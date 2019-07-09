@@ -29,7 +29,7 @@
 #     doClustering        ... compute a clustering
 #
 #
-#     mode(Train/Predict/Booth) ... either Train a model or make predictions
+#     mode(Train/Predict/None) ... either Train a model or make predictions
 #
 #     ------------------------------------------------------------------
 #     mode == Train 
