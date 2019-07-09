@@ -50,9 +50,16 @@
 │       └── Tests
 ├── QuickStart
 │   ├── ModelTrain
-│   │   └── pdb
+│   │   ├── bestModel
+│   │   ├── pdb
+│   │   ├── Proteins
+│   │   └── RepeatedSubSampling
+│   ├── Predictions
+│   │   ├── distances
+│   │   └── proteins
 │   └── Test
-│       └── pdb
+│       ├── pdb
+│       └── Proteins
 ├── Results
 │   ├── Examples
 │   │   └── MeasureCouplings
@@ -63,4 +70,4 @@
 └── Summerschool
     └── old
 
-63 directories
+70 directories

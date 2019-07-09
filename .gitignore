@@ -1,8 +1,19 @@
 Summerschool/
 Results/
 
+MetricGeometry/RepeatedSubsampling/FirstLowerBoundRelationOfPosAndNeg/cmakeBin/
+
 data/old/
 
 PCL/
 
 MasterThesis.pdf
+
+
+QuickStart/ModelTrain/Proteins/
+QuickStart/ModelTrain/bestModel/
+QuickStart/ModelTrain/RepeatedSubSampling/
+
+QuickStart/Test/Proteins/
+
+QuickStart/Predictions/

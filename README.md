@@ -42,6 +42,38 @@ This document gives instructions on how to recreate the data that was used in th
     └── Tables
 ```
 
+## QuickStart
+Before you can run this example make sure that all dependencies are installed. A script that trys to do that can be found in *setUp/setUp.sh*. Install all dependencies by typing:
+```
+./setUp.sh
+```
+
+The folder *QuickStart* contains a fully setup example that demonstrates what this implementation can do.
+In *ModelTrain/pdb/* pdb-files are stored to train a model. The file *ModelTrain/labels.txt* contains the labels of the proteins (in this case *functional* and *not_functional*, you can specify any label however). In *Test/pdb/* the pdb-files are stored that predictions should be made for. To build the model type:
+```
+../Classification/./predictingProteinInteractions.R
+```
+
+After the script is executed you should have an optimized model in *ModelTrain/bestModel/bestModel.RData*. This file is in a binary-format and can only be read with the R-function *readDs*. Additionally the computed distances are stored in *ModelTrain/RepeatedSubSampling/*.
+Now make predictions:
+
+```
+../Classification/./predictingProteinInteractions.R --mode Predict --pdb_folder <path/To/QuickStart>/Test/pdb/ --MutCompOutPut <path/To/QuickStart>/Test/Proteins/
+```
+
+The predictions are now stored in *Predictions/predictions.txt*. The prediction-file has three columns:
+the name of the protein, probability for *functional* probability for *not_functional*.
+The output might look like this:
+
+| "ind" | "functional"      | "not_functional"  |
+|-------|-------------------|-------------------|
+| "013" | 0.554907677356657 | 0.445092322643343 |
+|       |                   |                   |
+|       |                   |                   |
+
+
+
+
 ## 1. Classification
 Contains one script that does a classification given one distance-matrix and labels and other parameters for the model.
 ```
