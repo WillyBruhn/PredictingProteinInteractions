@@ -1,18 +1,48 @@
 #!/usr/bin/Rscript
 
-source("/home/willy/RedoxChallenges/MasterThesis/ExtrinsicDistances/isoFaces.R")
-source("/home/willy/RedoxChallenges/MasterThesis/ExtrinsicDistances/extrinsicDistances.R")
+# source("/home/willy/RedoxChallenges/MasterThesis/ExtrinsicDistances/isoFaces.R")
+# source("/home/willy/RedoxChallenges/MasterThesis/ExtrinsicDistances/extrinsicDistances.R")
+
+
+is.installed <- function(mypkg){
+  is.element(mypkg, installed.packages()[,1])
+}
+
+if(!is.installed("misc3d")){install.packages("misc3d")}
+library("misc3d")
+
+
+# tell horst to install GL library
+# if(!is.installed("rgl")){install.packages("rgl")}
+# library("rgl")
+
 
 library(misc3d)
-library(rgl)
-library(doBy)
-library(geometry)
-library(FNN)
-library(gplots)
-library(readobj)
-library(xtable)
-library(spatstat)
-library(igraph)
+# library(rgl)
+
+if(!is.installed("doBy")){install.packages("doBy")}
+library("doBy")
+
+if(!is.installed("geometry")){install.packages("geometry")}
+library("geometry")
+
+if(!is.installed("FNN")){install.packages("FNN")}
+library("FNN")
+
+if(!is.installed("gplots")){install.packages("gplots")}
+library("gplots")
+
+if(!is.installed("readobj")){install.packages("readobj")}
+library("readobj")
+if(!is.installed("xtable")){install.packages("xtable")}
+library("xtable")
+
+# if(!is.installed("spatstat")){install.packages("spatstat")}
+# library("spatstat")
+
+# if(!is.installed("igraph")){install.packages("igraph")}
+# library("igraph")
+
 
 
 

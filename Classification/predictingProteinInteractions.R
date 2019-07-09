@@ -40,9 +40,9 @@
 #
 #     distances_train       ... folder in which all distance-matrices will be stored
 #
-#     n                     ... number of points to select (see parameters of RepeatedSampling)
+#     numberOfPoints        ... number of points to select (see parameters of RepeatedSampling)
 #
-#     m                     ... number of repetitions
+#     rounds                ... number of repetitions
 #
 #     -------------------------------------------------------------------
 #     evolutionary algorithm to find optimal boosted model
@@ -119,6 +119,9 @@ library("ggplot2")
 library("ggdendro")
 library("plot3D")
 library("emdist")
+
+if(!is.installed("getopt")){install.packages("getopt")}
+library("getopt")
 
 rm(is.installed)
 
@@ -310,7 +313,7 @@ labels_train = opt$labels_train
 
 # the dummy-file containing the needed parameters for MutComp
 # funr::get_script_path() does not work within Rstudio
-MutCompSettings = "/home/willy/PredictingProteinInteractions/Classification/predictingProteinInteractionsSettings/MutCompParametersDummy.txt"
+# MutCompSettings = "/home/willy/PredictingProteinInteractions/Classification/predictingProteinInteractionsSettings/MutCompParametersDummy.txt"
 MutCompSettings = paste(funr::get_script_path(),"/predictingProteinInteractionsSettings/MutCompParametersDummy.txt",sep = "")
 
 createFolderHierarchy(PPIoutputFolder, pdbFolder)
@@ -487,7 +490,7 @@ if(mode == "Train"){
 #-------------------------------------------------------------------------
 
 if(mode == "Predict"){
-  pathToBoostedNNClassification = "/home/willy/PredictingProteinInteractions/Classification/NNClassification/"
+  # pathToBoostedNNClassification = "/home/willy/PredictingProteinInteractions/Classification/NNClassification/"
   pathToBoostedNNClassification = paste(funr::get_script_path(),"/NNClassification/",sep = "")
   BoostedNNClassificationCall = "./BoostedNNClassification.R"
   

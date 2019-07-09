@@ -20,3 +20,6 @@
 ../Classification/./predictingProteinInteractions.R --mode Predict --pdb_folder /home/willy/PredictingProteinInteractions/QuickStart/Test/pdb/ --MutCompOutPut /home/willy/PredictingProteinInteractions/QuickStart/Test/Proteins/
 
 #-------------------------------------------------------------------------
+# on WS
+
+../Classification/./predictingProteinInteractions.R --mode Predict --pdb_folder /home/sysgen/Documents/LWB/PredictingProteinInteractions/QuickStart/Test/pdb/ --MutCompOutPut /home/sysgen/Documents/LWB/PredictingProteinInteractions/QuickStart/Test/Proteins/

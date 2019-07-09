@@ -12,7 +12,7 @@ Set(Sources "${SourceDir}/sampling.cpp" "${SourceDir}/mathFunctions.cpp" "${Sour
 
 add_executable(main "${SourceDir}main.cpp" ${Sources} ${Headers})
 
-target_link_libraries (main -pthread -lboost_system -lgsl -lgslcblas -lm -lboost_filesystem)
+target_link_libraries (main -pthread -lboost_system  -lm -lboost_filesystem)
 
 ################################
 # GTest

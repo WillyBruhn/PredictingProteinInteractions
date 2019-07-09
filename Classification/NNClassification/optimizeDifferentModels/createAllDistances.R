@@ -48,16 +48,49 @@ if ( is.null(opt$m    ) ) { opt$m    = 500  }
 if ( is.null(opt$verbose ) ) { opt$verbose = FALSE }
 
 #----------------------------------------------------------------------------------
-# s1 = paste(funr::get_script_path(),"/additionalScripts/TriangulateIsoSurface.R", sep ="")
-source("/home/willy/PredictingProteinInteractions/Classification/NNClassification/additionalScripts/TriangulateIsoSurface.R")
+thisLocation = funr::get_script_path()
+print(thisLocation)
 
-# s2 = paste(funr::get_script_path(),"/additionalScripts/TriangulateIsoSurface.R", sep ="")
-source("/home/willy/RedoxChallenges/MasterThesis/ExtrinsicDistances/isoFaces.R")
-# source(s2)
+split = strsplit(thisLocation,split = "/")
+oneUp = split[[1]][1:(length(split[[1]])-1)]
 
-source("/home/willy/RedoxChallenges/MasterThesis/ExtrinsicDistances/extrinsicDistances.R")
+oneUpPath = ""
+for(i in 2:length(oneUp)){
+  oneUpPath = paste(oneUpPath, oneUp[i],sep = "/")
+}
+oneUpPath = paste(oneUpPath, "/", sep ="")
 
-source("/home/willy/PredictingProteinInteractions/Classification/NNClassification/optimizeDifferentModels/BoostedKNN.R")
+print(oneUpPath)
+
+
+
+s1 = paste(oneUpPath,"additionalScripts/TriangulateIsoSurface.R", sep ="")
+# s1 = paste(thisLocation, "../additionalScripts/TriangulateIsoSurface.R", sep ="")
+print(paste("sourcing ", s1, sep =""))
+
+print("-----------------------------------------------------------")
+source(s1)
+# /home/sysgen/Documents/LWB/PredictingProteinInteractions/Classification/NNClassification/additionalScripts/
+# source("/home/willy/PredictingProteinInteractions/Classification/NNClassification/additionalScripts/TriangulateIsoSurface.R")
+
+s2 = paste(oneUpPath,"/additionalScripts/isoFaces.R", sep ="")
+print(paste("sourcing ", s2, sep =""))
+source(s2)
+# source("/home/willy/RedoxChallenges/MasterThesis/ExtrinsicDistances/isoFaces.R")
+
+# source("/home/willy/RedoxChallenges/MasterThesis/ExtrinsicDistances/extrinsicDistances.R")
+
+s3 = paste(oneUpPath,"/additionalScripts/extrinsicDistances.R", sep ="")
+print(paste("sourcing ", s3, sep =""))
+source(s3)
+
+# source("/home/willy/PredictingProteinInteractions/Classification/NNClassification/optimizeDifferentModels/BoostedKNN.R")
+
+s4 = paste(oneUpPath,"/optimizeDifferentModels/BoostedKNN.R", sep ="")
+print(paste("sourcing ", s4, sep =""))
+source(s4)
+
+print("done sourcing")
 
 #--------------------------------------------------------------------------------------------------
 

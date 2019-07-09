@@ -1,18 +1,15 @@
 
 # in the parametersFile this is the value for vmdRC
-sudo find . -name ".vmdrc"
+# sudo find . -name ".vmdrc"
 
 #--------------------------------------------------------------------------------------
 # compile Repeated Sub Sampling
-cd /home/willy/PredictingProteinInteractions/MetricGeometry/RepeatedSubsampling/FirstLowerBoundRelationOfPosAndNeg/
+cd ../MetricGeometry/RepeatedSubsampling/FirstLowerBoundRelationOfPosAndNeg/
 
 mkdir cmakeBin
-
-cd /home/willy/PredictingProteinInteractions/MetricGeometry/RepeatedSubsampling/FirstLowerBoundRelationOfPosAndNeg/cmakeBin/
+cd cmakeBin/
 
 cmake ..
 
-cd /home/willy/PredictingProteinInteractions/MetricGeometry/RepeatedSubsampling/FirstLowerBoundRelationOfPosAndNeg/cmakeBin/
-
-make
+make main
 #--------------------------------------------------------------------------------------

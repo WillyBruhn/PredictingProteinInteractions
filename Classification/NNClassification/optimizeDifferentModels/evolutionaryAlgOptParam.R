@@ -1,5 +1,9 @@
 #!/usr/bin/Rscript
-source("/home/willy/PredictingProteinInteractions/Classification/NNClassification/optimizeDifferentModels/BoostedKNN.R")
+
+print(funr::get_script_path())
+s1 = paste(funr::get_script_path(), "/BoostedKNN.R", sep = "")
+print(s1)
+source(s1)
 
 #------------------------------------------------------------------------------------------------------------------------
 # evolutionary algorithm to find optimal boosted model

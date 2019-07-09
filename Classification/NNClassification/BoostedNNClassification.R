@@ -74,8 +74,11 @@ source(s2)
 s3 = paste(funr::get_script_path(),"/additionalScripts/extrinsicDistances.R", sep ="")
 source(s3)
 
+print("----------------------")
+print(funr::get_script_path())
 
-source("/home/willy/PredictingProteinInteractions/Classification/NNClassification/optimizeDifferentModels/BoostedKNN.R")
+s4 = paste(funr::get_script_path(),"/optimizeDifferentModels/BoostedKNN.R", sep ="")
+source(s4)
 
 print("done sourcing ...")
 
