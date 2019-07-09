@@ -721,7 +721,8 @@ int main(int argc, char *argv[])
 	 c2 = stod(argv[9]);		// model parameters
 	 c3 = stod(argv[10]);		// model parameters
 
-	 num_bins = log2(rounds)+1;	// model parameters
+//	 num_bins = log2(rounds)+1;	// model parameters
+     num_bins = 100;
 
 	 emd_list_id = argv[11];	// for running multiple times with same parameters
 

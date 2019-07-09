@@ -103,7 +103,9 @@ RepeatedSamplingExe = "./main"
 model = loadModelFromFile(model_f_name)
 
 # check if the model is valid
-# if(checkIfModelValid(model) == 1) q(status=1)
+if(checkIfModelValid(model) == 1) q(status=1)
+
+print(model)
 
 
 copyDirectoriesInDirectory <- function(from,to){
@@ -165,8 +167,8 @@ for(i in 1:length(model$distance_files)){
                                               proteinsToCompareFile_target = names_file,
                                               proteinsToCompareFile = names_file,
                                               measure = parameters$measure,
-                                              number_of_selected_points = 2,
-                                              rounds = 5,
+                                              number_of_selected_points = parameters$n,
+                                              rounds = parameters$m,
                                               c1 = parameters$c1,
                                               c2 = parameters$c2,
                                               c3 = parameters$c3)

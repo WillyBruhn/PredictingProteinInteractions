@@ -528,6 +528,9 @@ loadModelFromFile <- function(file){
   return(readRDS(file))
 }
 
+# loadModelFromFile("/home/willy/PredictingProteinInteractions/QuickStart/ModelTrain/bestModel/bestModel.RData")
+
+
 checkIfModelValid <- function(model){
   print("Checking if model is valid ...")
   
@@ -594,7 +597,29 @@ getRepeatedSampling <- function(RepeatedSamplingPath,RepeatedSamplingExe, path,o
   
   RepeatedSamplingArguments_distanceMatrix_csv = paste(RepeatedSamplingArguments_distanceMatrix, ".csv", sep = "")
   
+  print(unlist(RepeatedSamplingArguments))
+  
+  print(paste(outPath,"/",RepeatedSamplingArguments_distanceMatrix_csv, sep = ""))
   if(!file.exists(paste(outPath,"/",RepeatedSamplingArguments_distanceMatrix_csv, sep = ""))) system2(paste(RepeatedSamplingPath,RepeatedSamplingExe, sep = ""), args = unlist(RepeatedSamplingArguments))
   
   return(readDistanceMatrix3(paste(outPath,"/",RepeatedSamplingArguments_distanceMatrix_csv, sep = "")))
 }
+
+summaryFromDistanceMatrix <-function(distance_matrix){
+  # excluding distances to self
+  # so only look at the topright matrix
+  
+  # print(distance_matrix)
+  distances = distance_matrix[upper.tri(distance_matrix, diag = FALSE)]
+  
+  
+  summ = summary(distances)
+
+  df = data.frame(matrix(c(summ, mean(distances), var(distances)),nrow = 1))
+
+  colnames(df) = c(names(summ), "mean", "var")
+  
+  return(df)
+}
+
+

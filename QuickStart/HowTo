@@ -11,15 +11,19 @@
 #-------------------------------------------------------------------------
 # Call Predicting Proteins to generate the Trained model
 #-------------------------------------------------------------------------
-../Classification/./predictingProteinInteractions.R
+../Classification/./predictingProteinInteractions.R --rounds 20 --generations 10
 
 
 #-------------------------------------------------------------------------
 # Call Predicting Proteins to make predictions
 #-------------------------------------------------------------------------
-../Classification/./predictingProteinInteractions.R --mode Predict --pdb_folder /home/willy/PredictingProteinInteractions/QuickStart/Test/pdb/ --MutCompOutPut /home/willy/PredictingProteinInteractions/QuickStart/Test/Proteins/
+../Classification/./predictingProteinInteractions.R --mode Predict --pdb_folder /home/willy/PredictingProteinInteractions/QuickStart/Test/pdb/ --MutCompOutPut /home/willy/PredictingProteinInteractions/QuickStart/Test/Proteins/ --rounds 20 
 
 #-------------------------------------------------------------------------
 # on WS
 
 ../Classification/./predictingProteinInteractions.R --mode Predict --pdb_folder /home/sysgen/Documents/LWB/PredictingProteinInteractions/QuickStart/Test/pdb/ --MutCompOutPut /home/sysgen/Documents/LWB/PredictingProteinInteractions/QuickStart/Test/Proteins/
+
+#-------------------------------------------------------------------------
+# get clustering
+../Classification/./predictingProteinInteractions.R --mode SingleDistance --doClustering TRUE

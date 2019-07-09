@@ -28,8 +28,7 @@
 #   
 #     doClustering        ... compute a clustering
 #
-#
-#     mode(Train/Predict/None) ... either Train a model or make predictions
+#     mode(Train/Predict/SingleDistance) ... either Train a model or make predictions
 #
 #     ------------------------------------------------------------------
 #     mode == Train 
@@ -191,6 +190,11 @@ if ( is.null(opt$verbose ) ) { opt$verbose = FALSE }
 
 
 print(opt)
+
+
+s1 = paste(funr::get_script_path(), "/NNClassification/optimizeDifferentModels/BoostedKNN.R", sep = "")
+print(s1)
+source(s1)
 
 #-------------------------------------------------------------------------
 CreatALLdx <- function(ListOfProtNames,PathToProtData)
@@ -445,18 +449,17 @@ makeCustomCall <-function(pathToExe,call, parameterList, print = TRUE){
   system2(paste(pathToExe,call,sep = ""), args = arguments)
 }
 
+# create the names-file
+print("Creating file with the names ...")
+names_file = paste(pathToProteins,"/names.txt", sep ="")
+proteinnames = list.dirs(path = pathToProteins, recursive = FALSE, full.names = FALSE)
+print(proteinnames)
+write(file = names_file,proteinnames)
+
 if(mode == "Train"){
   print("Creating all distances with createAllDistances.R ...")
   pathToCreateAllDistances = paste(funr::get_script_path(),"/NNClassification/optimizeDifferentModels/",sep = "")
   createAllDistancesExe = "./createAllDistances.R"
-  
-  # create the names-file
-  print("Creating file with the names ...")
-  names_file = paste(pathToProteins,"/names.txt", sep ="")
-  proteinnames = list.dirs(path = pathToProteins, recursive = FALSE, full.names = FALSE)
-  print(proteinnames)
-  write(file = names_file,proteinnames)
-  
 
   createAllDistancesParameters = list(
     "--ProteinsPath" = pathToProteins,
@@ -515,68 +518,105 @@ if(mode == "Predict"){
 
 #-------------------------------------------------------------------------
 # 4. Clustering
-AllvsAll.Cluster <- function(outPath, RepeatedSamplingArguments_distanceMatrix)
-{  
-  mydendrogramplot <- function(clust,xlim=NULL,ylim=NULL, title=NULL)
-  {
-    
-    dendrogram <- as.dendrogram(clust)
-    dendro.data <- dendro_data(dendrogram)
-    
-    p <- ggplot() +
-      geom_segment(data = dendro.data$segments,
-                   aes_string(x = "x", y = "y", xend = "xend", yend = "yend"))+
-      theme_dendro()+
-      scale_x_continuous(breaks = seq_along(dendro.data$labels$label), 
-                         labels = dendro.data$labels$label) + 
-      theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
-      theme(axis.text.y = element_text(angle = 90, hjust = 1)) +
-      ggtitle(title)
-    
-    if(is.null(xlim) &is.null(ylim))
-    {
-      p <- p +  coord_cartesian(xlim = xlim, ylim = ylim)
-      
-    }
-    p
-  }
-  distance_matrix_file_name = paste(outPath, "/", RepeatedSamplingArguments_distanceMatrix, sep ="")
-  # distance_matrix_file_name = "/home/willy/Schreibtisch/PPITEST//RepSubOutput//EMD_100_500_1.0000_1.0000_0.0000_0.0000_id_test_NNact_0.csv"
-  data = read.csv2(distance_matrix_file_name)
-  
-  ProtList <- unique(c(as.character(data[,1]),as.character(data[,2])))
-  print(ProtList)
-  
-  print(data$emd_distance)
-  
-  matr.Neg <- matrix(0,nrow = NROW(ProtList),ncol = NROW(ProtList), dimnames = list(ProtList,ProtList))
-  
-  
-  
-  k <- 1
-  for(i in 1:(NROW(ProtList)-1))
-  {
-    for(j in (i+1):NROW(ProtList))
-    {
-      if(k <= NROW(data)){
-        matr.Neg[i,j] <- data[k,3]
-        matr.Neg[j,i] <- data[k,3]
-      }
-      k <- k+1
-    }
-  }
-  
-  print(matr.Neg)
-  
-  fname = strsplit(RepeatedSamplingArguments_distanceMatrix, split = ".csv")[[1]]
-  
-  
-  agnes.average.Neg <- agnes(x = matr.Neg, diss = T,method = "average",keep.diss = F,keep.data = F)
-  mydendrogramplot(agnes.average.Neg,title = "UPGMA")
-  ggsave(filename = paste(outPath,"/Dendrogram_", fname, ".pdf",sep=""),height=7, width = 14)
-}
 
-if(doClustering) AllvsAll.Cluster(outPath = RepeatedSamplingArguments$outPath, RepeatedSamplingArguments_distanceMatrix = RepeatedSamplingArguments_distanceMatrix)
+if(mode == "SingleDistance"){
+  #-------------------------------------------------------------------------
+  # comput one distance-matrix with RepSubSample
+  #-------------------------------------------------------------------------
+  
+  RepeatedSamplingPath = paste(funr::get_script_path(),"/../MetricGeometry/RepeatedSubsampling/FirstLowerBoundRelationOfPosAndNeg/cmakeBin/",sep = "")
+  RepeatedSamplingExe = "./main"
+  
+  positive = getRepeatedSampling(RepeatedSamplingPath,RepeatedSamplingExe,
+                                 path = pathToProteins,
+                                 outPath = opt$distances_train, 
+                                 proteinsToCompareFile_target = names_file, 
+                                 proteinsToCompareFile = names_file,
+                                 measure = 1,
+                                 number_of_selected_points = opt$numberOfPoints,
+                                 rounds = opt$rounds,
+                                 c1 = 1, c2 = 0, c3 = 0)
+  
+  
+  negative = getRepeatedSampling(RepeatedSamplingPath,RepeatedSamplingExe,
+                                 path = pathToProteins,
+                                 outPath = opt$distances_train,
+                                 proteinsToCompareFile_target = names_file,
+                                 proteinsToCompareFile = names_file,
+                                 measure = 1,
+                                 number_of_selected_points = opt$numberOfPoints,
+                                 rounds = opt$rounds,
+                                 c1 = 0, c2 = 1, c3 = 0)
+  
+  
+  AllvsAll.Cluster <- function(outPath, distance_matrix, fname)
+  {  
+    mydendrogramplot <- function(clust,xlim=NULL,ylim=NULL, title=NULL)
+    {
+      
+      dendrogram <- as.dendrogram(clust)
+      dendro.data <- dendro_data(dendrogram)
+      
+      p <- ggplot() +
+        geom_segment(data = dendro.data$segments,
+                     aes_string(x = "x", y = "y", xend = "xend", yend = "yend"))+
+        theme_dendro()+
+        scale_x_continuous(breaks = seq_along(dendro.data$labels$label), 
+                           labels = dendro.data$labels$label) + 
+        theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+        theme(axis.text.y = element_text(angle = 90, hjust = 1)) +
+        ggtitle(title)
+      
+      if(is.null(xlim) &is.null(ylim))
+      {
+        p <- p +  coord_cartesian(xlim = xlim, ylim = ylim)
+        
+      }
+      p
+    }
+    # data = distance_matrix
+    # 
+    # ProtList <- unique(c(as.character(data[,1]),as.character(data[,2])))
+    # print(ProtList)
+    # 
+    # print(data$emd_distance)
+    # 
+    # matr.Neg <- matrix(0,nrow = NROW(ProtList),ncol = NROW(ProtList), dimnames = list(ProtList,ProtList))
+    # 
+    # 
+    # 
+    # k <- 1
+    # for(i in 1:(NROW(ProtList)-1))
+    # {
+    #   for(j in (i+1):NROW(ProtList))
+    #   {
+    #     if(k <= NROW(data)){
+    #       matr.Neg[i,j] <- data[k,3]
+    #       matr.Neg[j,i] <- data[k,3]
+    #     }
+    #     k <- k+1
+    #   }
+    # }
+    
+    agnes.average.Neg <- agnes(x = distance_matrix, diss = T,method = "average",keep.diss = F,keep.data = F)
+    mydendrogramplot(agnes.average.Neg,title = "UPGMA")
+    ggsave(filename = paste(outPath,"/Dendrogram_", fname, ".pdf",sep=""),height=7, width = 14)
+  }
+  
+  positive_name = paste("positive_n_", opt$numberOfPoints, "_m_", opt$rounds, sep = "")
+  # negative_name = paste("negative_n_", opt$numberOfPoints, "_m_", opt$rounds, sep = "")
+  
+  if(doClustering) AllvsAll.Cluster(outPath = pathToProteins, distance_matrix = positive, positive_name)
+  # if(doClustering) AllvsAll.Cluster(outPath = pathToProteins, distance_matrix = negative, negative_name)
+  
+  
+  #-------------------------------------------------------------------------
+  # Compute some Summary-statistics
+  #-------------------------------------------------------------------------
+  write.table(file = paste(pathToProteins, "/summary_",positive_name,".txt",sep=""), summaryFromDistanceMatrix(positive), row.names = FALSE)
+  # write.table(file = paste(pathToProteins, "/summary_",negative_name,".txt",sep=""), summaryFromDistanceMatrix(negative), row.names = FALSE)
+  
+}
 
 
 
