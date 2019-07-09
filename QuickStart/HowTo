@@ -1,0 +1,22 @@
+#-------------------------------------------------------------------------
+# Willy Bruhn
+# 9.7.2019
+# 
+# This is a fully setup example.
+# First a model is built on some pdbs.
+# Then the model is used to make predictions.
+#
+#-------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------
+# Call Predicting Proteins to generate the Trained model
+#-------------------------------------------------------------------------
+../Classification/./predictingProteinInteractions.R
+
+
+#-------------------------------------------------------------------------
+# Call Predicting Proteins to make predictions
+#-------------------------------------------------------------------------
+../Classification/./predictingProteinInteractions.R --mode Predict --pdb_folder /home/willy/PredictingProteinInteractions/QuickStart/Test/pdb/ --MutCompOutPut /home/willy/PredictingProteinInteractions/QuickStart/Test/Proteins/
+
+#-------------------------------------------------------------------------

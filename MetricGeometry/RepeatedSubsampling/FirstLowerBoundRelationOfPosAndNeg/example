@@ -1,0 +1,134 @@
+
+
+
+./main /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/MotivationalExample/Output/000_Trx/000_Trx_pot_positive.pts /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/MotivationalExample/Output/000_Trx/000_Trx_pot_negative.pts /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/MotivationalExample/Output/000_Trx_shifted/000_Trx_shifted_pot_positive.pts /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/MotivationalExample/Output/000_Trx_shifted/000_Trx_shifted_pot_negative.pts 2 1
+
+./main /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/MotivationalExample/Output/000_Trx/000_Trx_pot_positive.pts /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/MotivationalExample/Output/000_Trx/000_Trx_pot_negative.pts /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/MotivationalExample/Output/000_Trx/000_Trx_pot_positive.pts /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/MotivationalExample/Output/000_Trx/000_Trx_pot_negative.pts 2 1
+
+
+./main /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/MotivationalExample/Output/000_Trx/000_Trx_pot_positive.pts /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/MotivationalExample/Output/000_Trx/000_Trx_pot_negative.pts /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/MotivationalExample/Output/000_Trx/000_Trx_pot_positive.pts /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/MotivationalExample/Output/000_Trx/000_Trx_pot_negative.pts 2 1 1 1 1
+
+
+
+	string Dataname1_pos = argv[1];
+    string Dataname1_mu_pos = argv[2];
+
+	string Dataname1_neg = argv[3];
+	string Dataname1_mu_neg = argv[4];
+
+    string Dataname1_actCent = argv[5];
+
+	string Dataname2_pos = argv[6];
+    string Dataname2_mu_pos = argv[7];
+
+	string Dataname2_neg = argv[8];	
+	string Dataname2_mu_neg = argv[9];
+
+    string Dataname2_actCent = argv[10];
+
+	number_of_selected_points = atoi(argv[11]);
+	rounds = atoi(argv[12]);
+
+	 c1 = stod(argv[13]);
+	 c2 = stod(argv[14]);
+	 c3 = stod(argv[15]);
+
+    string fileName = argv[16];
+
+pa="/home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/MotivationalExample/Output/000_Trx/"
+pa2="/home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/MotivationalExample/Output/000_Trx_shifted/"
+./main $pa/000_Trx_pot_positive.pts $pa/000_Trx_mu_positive.pts $pa/000_Trx_pot_negative.pts $pa/000_Trx_mu_negative.pts $pa/000_Trx_active_center.pts $pa2/000_Trx_shifted_pot_positive.pts $pa2/000_Trx_shifted_mu_positive.pts $pa2/000_Trx_shifted_pot_negative.pts $pa2/000_Trx_shifted_mu_negative.pts $pa2/000_Trx_shifted_active_center.pts 2 2 1 1 1 1 $pa/out.txt
+
+
+pa="/home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/000_Trx/"
+./main_profiled $pa/000_Trx_pot_positive.pts $pa/000_Trx_mu_positive.pts $pa/000_Trx_pot_negative.pts $pa/000_Trx_mu_negative.pts $pa/000_Trx_active_center.pts $pa/000_Trx_pot_positive.pts $pa/000_Trx_mu_positive.pts $pa/000_Trx_pot_negative.pts $pa/000_Trx_mu_negative.pts $pa/000_Trx_active_center.pts 2 2 1 1 1 1 $pa/out.txt
+
+
+
+
+pa="/home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/000_Trx/"
+./main $pa/000_Trx_pot_positive.pts $pa/000_Trx_mu_positive.pts $pa/000_Trx_pot_negative.pts $pa/000_Trx_mu_negative.pts $pa/000_Trx_active_center.pts $pa/000_Trx_pot_positive.pts $pa/000_Trx_mu_positive.pts $pa/000_Trx_pot_negative.pts $pa/000_Trx_mu_negative.pts $pa/000_Trx_active_center.pts 2 2 1 1 1 1 $pa/out.txt
+
+
+    string path = argv[1];
+    string Dataname1 = argv[2];
+    string proteinsToCompareFile = argv[2];
+
+    int uniform_distribution = atoi(argv[3]);
+
+	number_of_selected_points = atoi(argv[4]);
+	rounds = atoi(argv[5]);
+
+	 c1 = stod(argv[6]);
+	 c2 = stod(argv[7]);
+	 c3 = stod(argv[8]);
+
+
+pa="/home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/000_Trx/"
+./main $pa/000_Trx_pot_positive.pts $pa/000_Trx_mu_positive.pts $pa/000_Trx_pot_negative.pts $pa/000_Trx_mu_negative.pts $pa/000_Trx_active_center.pts $pa/000_Trx_pot_positive.pts $pa/000_Trx_mu_positive.pts $pa/000_Trx_pot_negative.pts $pa/000_Trx_mu_negative.pts $pa/000_Trx_active_center.pts 2 2 1 1 1 1 $pa/out.txt
+
+pa="/home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/"
+./main $pa /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/ComparingProteins/LowerBounds/FirstLowerBoundRelationOfPosAndNeg/Example/ 000_Trx /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/ComparingProteins/LowerBounds/FirstLowerBoundRelationOfPosAndNeg/Example/proteinsToCompare.txt 5 2 100 1 1 1
+
+
+/home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/ComparingProteins/LowerBounds/FirstLowerBoundRelationOfPosAndNeg/Example/proteinsToCompareFull.txt
+
+
+pa="/home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/"
+./main $pa /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/ComparingProteins/LowerBounds/FirstLowerBoundRelationOfPosAndNeg/Example/ 000_Trx /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/ComparingProteins/LowerBounds/FirstLowerBoundRelationOfPosAndNeg/Example/proteinsToCompare103.txt 5 1 2 100 1 1 1 test
+
+
+
+
+pa="/home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/"
+./main $pa /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/ComparingProteins/LowerBounds/FirstLowerBoundRelationOfPosAndNeg/Example/ 000_Trx /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/ComparingProteins/LowerBounds/FirstLowerBoundRelationOfPosAndNeg/Example/proteinsToCompare103.txt 5 1 10 100 1 1 1 10 test 1
+
+
+
+pa="/home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/"
+./main $pa /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/scripts/evaluate/optimizeParameters/ 000_Trx /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/ComparingProteins/LowerBounds/FirstLowerBoundRelationOfPosAndNeg/Example/proteinsToCompare103.txt 1 10 100 1 0.86 0.38 test 1
+
+
+
+n m measure c1 c2 c3 bins ROC
+10 100 1 1 0.86 0.38 5
+
+
+
+
+
+pa="/home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/"
+./main $pa /home/willy/Schreibtisch/repeatedSampling/ 000_Trx /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/ComparingProteins/LowerBounds/FirstLowerBoundRelationOfPosAndNeg/Example/proteinsToCompare103.txt 1 10 100 1 0.86 0.38 test 1
+
+pa="/home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/"
+./main $pa /home/willy/Schreibtisch/repeatedSampling/ /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/ComparingProteins/LowerBounds/FirstLowerBoundRelationOfPosAndNeg/Example/proteinsToCompareFull.txt /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/ComparingProteins/LowerBounds/FirstLowerBoundRelationOfPosAndNeg/Example/proteinsToCompareFull.txt 1 10 100 1 0.0 0.0 test 0
+
+
+pa="/home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/"
+./main $pa /home/willy/Schreibtisch/repeatedSampling/ /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/ComparingProteins/LowerBounds/FirstLowerBoundRelationOfPosAndNeg/Example/proteinsTestSmall.txt /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/ComparingProteins/LowerBounds/FirstLowerBoundRelationOfPosAndNeg/Example/proteinsTestSmall.txt 1 2 5 1 0.0 0.0 test 0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

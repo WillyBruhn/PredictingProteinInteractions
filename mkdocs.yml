@@ -1,0 +1,5 @@
+site_name: PredictingProteinInteractions
+nav:
+    - Home: index.md
+    - MetricGeometry: about.md
+    - MetricGeometry2: about.md

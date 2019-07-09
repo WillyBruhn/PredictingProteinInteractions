@@ -1,0 +1,69 @@
+/home/willy/PredictingProteinInteractions/
+├── Classification
+│   ├── NNClassification
+│   │   └── additionalScripts
+│   └── predictingProteinInteractionsSettings
+├── data
+│   ├── 106Redoxins
+│   │   ├── CompareProteinsOutput
+│   │   ├── Input
+│   │   ├── Labels
+│   │   ├── Output
+│   │   ├── RepSubOutput
+│   │   ├── RepSubOutputDifferentActNN
+│   │   └── SubSamplingOutput
+│   ├── 106RedoxinsWithAddionalPDBS_1
+│   │   ├── OutputMerged
+│   │   └── RepSubOutput
+│   ├── additionalPDBS_1
+│   │   ├── CompareProteinsOutput
+│   │   ├── Input
+│   │   ├── Output
+│   │   └── RepSubOutput
+│   └── animals
+├── docs
+├── MetricGeometry
+│   ├── ComparingProteins
+│   │   ├── EMDandClustering
+│   │   └── LowerBounds
+│   ├── Downsampling2Step
+│   └── RepeatedSubsampling
+│       └── FirstLowerBoundRelationOfPosAndNeg
+├── PCL
+│   ├── IsoSurfSimilarity
+│   │   ├── Debug
+│   │   ├── Release
+│   │   └── src
+│   └── ptsToPcd
+├── PreProcessingProteins
+│   ├── centerSelect
+│   │   ├── AA_utility
+│   │   ├── Ars
+│   │   ├── example
+│   │   ├── exampleImages
+│   │   ├── experimental
+│   │   ├── parameters
+│   │   └── Redox
+│   └── MutComp
+│       ├── APBS
+│       ├── deprecated
+│       ├── ExampleHierarchy
+│       ├── GUI
+│       ├── ImageCreator
+│       ├── ImageSimilarity
+│       ├── MovieCreator
+│       ├── mutationTest
+│       ├── Output
+│       ├── TclScripts
+│       └── Tests
+├── Results
+│   ├── Examples
+│   │   └── MeasureCouplings
+│   ├── Images
+│   ├── Scripts
+│   └── Tables
+├── setUp
+└── Summerschool
+    └── old
+
+66 directories

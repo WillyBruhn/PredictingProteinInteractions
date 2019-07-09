@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="None">
+        
+        
+        <link rel="shortcut icon" href="./img/favicon.ico">
+        <title>PredictingProteinInteractions</title>
+        <link href="./css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="./css/font-awesome-4.5.0.css" rel="stylesheet">
+        <link href="./css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="./css/highlight.css">
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+        <![endif]-->
+	
+	<script src="./js/jquery-1.10.2.min.js"></script>
+        <script src="./js/bootstrap-3.0.3.min.js"></script>
+        <script src="./js/highlight.pack.js"></script> 
+    </head>
+
+    <body class="homepage">
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+    <div class="container">
+
+        <!-- Collapsed navigation -->
+        <div class="navbar-header">
+            <!-- Expander button -->
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href=".">PredictingProteinInteractions</a>
+        </div>
+
+        <!-- Expanded navigation -->
+        <div class="navbar-collapse collapse">
+                <!-- Main navigation -->
+                <ul class="nav navbar-nav">
+                    <li class="active">
+                        <a href=".">Home</a>
+                    </li>
+                    <li >
+                        <a href="about/">About</a>
+                    </li>
+                </ul>
+
+            <ul class="nav navbar-nav navbar-right">
+                <li>
+                    <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                        <i class="fa fa-search"></i> Search
+                    </a>
+                </li>
+                    <li class="disabled">
+                        <a rel="next" >
+                            <i class="fa fa-arrow-left"></i> Previous
+                        </a>
+                    </li>
+                    <li >
+                        <a rel="prev" href="about/">
+                            Next <i class="fa fa-arrow-right"></i>
+                        </a>
+                    </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+        <div class="container">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#predicting-protein-interactions">Predicting Protein Interactions</a></li>
+            <li><a href="#folder-hierarchy">Folder Hierarchy</a></li>
+            <li><a href="#1-classification">1. Classification</a></li>
+            <li><a href="#2-data">2. data</a></li>
+            <li><a href="#3-metric-geometry">3. Metric Geometry</a></li>
+            <li><a href="#4-pcl">4. PCL</a></li>
+            <li><a href="#5-preprocessingproteins">5. PreprocessingProteins</a></li>
+            <li><a href="#6-results">6. Results</a></li>
+        <li class="main "><a href="#todo_1">TODO</a></li>
+            <li><a href="#thesis">Thesis</a></li>
+            <li><a href="#research">Research</a></li>
+    </ul>
+</div></div>
+                <div class="col-md-9" role="main">
+
+<h1 id="predicting-protein-interactions">Predicting Protein Interactions</h1>
+<p>Predict protein-protein-interactions from raw pdb(protein-databank)-files. Find the thesis in <strong>Masterthesis.pdf</strong>. </p>
+<p>This document gives instructions on how to recreate the data that was used in the thesis. As a first step it only serves as a documentation for me personally. The idea is however to transfer this data directly to the CD that has to be submitted with the thesis. 
+(Willy Bruhn, 13.4.2019)</p>
+<h2 id="folder-hierarchy">Folder Hierarchy</h2>
+<pre><code>├── Classification
+├── data
+│   ├── 106Redoxins
+│   │   ├── Input
+│   │   ├── Labels
+│   │   └── Output
+│   └── animals
+├── docs
+├── MetricGeometry
+│   ├── ComparingProteins
+│   │   ├── EMDandClustering
+│   │   └── LowerBounds
+│   ├── Downsampling2Step
+│   └── RepeatedSubsampling
+│       └── FirstLowerBoundRelationOfPosAndNeg
+├── PCL
+├── PreProcessingProteins
+│   └── MutComp
+│       ├── APBS
+│       ├── deprecated
+│       ├── ExampleHierarchy
+│       ├── GUI
+│       ├── ImageCreator
+│       ├── ImageSimilarity
+│       ├── MovieCreator
+│       ├── mutationTest
+│       ├── Output
+│       ├── TclScripts
+│       └── Tests
+└── Results
+    ├── Images
+    ├── Scripts
+    └── Tables
+</code></pre>
+
+<h2 id="1-classification">1. Classification</h2>
+<p>Contains one script that does a classification given one distance-matrix and labels and other parameters for the model.</p>
+<pre><code>Input:
+distance_f_name(&quot;&quot;)           ... name of the file with the distances
+
+distance_format(1)
+                           = 1 ... a simple distance-matrix
+                           = 3 ... a 3 column-data-frame. First column ProtA
+                                   second column ProtB, third column distance.
+
+ labels_train                   ... name of the file with the labels
+
+ evaluate(TRUE)        
+                           = 1 ... with crossvalidation the model is tested
+                           = 2 ... the model is tested on the testset
+                           = 0 ... the model makes predictions on new data
+                                   to which not all classlabels are given.
+
+ evaluate_n                    ... number of times to repeat the classification.
+                                   Higher number leads to more accurate estimation.
+
+ kNN                           ... number of nearest neighbors to use for the majority-
+                                   voting.
+
+ test_split                    ... if(evaluate == 2) then this file specifies
+                                   the names to be tested with a model built from 
+                                   the remaining names.
+</code></pre>
+
+<h2 id="2-data">2. data</h2>
+<h3 id="106redoxins">106Redoxins</h3>
+<p>Contains the protein-test-set.</p>
+<h3 id="additionalpdbs_1">additionalPDBS_1</h3>
+<p>Contains 19 Redoxins that are very simialr to Thrx.</p>
+<h3 id="106redoxinswithadditionalpdbs_1">106RedoxinsWithAdditionalPDBS_1</h3>
+<p>Contains the output of <em>106Redoxins</em> and <em>additionalPDBS_1</em> together in one folder. The files have to be in one folder for the calculation of the distances.</p>
+<h4 id="outputmerged">OutputMerged</h4>
+<p>Folder with all the pts-files.</p>
+<p><em>RepeatedSubsampling</em></p>
+<pre><code>../../MetricGeometry/RepeatedSubsampling/FirstLowerBoundRelationOfPosAndNeg/cmakeBin/./main /home/willy/PredictingProteinInteractions/data/106RedoxinsWithAddionalPDBS_1/OutputMerged/ /home/willy/PredictingProteinInteractions/data/106RedoxinsWithAddionalPDBS_1/RepSubOutput/ /home/willy/PredictingProteinInteractions/data/106RedoxinsWithAddionalPDBS_1/OutputMerged/names.txt /home/willy/PredictingProteinInteractions/data/106RedoxinsWithAddionalPDBS_1/OutputMerged/names.txt 1 100 500 1 0.0 0.0 test 0
+</code></pre>
+
+<p><em>classification of RepeatedSubsampling</em></p>
+<pre><code>../../Classification/./NNClassification.R --evaluate 0 --distance_format 3 --distance_f_name /home/willy/PredictingProteinInteractions/data/106RedoxinsWithAddionalPDBS_1/RepSubOutput/EMD_100_500_1.0000_1.0000_0.0000_0.0000_id_test.csv --kNN 10 --evaluate_n 1000 --test_split /home/willy/PredictingProteinInteractions/data/106Redoxins/Labels/testNames.txt --labels_train /home/willy/PredictingProteinInteractions/data/106Redoxins/Labels/labels.txt &gt; predictions.txt
+</code></pre>
+
+<h4 id="repsuboutput">RepSubOutput</h4>
+<p>Folder with the distances obtained with the repeated-subsampling-method.</p>
+<h3 id="active-center">Active Center</h3>
+<h3 id="animals">animals</h3>
+<p>Contains the models of the animals also used in Memolis Paper.</p>
+<h2 id="3-metric-geometry">3. Metric Geometry</h2>
+<p><em>MetricGeometry/ComparingProteins/</em> contains the original implementation of Felix Berens cloned from Git-hub (<a href="https://github.com/BerensF/ComparingProteins">ComparingProteins</a>, 04.13.2019). </p>
+<h3 id="comparingproteins">ComparingProteins</h3>
+<p>See for more details <a href="https://github.com/BerensF/ComparingProteins">ComparingProteins</a>.</p>
+<p>Modifications:
+* Other shebang for linux <strong>#!/usr/bin/Rscript</strong></p>
+<h3 id="downsampling2step">Downsampling2Step</h3>
+<p>Contains the implementation of the 2-step-downsampling-procedure.</p>
+<h3 id="repeatedsubsampling">RepeatedSubsampling</h3>
+<p>This folder contains the C++ implementation based on the original implementation of the <em>FLB</em> <a href="https://github.com/BerensF/ComparingProteins">ComparingProteins</a> by Felix Berens. An example call would be:</p>
+<pre><code>pa=&quot;/home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/&quot;
+./main $pa /home/willy/Schreibtisch/repeatedSampling/ /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/ComparingProteins/LowerBounds/FirstLowerBoundRelationOfPosAndNeg/Example/proteinsTestSmall.txt /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/ComparingProteins/LowerBounds/FirstLowerBoundRelationOfPosAndNeg/Example/proteinsTestSmall.txt 1 2 5 1 0.0 0.0 test 0
+</code></pre>
+
+<p>. More example-calls can be found in <strong>/home/willy/PredictingProteinInteractions/MetricGeometry/RepeatedSubsampling/FirstLowerBoundRelationOfPosAndNeg/example</strong>.</p>
+<h4 id="usage">Usage</h4>
+<pre><code>  string path = argv[1];                                        // path to the folder with the proteins and pts-files
+  string outPath = argv[2];                                 // path to the folder where the output of this programm should be stored
+  string proteinsToCompareFile_target = argv[3];    // proteins to compare to, usually only Trx or all proteins
+  string proteinsToCompareFile = argv[4];               // all other proteins
+
+  measure = stod(argv[5]);                                  // model parameter, measure == 1 equals a uniform-distribution
+    number_of_selected_points = atoi(argv[6]);        // model parameters n
+    rounds = atoi(argv[7]);                                     // model parameters m
+
+  c1 = stod(argv[8]);                                 // model parameters
+  c2 = stod(argv[9]);                                 // model parameters
+  c3 = stod(argv[10]);                              // model parameters
+
+  num_bins = log2(rounds)+1;                        // model parameters
+
+  emd_list_id = argv[11];                           // for running multiple times with same parameters
+    bool allParameterCombinations = (bool)atoi(argv[12]); // for optimizing the modelparameters
+
+    int NNtoActCent = atoi(argv[13]);               // = 0 then all points are taken
+</code></pre>
+
+<h4 id="compilation">Compilation</h4>
+<p>Go to <strong>/FirstLowerBoundRelationOfPosAndNeg/cmakeBin/</strong> and type</p>
+<pre><code>cmake ..
+</code></pre>
+
+<p>and then type </p>
+<pre><code>make
+</code></pre>
+
+<p>To run the program type:</p>
+<pre><code>./main
+</code></pre>
+
+<h2 id="4-pcl">4. PCL</h2>
+<p>Contains the implementation that makes use of the ICP(iterative-closest-point-algorithm) of the <em>Point-Cloud-Library</em>. </p>
+<h4 id="setting-up">Setting Up</h4>
+<p>With the script <em>\IsoSurfSimilarity\setUp.sh</em> some dependencies are installed and downloaded.</p>
+<h4 id="usage_1">Usage</h4>
+<p>For this implementation a seperate file called <em>settings.ini</em> is used</p>
+<pre><code>ICP = 0                             ... if 0: a genetic algorithm is performed
+                                    ... if 1: the ICP-algorithm is performed
+
+ICPiterations = 100                 ... if (ICP = 1): number of iterations to run ICP
+
+K = 0                               ... (if ICP = 0) In the step of finding the nearest neighbour in the potential of the other protein
+                                                     this number specifies how many points should be considered. Given two points a similarity is
+                                                     calculated depending on the distance to the active center and the local distribution of     
+                                                     positive and negative points. Under the K nearest neighbours to the given point in euclidean 
+                                                     space the point is chosen that has the highest similarity.
+
+
+WindowSize = 200                    ... size of the small Window for display
+
+displayWeightTH = 10                ... show only points with a weight higher than &quot;displayWeightTH&quot;.
+
+evalFunction = simpleSqrdDistances  ... (if ICP = 0) specifies which evaluation-function for the distance should be taken
+                                            if &quot;simpleSqrdDistances&quot; then for each point in X the closest point in Y is taken
+                                            and the corresponding distance is squared. This is done for all points in X.
+                                            All of these values are summed up. Analogously for Y. The sum of the two sums is
+                                            the final value.
+
+genNum = 100                        ... (if ICP = 0) specifies how many generations the genetic algorithm should run for
+
+overWriteExistingInd = 1            ... if 1: overwrites a previous (if existing) solution, if the new one is better
+                                    ... if 0: if another solution exists this new solution is discarded
+
+path2Data = /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/
+                                    ... path to where the data is stored
+
+popSize = 25                        ... if (ICP = 0): number of individuals in the population for the
+                                        genetic algorithm
+
+prot1FileName = 000_Trx             ... name of the protein to be read in. This would for example be
+                                    /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/000_Trx/000_Trx.pcd
+
+                                    If you get an error-message showing something like 
+                                    &quot;[pcl::PCDReader::readHeader] Could not find file 
+                                    '/home/willy/PredictingProteinInteractions/data/106Redoxins/Output//000_Trx/000_Trx.pcd'.
+                                    Error loading object/scene file!&quot; 
+                                    please make sure to run ptsToPcd.sh beforehand.
+
+
+prot2FileName = 103                 ... name of the protein to be read in. This would for example be
+                                    /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/103/103.pcd
+
+range = 0                           ... (if ICP = 0) specifies an upper bound for the entries in the translation-vector of the individuals 
+                                          in the genetic algorithm.
+
+                                          if range = 0: then only the rotations are optimized. (The proteins are centered on the active center.)
+
+visInteractive = 1                  ... if 1: an interactive model is displayed
+                                    ... if 2: an interactive model is displayed 
+                                              and the model is recalculated
+                                    ... else: a model is calculated
+</code></pre>
+
+<h4 id="generating-pcdpoint-cloud-data-files">Generating pcd(Point-Cloud-Data)-files</h4>
+<p>The PCL uses its own file-format.
+With the scripts <em>ptsToPcd.sh</em> and <em>ptsToPcl.R</em> the pcd-files can be generated.</p>
+<p>In <em>ptsToPcd.sh</em> change the variables <em>path</em> and <em>path2ptsToPcd</em> accordingly:</p>
+<pre><code>path=&quot;/home/willy/PredictingProteinInteractions/data/106Redoxins/Output/&quot;
+path2ptsToPcd=&quot;/home/willy/PredictingProteinInteractions/PCL/ptsToPcd/&quot;
+</code></pre>
+
+<p>then run <em>ptsToPcd.sh</em> by typing:</p>
+<pre><code>./ptsToPcd.sh
+</code></pre>
+
+<h3 id="todo">TODO</h3>
+<ul>
+<li>Make IsoSurfSimilarity take one argument specifiying the path to the settings-file.</li>
+<li>Uncomment the lines in ptsToPcl.R that install the necessary packages</li>
+<li>move the sources from ptsToPcl.R to a place in PredictingProteinInteractions</li>
+<li>change <em>ptsToPcd.sh</em> such that it accepts one argument specifying the path to the data
+instead of the user having to edit <em>ptsToPcd.sh</em> itself</li>
+</ul>
+<h2 id="5-preprocessingproteins">5. PreprocessingProteins</h2>
+<p>Given a <em>pdb-file</em> this script generates the dx-files that are necessary in the further steps to analyse the similarities of the surfaces of the proteins.</p>
+<h3 id="mutcomp">Mutcomp</h3>
+<p>(<a href="https://github.com/WillyBruhn/MutComp">MutComp</a>). </p>
+<p>The standard path to the parameters-file is (for the use on the WS):</p>
+<pre><code>/home/sysgen/Documents/LWB/TCL/MutComp/GUI/Parameters/parameters.txt
+</code></pre>
+
+<p>. To run the script type:</p>
+<pre><code>&lt;pathToMutComp&gt;./process.sh
+</code></pre>
+
+<p>where <em><pathToMutComp></em> is the path to the script.
+If you want to use a different parameter-file just pass it as an argument to the script</p>
+<pre><code>&lt;pathToMutComp&gt;./process.sh &lt;path/to/a/different/parametersfile&gt;
+</code></pre>
+
+<p>On my machine this call becomes: </p>
+<pre><code>/home/willy/PredictingProteinInteractions/PreProcessingProteins/MutComp/./process.sh /home/willy/PredictingProteinInteractions/PreProcessingProteins/MutComp/GUI/Parameters/parametersForThesis.txt
+</code></pre>
+
+<p>I strongly recommmend placing the parametersFile for each data-set in the same folder. </p>
+<h3 id="centerselect">centerSelect</h3>
+<p>(<a href="https://github.com/WillyBruhn/centerSelect">centerSelect</a>). </p>
+<h2 id="6-results">6. Results</h2>
+<h3 id="scripts">Scripts</h3>
+<p>Contains all the scripts that are necessary to reproduce the results that are presented in <strong>Masterthesis.pdf</strong>.</p>
+<ul>
+<li>Classification.R creates the evaluations presented in <strong>Masterthesis</strong></li>
+</ul>
+<h3 id="images">Images</h3>
+<p>Contains the images that were produced in the thesis with the implementations.</p>
+<h3 id="tables">Tables</h3>
+<p>Contains the tables that were produced in the thesis with the implementations.</p>
+<h1 id="todo_1">TODO</h1>
+<h2 id="thesis">Thesis</h2>
+<ul>
+<li>We/I</li>
+<li>Math-chapter</li>
+</ul>
+<h2 id="research">Research</h2>
+<ul>
+<li>active center</li>
+<li>use the measure parameter</li>
+<li>additional data tested with the model</li>
+</ul></div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>var base_url = '.';</script>
+        <script data-main="./mkdocs/js/search.js" src="./mkdocs/js/require.js"></script>
+        <script src="./js/base.js"></script><div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
+
+<!--
+MkDocs version : 0.16.3
+Build Date UTC : 2019-06-28 13:42:22
+-->

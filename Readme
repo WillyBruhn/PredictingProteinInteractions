@@ -1,0 +1,8 @@
+For the documentation:
+cd ./docs
+./createDoc.sh
+
+docs/./createDoc.sh
+
+# list tracked files
+git ls-tree -r master --name-only

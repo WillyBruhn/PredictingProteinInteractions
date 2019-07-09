@@ -1,0 +1,35 @@
+# felix
+./NNClassification.R --evaluate 1 --distance_format 2 --distance_f_name /home/willy/RedoxChallenges/MasterThesis/memoliModels/FLB_repeated_sampling/FelixMasterThesis/ListOfEMD_positive_100.csv --kNN 10 --evaluate_n 1000 --test_split /home/willy/PredictingProteinInteractions/data/106Redoxins/Labels/testNames.txt --labels_train /home/willy/PredictingProteinInteractions/data/106Redoxins/Labels/labels.txt
+
+
+# ICP
+./NNClassification.R --evaluate 2 --distance_format 1 --distance_f_name /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/d_matrix.csv --kNN 10 --evaluate_n 1000 --test_split /home/willy/PredictingProteinInteractions/data/106Redoxins/Labels/testNames.txt --labels_train /home/willy/PredictingProteinInteractions/data/106Redoxins/Labels/labels.txt
+
+
+# hist 2d
+./NNClassification.R --evaluate 2 --distance_format 1 --distance_f_name /home/willy/RedoxChallenges/MasterThesis/memoliModels/myVmdToys/Output_distances/d_4000_80.csv --kNN 10 --evaluate_n 1000 --test_split /home/willy/PredictingProteinInteractions/data/106Redoxins/Labels/testNames.txt --labels_train /home/willy/PredictingProteinInteractions/data/106Redoxins/Labels/labels.txt
+
+
+
+./NNClassification.R --evaluate 2 --distance_format 1 --distance_f_name /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/d_matrix.csv --kNN 10 --evaluate_n 1000 --test_split /home/willy/PredictingProteinInteractions/data/106Redoxins/Labels/testNames.txt --labels_train /home/willy/PredictingProteinInteractions/data/106Redoxins/Labels/labels.txt
+
+
+
+# felix
+./NNClassification.R --evaluate 1 --distance_format 2 --distance_f_name /home/willy/Schreibtisch/ListofEMD_positive_100.csv --kNN 10 --evaluate_n 1000 --test_split /home/willy/PredictingProteinInteractions/data/106Redoxins/Labels/testNames.txt --labels_train /home/willy/PredictingProteinInteractions/data/106Redoxins/Labels/labels.txt
+
+
+# repeated_sampling
+./NNClassification.R --evaluate 1 --distance_format 3 --distance_f_name /home/willy/Schreibtisch/repeatedSampling/EMD_100_500_1.0000_1.0000_0.0000_0.0000_id_test.csv --kNN 10 --evaluate_n 1000 --test_split /home/willy/PredictingProteinInteractions/data/106Redoxins/Labels/testNames.txt --labels_train /home/willy/PredictingProteinInteractions/data/106Redoxins/Labels/labels.txt
+
+
+
+# felix
+./NNClassification.R --evaluate 1 --distance_format 2 --distance_f_name /home/willy/Schreibtisch/ListofEMD_positive_100.csv --kNN 10 --evaluate_n 1000 --test_split /home/willy/PredictingProteinInteractions/data/106Redoxins/Labels/testNames.txt --labels_train /home/willy/PredictingProteinInteractions/data/106Redoxins/Labels/labels.txt
+
+
+./NNClassification.R --evaluate 1 --distance_format 2 --distance_f_name /home/willy/RedoxChallenges/MasterThesis/memoliModels/FLB_repeated_sampling/FelixMasterThesis/ListOfEMD_positive_100.csv --kNN 10 --evaluate_n 1000 --test_split /home/willy/PredictingProteinInteractions/data/106Redoxins/Labels/testNames.txt --labels_train /home/willy/PredictingProteinInteractions/data/106Redoxins/Labels/labels.txt
+
+
+
+

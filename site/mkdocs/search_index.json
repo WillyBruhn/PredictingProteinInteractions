@@ -1,0 +1,179 @@
+{
+    "docs": [
+        {
+            "location": "/",
+            "text": "Predicting Protein Interactions\n\n\nPredict protein-protein-interactions from raw pdb(protein-databank)-files. Find the thesis in \nMasterthesis.pdf\n. \n\n\nThis document gives instructions on how to recreate the data that was used in the thesis. As a first step it only serves as a documentation for me personally. The idea is however to transfer this data directly to the CD that has to be submitted with the thesis. \n(Willy Bruhn, 13.4.2019)\n\n\nFolder Hierarchy\n\n\n\u251c\u2500\u2500 Classification\n\u251c\u2500\u2500 data\n\u2502\u00a0\u00a0 \u251c\u2500\u2500 106Redoxins\n\u2502\u00a0\u00a0 \u2502\u00a0\u00a0 \u251c\u2500\u2500 Input\n\u2502\u00a0\u00a0 \u2502\u00a0\u00a0 \u251c\u2500\u2500 Labels\n\u2502\u00a0\u00a0 \u2502\u00a0\u00a0 \u2514\u2500\u2500 Output\n\u2502\u00a0\u00a0 \u2514\u2500\u2500 animals\n\u251c\u2500\u2500 docs\n\u251c\u2500\u2500 MetricGeometry\n\u2502\u00a0\u00a0 \u251c\u2500\u2500 ComparingProteins\n\u2502\u00a0\u00a0 \u2502\u00a0\u00a0 \u251c\u2500\u2500 EMDandClustering\n\u2502\u00a0\u00a0 \u2502\u00a0\u00a0 \u2514\u2500\u2500 LowerBounds\n\u2502\u00a0\u00a0 \u251c\u2500\u2500 Downsampling2Step\n\u2502\u00a0\u00a0 \u2514\u2500\u2500 RepeatedSubsampling\n\u2502\u00a0\u00a0     \u2514\u2500\u2500 FirstLowerBoundRelationOfPosAndNeg\n\u251c\u2500\u2500 PCL\n\u251c\u2500\u2500 PreProcessingProteins\n\u2502\u00a0\u00a0 \u2514\u2500\u2500 MutComp\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 APBS\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 deprecated\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 ExampleHierarchy\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 GUI\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 ImageCreator\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 ImageSimilarity\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 MovieCreator\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 mutationTest\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 Output\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 TclScripts\n\u2502\u00a0\u00a0     \u2514\u2500\u2500 Tests\n\u2514\u2500\u2500 Results\n    \u251c\u2500\u2500 Images\n    \u251c\u2500\u2500 Scripts\n    \u2514\u2500\u2500 Tables\n\n\n\n\n1. Classification\n\n\nContains one script that does a classification given one distance-matrix and labels and other parameters for the model.\n\n\nInput:\ndistance_f_name(\"\")           ... name of the file with the distances\n\ndistance_format(1)\n                           = 1 ... a simple distance-matrix\n                           = 3 ... a 3 column-data-frame. First column ProtA\n                                   second column ProtB, third column distance.\n\n labels_train                   ... name of the file with the labels\n\n evaluate(TRUE)        \n                           = 1 ... with crossvalidation the model is tested\n                           = 2 ... the model is tested on the testset\n                           = 0 ... the model makes predictions on new data\n                                   to which not all classlabels are given.\n\n evaluate_n                    ... number of times to repeat the classification.\n                                   Higher number leads to more accurate estimation.\n\n kNN                           ... number of nearest neighbors to use for the majority-\n                                   voting.\n\n test_split                    ... if(evaluate == 2) then this file specifies\n                                   the names to be tested with a model built from \n                                   the remaining names.\n\n\n\n\n2. data\n\n\n106Redoxins\n\n\nContains the protein-test-set.\n\n\nadditionalPDBS_1\n\n\nContains 19 Redoxins that are very simialr to Thrx.\n\n\n106RedoxinsWithAdditionalPDBS_1\n\n\nContains the output of \n106Redoxins\n and \nadditionalPDBS_1\n together in one folder. The files have to be in one folder for the calculation of the distances.\n\n\nOutputMerged\n\n\nFolder with all the pts-files.\n\n\nRepeatedSubsampling\n\n\n../../MetricGeometry/RepeatedSubsampling/FirstLowerBoundRelationOfPosAndNeg/cmakeBin/./main /home/willy/PredictingProteinInteractions/data/106RedoxinsWithAddionalPDBS_1/OutputMerged/ /home/willy/PredictingProteinInteractions/data/106RedoxinsWithAddionalPDBS_1/RepSubOutput/ /home/willy/PredictingProteinInteractions/data/106RedoxinsWithAddionalPDBS_1/OutputMerged/names.txt /home/willy/PredictingProteinInteractions/data/106RedoxinsWithAddionalPDBS_1/OutputMerged/names.txt 1 100 500 1 0.0 0.0 test 0\n\n\n\n\nclassification of RepeatedSubsampling\n\n\n../../Classification/./NNClassification.R --evaluate 0 --distance_format 3 --distance_f_name /home/willy/PredictingProteinInteractions/data/106RedoxinsWithAddionalPDBS_1/RepSubOutput/EMD_100_500_1.0000_1.0000_0.0000_0.0000_id_test.csv --kNN 10 --evaluate_n 1000 --test_split /home/willy/PredictingProteinInteractions/data/106Redoxins/Labels/testNames.txt --labels_train /home/willy/PredictingProteinInteractions/data/106Redoxins/Labels/labels.txt > predictions.txt\n\n\n\n\nRepSubOutput\n\n\nFolder with the distances obtained with the repeated-subsampling-method.\n\n\nActive Center\n\n\nanimals\n\n\nContains the models of the animals also used in Memolis Paper.\n\n\n3. Metric Geometry\n\n\nMetricGeometry/ComparingProteins/\n contains the original implementation of Felix Berens cloned from Git-hub (\nComparingProteins\n, 04.13.2019). \n\n\nComparingProteins\n\n\nSee for more details \nComparingProteins\n.\n\n\nModifications:\n* Other shebang for linux \n#!/usr/bin/Rscript\n\n\nDownsampling2Step\n\n\nContains the implementation of the 2-step-downsampling-procedure.\n\n\nRepeatedSubsampling\n\n\nThis folder contains the C++ implementation based on the original implementation of the \nFLB\n \nComparingProteins\n by Felix Berens. An example call would be:\n\n\npa=\"/home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/\"\n./main $pa /home/willy/Schreibtisch/repeatedSampling/ /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/ComparingProteins/LowerBounds/FirstLowerBoundRelationOfPosAndNeg/Example/proteinsTestSmall.txt /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/ComparingProteins/LowerBounds/FirstLowerBoundRelationOfPosAndNeg/Example/proteinsTestSmall.txt 1 2 5 1 0.0 0.0 test 0\n\n\n\n\n. More example-calls can be found in \n/home/willy/PredictingProteinInteractions/MetricGeometry/RepeatedSubsampling/FirstLowerBoundRelationOfPosAndNeg/example\n.\n\n\nUsage\n\n\n  string path = argv[1];                                        // path to the folder with the proteins and pts-files\n  string outPath = argv[2];                                 // path to the folder where the output of this programm should be stored\n  string proteinsToCompareFile_target = argv[3];    // proteins to compare to, usually only Trx or all proteins\n  string proteinsToCompareFile = argv[4];               // all other proteins\n\n  measure = stod(argv[5]);                                  // model parameter, measure == 1 equals a uniform-distribution\n    number_of_selected_points = atoi(argv[6]);        // model parameters n\n    rounds = atoi(argv[7]);                                     // model parameters m\n\n  c1 = stod(argv[8]);                                 // model parameters\n  c2 = stod(argv[9]);                                 // model parameters\n  c3 = stod(argv[10]);                              // model parameters\n\n  num_bins = log2(rounds)+1;                        // model parameters\n\n  emd_list_id = argv[11];                           // for running multiple times with same parameters\n    bool allParameterCombinations = (bool)atoi(argv[12]); // for optimizing the modelparameters\n\n    int NNtoActCent = atoi(argv[13]);               // = 0 then all points are taken\n\n\n\n\nCompilation\n\n\nGo to \n/FirstLowerBoundRelationOfPosAndNeg/cmakeBin/\n and type\n\n\ncmake ..\n\n\n\n\nand then type \n\n\nmake\n\n\n\n\nTo run the program type:\n\n\n./main\n\n\n\n\n4. PCL\n\n\nContains the implementation that makes use of the ICP(iterative-closest-point-algorithm) of the \nPoint-Cloud-Library\n. \n\n\nSetting Up\n\n\nWith the script \n\\IsoSurfSimilarity\\setUp.sh\n some dependencies are installed and downloaded.\n\n\nUsage\n\n\nFor this implementation a seperate file called \nsettings.ini\n is used\n\n\nICP = 0                             ... if 0: a genetic algorithm is performed\n                                    ... if 1: the ICP-algorithm is performed\n\nICPiterations = 100                 ... if (ICP = 1): number of iterations to run ICP\n\nK = 0                               ... (if ICP = 0) In the step of finding the nearest neighbour in the potential of the other protein\n                                                     this number specifies how many points should be considered. Given two points a similarity is\n                                                     calculated depending on the distance to the active center and the local distribution of     \n                                                     positive and negative points. Under the K nearest neighbours to the given point in euclidean \n                                                     space the point is chosen that has the highest similarity.\n\n\nWindowSize = 200                    ... size of the small Window for display\n\ndisplayWeightTH = 10                ... show only points with a weight higher than \"displayWeightTH\".\n\nevalFunction = simpleSqrdDistances  ... (if ICP = 0) specifies which evaluation-function for the distance should be taken\n                                            if \"simpleSqrdDistances\" then for each point in X the closest point in Y is taken\n                                            and the corresponding distance is squared. This is done for all points in X.\n                                            All of these values are summed up. Analogously for Y. The sum of the two sums is\n                                            the final value.\n\ngenNum = 100                        ... (if ICP = 0) specifies how many generations the genetic algorithm should run for\n\noverWriteExistingInd = 1            ... if 1: overwrites a previous (if existing) solution, if the new one is better\n                                    ... if 0: if another solution exists this new solution is discarded\n\npath2Data = /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/\n                                    ... path to where the data is stored\n\npopSize = 25                        ... if (ICP = 0): number of individuals in the population for the\n                                        genetic algorithm\n\nprot1FileName = 000_Trx             ... name of the protein to be read in. This would for example be\n                                    /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/000_Trx/000_Trx.pcd\n\n                                    If you get an error-message showing something like \n                                    \"[pcl::PCDReader::readHeader] Could not find file \n                                    '/home/willy/PredictingProteinInteractions/data/106Redoxins/Output//000_Trx/000_Trx.pcd'.\n                                    Error loading object/scene file!\" \n                                    please make sure to run ptsToPcd.sh beforehand.\n\n\nprot2FileName = 103                 ... name of the protein to be read in. This would for example be\n                                    /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/103/103.pcd\n\nrange = 0                           ... (if ICP = 0) specifies an upper bound for the entries in the translation-vector of the individuals \n                                          in the genetic algorithm.\n\n                                          if range = 0: then only the rotations are optimized. (The proteins are centered on the active center.)\n\nvisInteractive = 1                  ... if 1: an interactive model is displayed\n                                    ... if 2: an interactive model is displayed \n                                              and the model is recalculated\n                                    ... else: a model is calculated\n\n\n\n\nGenerating pcd(Point-Cloud-Data)-files\n\n\nThe PCL uses its own file-format.\nWith the scripts \nptsToPcd.sh\n and \nptsToPcl.R\n the pcd-files can be generated.\n\n\nIn \nptsToPcd.sh\n change the variables \npath\n and \npath2ptsToPcd\n accordingly:\n\n\npath=\"/home/willy/PredictingProteinInteractions/data/106Redoxins/Output/\"\npath2ptsToPcd=\"/home/willy/PredictingProteinInteractions/PCL/ptsToPcd/\"\n\n\n\n\nthen run \nptsToPcd.sh\n by typing:\n\n\n./ptsToPcd.sh\n\n\n\n\nTODO\n\n\n\n\nMake IsoSurfSimilarity take one argument specifiying the path to the settings-file.\n\n\nUncomment the lines in ptsToPcl.R that install the necessary packages\n\n\nmove the sources from ptsToPcl.R to a place in PredictingProteinInteractions\n\n\nchange \nptsToPcd.sh\n such that it accepts one argument specifying the path to the data\ninstead of the user having to edit \nptsToPcd.sh\n itself\n\n\n\n\n5. PreprocessingProteins\n\n\nGiven a \npdb-file\n this script generates the dx-files that are necessary in the further steps to analyse the similarities of the surfaces of the proteins.\n\n\nMutcomp\n\n\n(\nMutComp\n). \n\n\nThe standard path to the parameters-file is (for the use on the WS):\n\n\n/home/sysgen/Documents/LWB/TCL/MutComp/GUI/Parameters/parameters.txt\n\n\n\n\n. To run the script type:\n\n\n<pathToMutComp>./process.sh\n\n\n\n\nwhere \n is the path to the script.\nIf you want to use a different parameter-file just pass it as an argument to the script\n\n\n<pathToMutComp>./process.sh <path/to/a/different/parametersfile>\n\n\n\n\nOn my machine this call becomes: \n\n\n/home/willy/PredictingProteinInteractions/PreProcessingProteins/MutComp/./process.sh /home/willy/PredictingProteinInteractions/PreProcessingProteins/MutComp/GUI/Parameters/parametersForThesis.txt\n\n\n\n\nI strongly recommmend placing the parametersFile for each data-set in the same folder. \n\n\ncenterSelect\n\n\n(\ncenterSelect\n). \n\n\n6. Results\n\n\nScripts\n\n\nContains all the scripts that are necessary to reproduce the results that are presented in \nMasterthesis.pdf\n.\n\n\n\n\nClassification.R creates the evaluations presented in \nMasterthesis\n\n\n\n\nImages\n\n\nContains the images that were produced in the thesis with the implementations.\n\n\nTables\n\n\nContains the tables that were produced in the thesis with the implementations.\n\n\nTODO\n\n\nThesis\n\n\n\n\nWe/I\n\n\nMath-chapter\n\n\n\n\nResearch\n\n\n\n\nactive center\n\n\nuse the measure parameter\n\n\nadditional data tested with the model",
+            "title": "Home"
+        },
+        {
+            "location": "/#predicting-protein-interactions",
+            "text": "Predict protein-protein-interactions from raw pdb(protein-databank)-files. Find the thesis in  Masterthesis.pdf .   This document gives instructions on how to recreate the data that was used in the thesis. As a first step it only serves as a documentation for me personally. The idea is however to transfer this data directly to the CD that has to be submitted with the thesis. \n(Willy Bruhn, 13.4.2019)",
+            "title": "Predicting Protein Interactions"
+        },
+        {
+            "location": "/#folder-hierarchy",
+            "text": "\u251c\u2500\u2500 Classification\n\u251c\u2500\u2500 data\n\u2502\u00a0\u00a0 \u251c\u2500\u2500 106Redoxins\n\u2502\u00a0\u00a0 \u2502\u00a0\u00a0 \u251c\u2500\u2500 Input\n\u2502\u00a0\u00a0 \u2502\u00a0\u00a0 \u251c\u2500\u2500 Labels\n\u2502\u00a0\u00a0 \u2502\u00a0\u00a0 \u2514\u2500\u2500 Output\n\u2502\u00a0\u00a0 \u2514\u2500\u2500 animals\n\u251c\u2500\u2500 docs\n\u251c\u2500\u2500 MetricGeometry\n\u2502\u00a0\u00a0 \u251c\u2500\u2500 ComparingProteins\n\u2502\u00a0\u00a0 \u2502\u00a0\u00a0 \u251c\u2500\u2500 EMDandClustering\n\u2502\u00a0\u00a0 \u2502\u00a0\u00a0 \u2514\u2500\u2500 LowerBounds\n\u2502\u00a0\u00a0 \u251c\u2500\u2500 Downsampling2Step\n\u2502\u00a0\u00a0 \u2514\u2500\u2500 RepeatedSubsampling\n\u2502\u00a0\u00a0     \u2514\u2500\u2500 FirstLowerBoundRelationOfPosAndNeg\n\u251c\u2500\u2500 PCL\n\u251c\u2500\u2500 PreProcessingProteins\n\u2502\u00a0\u00a0 \u2514\u2500\u2500 MutComp\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 APBS\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 deprecated\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 ExampleHierarchy\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 GUI\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 ImageCreator\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 ImageSimilarity\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 MovieCreator\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 mutationTest\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 Output\n\u2502\u00a0\u00a0     \u251c\u2500\u2500 TclScripts\n\u2502\u00a0\u00a0     \u2514\u2500\u2500 Tests\n\u2514\u2500\u2500 Results\n    \u251c\u2500\u2500 Images\n    \u251c\u2500\u2500 Scripts\n    \u2514\u2500\u2500 Tables",
+            "title": "Folder Hierarchy"
+        },
+        {
+            "location": "/#1-classification",
+            "text": "Contains one script that does a classification given one distance-matrix and labels and other parameters for the model.  Input:\ndistance_f_name(\"\")           ... name of the file with the distances\n\ndistance_format(1)\n                           = 1 ... a simple distance-matrix\n                           = 3 ... a 3 column-data-frame. First column ProtA\n                                   second column ProtB, third column distance.\n\n labels_train                   ... name of the file with the labels\n\n evaluate(TRUE)        \n                           = 1 ... with crossvalidation the model is tested\n                           = 2 ... the model is tested on the testset\n                           = 0 ... the model makes predictions on new data\n                                   to which not all classlabels are given.\n\n evaluate_n                    ... number of times to repeat the classification.\n                                   Higher number leads to more accurate estimation.\n\n kNN                           ... number of nearest neighbors to use for the majority-\n                                   voting.\n\n test_split                    ... if(evaluate == 2) then this file specifies\n                                   the names to be tested with a model built from \n                                   the remaining names.",
+            "title": "1. Classification"
+        },
+        {
+            "location": "/#2-data",
+            "text": "",
+            "title": "2. data"
+        },
+        {
+            "location": "/#106redoxins",
+            "text": "Contains the protein-test-set.",
+            "title": "106Redoxins"
+        },
+        {
+            "location": "/#additionalpdbs_1",
+            "text": "Contains 19 Redoxins that are very simialr to Thrx.",
+            "title": "additionalPDBS_1"
+        },
+        {
+            "location": "/#106redoxinswithadditionalpdbs_1",
+            "text": "Contains the output of  106Redoxins  and  additionalPDBS_1  together in one folder. The files have to be in one folder for the calculation of the distances.",
+            "title": "106RedoxinsWithAdditionalPDBS_1"
+        },
+        {
+            "location": "/#outputmerged",
+            "text": "Folder with all the pts-files.  RepeatedSubsampling  ../../MetricGeometry/RepeatedSubsampling/FirstLowerBoundRelationOfPosAndNeg/cmakeBin/./main /home/willy/PredictingProteinInteractions/data/106RedoxinsWithAddionalPDBS_1/OutputMerged/ /home/willy/PredictingProteinInteractions/data/106RedoxinsWithAddionalPDBS_1/RepSubOutput/ /home/willy/PredictingProteinInteractions/data/106RedoxinsWithAddionalPDBS_1/OutputMerged/names.txt /home/willy/PredictingProteinInteractions/data/106RedoxinsWithAddionalPDBS_1/OutputMerged/names.txt 1 100 500 1 0.0 0.0 test 0  classification of RepeatedSubsampling  ../../Classification/./NNClassification.R --evaluate 0 --distance_format 3 --distance_f_name /home/willy/PredictingProteinInteractions/data/106RedoxinsWithAddionalPDBS_1/RepSubOutput/EMD_100_500_1.0000_1.0000_0.0000_0.0000_id_test.csv --kNN 10 --evaluate_n 1000 --test_split /home/willy/PredictingProteinInteractions/data/106Redoxins/Labels/testNames.txt --labels_train /home/willy/PredictingProteinInteractions/data/106Redoxins/Labels/labels.txt > predictions.txt",
+            "title": "OutputMerged"
+        },
+        {
+            "location": "/#repsuboutput",
+            "text": "Folder with the distances obtained with the repeated-subsampling-method.",
+            "title": "RepSubOutput"
+        },
+        {
+            "location": "/#active-center",
+            "text": "",
+            "title": "Active Center"
+        },
+        {
+            "location": "/#animals",
+            "text": "Contains the models of the animals also used in Memolis Paper.",
+            "title": "animals"
+        },
+        {
+            "location": "/#3-metric-geometry",
+            "text": "MetricGeometry/ComparingProteins/  contains the original implementation of Felix Berens cloned from Git-hub ( ComparingProteins , 04.13.2019).",
+            "title": "3. Metric Geometry"
+        },
+        {
+            "location": "/#comparingproteins",
+            "text": "See for more details  ComparingProteins .  Modifications:\n* Other shebang for linux  #!/usr/bin/Rscript",
+            "title": "ComparingProteins"
+        },
+        {
+            "location": "/#downsampling2step",
+            "text": "Contains the implementation of the 2-step-downsampling-procedure.",
+            "title": "Downsampling2Step"
+        },
+        {
+            "location": "/#repeatedsubsampling",
+            "text": "This folder contains the C++ implementation based on the original implementation of the  FLB   ComparingProteins  by Felix Berens. An example call would be:  pa=\"/home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/\"\n./main $pa /home/willy/Schreibtisch/repeatedSampling/ /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/ComparingProteins/LowerBounds/FirstLowerBoundRelationOfPosAndNeg/Example/proteinsTestSmall.txt /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/ComparingProteins/LowerBounds/FirstLowerBoundRelationOfPosAndNeg/Example/proteinsTestSmall.txt 1 2 5 1 0.0 0.0 test 0  . More example-calls can be found in  /home/willy/PredictingProteinInteractions/MetricGeometry/RepeatedSubsampling/FirstLowerBoundRelationOfPosAndNeg/example .",
+            "title": "RepeatedSubsampling"
+        },
+        {
+            "location": "/#usage",
+            "text": "string path = argv[1];                                        // path to the folder with the proteins and pts-files\n  string outPath = argv[2];                                 // path to the folder where the output of this programm should be stored\n  string proteinsToCompareFile_target = argv[3];    // proteins to compare to, usually only Trx or all proteins\n  string proteinsToCompareFile = argv[4];               // all other proteins\n\n  measure = stod(argv[5]);                                  // model parameter, measure == 1 equals a uniform-distribution\n    number_of_selected_points = atoi(argv[6]);        // model parameters n\n    rounds = atoi(argv[7]);                                     // model parameters m\n\n  c1 = stod(argv[8]);                                 // model parameters\n  c2 = stod(argv[9]);                                 // model parameters\n  c3 = stod(argv[10]);                              // model parameters\n\n  num_bins = log2(rounds)+1;                        // model parameters\n\n  emd_list_id = argv[11];                           // for running multiple times with same parameters\n    bool allParameterCombinations = (bool)atoi(argv[12]); // for optimizing the modelparameters\n\n    int NNtoActCent = atoi(argv[13]);               // = 0 then all points are taken",
+            "title": "Usage"
+        },
+        {
+            "location": "/#compilation",
+            "text": "Go to  /FirstLowerBoundRelationOfPosAndNeg/cmakeBin/  and type  cmake ..  and then type   make  To run the program type:  ./main",
+            "title": "Compilation"
+        },
+        {
+            "location": "/#4-pcl",
+            "text": "Contains the implementation that makes use of the ICP(iterative-closest-point-algorithm) of the  Point-Cloud-Library .",
+            "title": "4. PCL"
+        },
+        {
+            "location": "/#setting-up",
+            "text": "With the script  \\IsoSurfSimilarity\\setUp.sh  some dependencies are installed and downloaded.",
+            "title": "Setting Up"
+        },
+        {
+            "location": "/#usage_1",
+            "text": "For this implementation a seperate file called  settings.ini  is used  ICP = 0                             ... if 0: a genetic algorithm is performed\n                                    ... if 1: the ICP-algorithm is performed\n\nICPiterations = 100                 ... if (ICP = 1): number of iterations to run ICP\n\nK = 0                               ... (if ICP = 0) In the step of finding the nearest neighbour in the potential of the other protein\n                                                     this number specifies how many points should be considered. Given two points a similarity is\n                                                     calculated depending on the distance to the active center and the local distribution of     \n                                                     positive and negative points. Under the K nearest neighbours to the given point in euclidean \n                                                     space the point is chosen that has the highest similarity.\n\n\nWindowSize = 200                    ... size of the small Window for display\n\ndisplayWeightTH = 10                ... show only points with a weight higher than \"displayWeightTH\".\n\nevalFunction = simpleSqrdDistances  ... (if ICP = 0) specifies which evaluation-function for the distance should be taken\n                                            if \"simpleSqrdDistances\" then for each point in X the closest point in Y is taken\n                                            and the corresponding distance is squared. This is done for all points in X.\n                                            All of these values are summed up. Analogously for Y. The sum of the two sums is\n                                            the final value.\n\ngenNum = 100                        ... (if ICP = 0) specifies how many generations the genetic algorithm should run for\n\noverWriteExistingInd = 1            ... if 1: overwrites a previous (if existing) solution, if the new one is better\n                                    ... if 0: if another solution exists this new solution is discarded\n\npath2Data = /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/\n                                    ... path to where the data is stored\n\npopSize = 25                        ... if (ICP = 0): number of individuals in the population for the\n                                        genetic algorithm\n\nprot1FileName = 000_Trx             ... name of the protein to be read in. This would for example be\n                                    /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/000_Trx/000_Trx.pcd\n\n                                    If you get an error-message showing something like \n                                    \"[pcl::PCDReader::readHeader] Could not find file \n                                    '/home/willy/PredictingProteinInteractions/data/106Redoxins/Output//000_Trx/000_Trx.pcd'.\n                                    Error loading object/scene file!\" \n                                    please make sure to run ptsToPcd.sh beforehand.\n\n\nprot2FileName = 103                 ... name of the protein to be read in. This would for example be\n                                    /home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/103/103.pcd\n\nrange = 0                           ... (if ICP = 0) specifies an upper bound for the entries in the translation-vector of the individuals \n                                          in the genetic algorithm.\n\n                                          if range = 0: then only the rotations are optimized. (The proteins are centered on the active center.)\n\nvisInteractive = 1                  ... if 1: an interactive model is displayed\n                                    ... if 2: an interactive model is displayed \n                                              and the model is recalculated\n                                    ... else: a model is calculated",
+            "title": "Usage"
+        },
+        {
+            "location": "/#generating-pcdpoint-cloud-data-files",
+            "text": "The PCL uses its own file-format.\nWith the scripts  ptsToPcd.sh  and  ptsToPcl.R  the pcd-files can be generated.  In  ptsToPcd.sh  change the variables  path  and  path2ptsToPcd  accordingly:  path=\"/home/willy/PredictingProteinInteractions/data/106Redoxins/Output/\"\npath2ptsToPcd=\"/home/willy/PredictingProteinInteractions/PCL/ptsToPcd/\"  then run  ptsToPcd.sh  by typing:  ./ptsToPcd.sh",
+            "title": "Generating pcd(Point-Cloud-Data)-files"
+        },
+        {
+            "location": "/#todo",
+            "text": "Make IsoSurfSimilarity take one argument specifiying the path to the settings-file.  Uncomment the lines in ptsToPcl.R that install the necessary packages  move the sources from ptsToPcl.R to a place in PredictingProteinInteractions  change  ptsToPcd.sh  such that it accepts one argument specifying the path to the data\ninstead of the user having to edit  ptsToPcd.sh  itself",
+            "title": "TODO"
+        },
+        {
+            "location": "/#5-preprocessingproteins",
+            "text": "Given a  pdb-file  this script generates the dx-files that are necessary in the further steps to analyse the similarities of the surfaces of the proteins.",
+            "title": "5. PreprocessingProteins"
+        },
+        {
+            "location": "/#mutcomp",
+            "text": "( MutComp ).   The standard path to the parameters-file is (for the use on the WS):  /home/sysgen/Documents/LWB/TCL/MutComp/GUI/Parameters/parameters.txt  . To run the script type:  <pathToMutComp>./process.sh  where   is the path to the script.\nIf you want to use a different parameter-file just pass it as an argument to the script  <pathToMutComp>./process.sh <path/to/a/different/parametersfile>  On my machine this call becomes:   /home/willy/PredictingProteinInteractions/PreProcessingProteins/MutComp/./process.sh /home/willy/PredictingProteinInteractions/PreProcessingProteins/MutComp/GUI/Parameters/parametersForThesis.txt  I strongly recommmend placing the parametersFile for each data-set in the same folder.",
+            "title": "Mutcomp"
+        },
+        {
+            "location": "/#centerselect",
+            "text": "( centerSelect ).",
+            "title": "centerSelect"
+        },
+        {
+            "location": "/#6-results",
+            "text": "",
+            "title": "6. Results"
+        },
+        {
+            "location": "/#scripts",
+            "text": "Contains all the scripts that are necessary to reproduce the results that are presented in  Masterthesis.pdf .   Classification.R creates the evaluations presented in  Masterthesis",
+            "title": "Scripts"
+        },
+        {
+            "location": "/#images",
+            "text": "Contains the images that were produced in the thesis with the implementations.",
+            "title": "Images"
+        },
+        {
+            "location": "/#tables",
+            "text": "Contains the tables that were produced in the thesis with the implementations.",
+            "title": "Tables"
+        },
+        {
+            "location": "/#todo_1",
+            "text": "",
+            "title": "TODO"
+        },
+        {
+            "location": "/#thesis",
+            "text": "We/I  Math-chapter",
+            "title": "Thesis"
+        },
+        {
+            "location": "/#research",
+            "text": "active center  use the measure parameter  additional data tested with the model",
+            "title": "Research"
+        },
+        {
+            "location": "/about/",
+            "text": "Metric Geometry",
+            "title": "About"
+        },
+        {
+            "location": "/about/#metric-geometry",
+            "text": "",
+            "title": "Metric Geometry"
+        }
+    ]
+}
