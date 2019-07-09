@@ -1,26 +1,18 @@
 /home/willy/PredictingProteinInteractions/
 ├── Classification
 │   ├── NNClassification
-│   │   └── additionalScripts
+│   │   ├── additionalScripts
+│   │   └── optimizeDifferentModels
 │   └── predictingProteinInteractionsSettings
 ├── data
-│   ├── 106Redoxins
-│   │   ├── CompareProteinsOutput
-│   │   ├── Input
-│   │   ├── Labels
-│   │   ├── Output
-│   │   ├── RepSubOutput
-│   │   ├── RepSubOutputDifferentActNN
-│   │   └── SubSamplingOutput
-│   ├── 106RedoxinsWithAddionalPDBS_1
-│   │   ├── OutputMerged
-│   │   └── RepSubOutput
-│   ├── additionalPDBS_1
-│   │   ├── CompareProteinsOutput
-│   │   ├── Input
-│   │   ├── Output
-│   │   └── RepSubOutput
-│   └── animals
+│   ├── 106Test
+│   │   └── pdb
+│   ├── Final_120_pdbs_20181024
+│   └── old
+│       ├── 106Redoxins
+│       ├── 106RedoxinsWithAddionalPDBS_1
+│       ├── additionalPDBS_1
+│       └── animals
 ├── docs
 ├── MetricGeometry
 │   ├── ComparingProteins
@@ -56,6 +48,11 @@
 │       ├── Output
 │       ├── TclScripts
 │       └── Tests
+├── QuickStart
+│   ├── ModelTrain
+│   │   └── pdb
+│   └── Test
+│       └── pdb
 ├── Results
 │   ├── Examples
 │   │   └── MeasureCouplings
@@ -66,4 +63,4 @@
 └── Summerschool
     └── old
 
-66 directories
+63 directories

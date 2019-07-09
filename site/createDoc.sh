@@ -25,7 +25,8 @@ mkdocs build
 # interactive documentation
 cd /home/willy/PredictingProteinInteractions/
 
-
+# copy to front to see at github
+mv index.md ../README.md
 
 mkdocs serve &
 firefox http://127.0.0.1:8000/ &
