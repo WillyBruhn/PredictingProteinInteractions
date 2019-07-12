@@ -467,7 +467,7 @@ if(mode == "Train"){
     "--n" = opt$numberOfPoints,
     "--m" = opt$rounds)
   
-  makeCustomCall(pathToCreateAllDistances,createAllDistancesExe,createAllDistancesParameters)
+  # makeCustomCall(pathToCreateAllDistances,createAllDistancesExe,createAllDistancesParameters)
   
   #-------------------------------------------------------------------------
   print("Training with evolutionaryAlgOptParam.R ...")
@@ -538,15 +538,15 @@ if(mode == "SingleDistance"){
                                  c1 = 1, c2 = 0, c3 = 0)
   
   
-  negative = getRepeatedSampling(RepeatedSamplingPath,RepeatedSamplingExe,
-                                 path = pathToProteins,
-                                 outPath = opt$distances_train,
-                                 proteinsToCompareFile_target = names_file,
-                                 proteinsToCompareFile = names_file,
-                                 measure = 1,
-                                 number_of_selected_points = opt$numberOfPoints,
-                                 rounds = opt$rounds,
-                                 c1 = 0, c2 = 1, c3 = 0)
+  # negative = getRepeatedSampling(RepeatedSamplingPath,RepeatedSamplingExe,
+  #                                path = pathToProteins,
+  #                                outPath = opt$distances_train,
+  #                                proteinsToCompareFile_target = names_file,
+  #                                proteinsToCompareFile = names_file,
+  #                                measure = 1,
+  #                                number_of_selected_points = opt$numberOfPoints,
+  #                                rounds = opt$rounds,
+  #                                c1 = 0, c2 = 1, c3 = 0)
   
   
   AllvsAll.Cluster <- function(outPath, distance_matrix, fname)

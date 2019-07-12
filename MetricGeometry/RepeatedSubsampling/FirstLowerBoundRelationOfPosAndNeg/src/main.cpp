@@ -26,7 +26,7 @@
 
 using namespace std;
 
-#define NUM_THREADS 20
+#define NUM_THREADS 10
 
 vector< vector<double> > out;
 //vector<double> distribution1_pos;

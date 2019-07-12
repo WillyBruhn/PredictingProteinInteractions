@@ -4,14 +4,28 @@
 # Then not the points but the distributions are sampled
 #---------------------------------------------------------------------
 print("loading libraries")
+
+# install.packages("parallel")
 library(parallel)
+
+# install.packages("rbenchmark")
 library(rbenchmark)
+
+# install.packages("doBy")
 library(doBy)
-library(smacpod)
+
+# install.packages("smacpod")
+# library(smacpod)
+
+# install.packages("raster")
 library(raster)
 
-library(plotrix)
+# install.packages("plotrix")
+# library(plotrix)
+
+# install.packages("foreach")
 library(foreach)
+
 # install.packages("doMC")
 library(doMC)
 
@@ -19,8 +33,12 @@ registerDoMC(cores=Sys.getenv('LSB_MAX_NUM_PROCESSORS'))
 registerDoMC(cores= 6)
 
 # install.packages("rlist")
-library(rlist)
-library(ade4)
+# library(rlist)
+
+# install.packages("ade4")
+# library(ade4)
+
+# install.packages("emdist")
 library(emdist)
 
 print("done lodaing libraries")
@@ -894,7 +912,6 @@ mergeProjections <- function(projections, mergeInd, number){
 }
 
 
-library(ade4)
 
 not_vectorized_get_allModels <- function(OutputPath, n,m,times, positive = TRUE){
   all_protein_models_with_distances = c()
