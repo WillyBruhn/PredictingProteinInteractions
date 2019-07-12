@@ -1,4 +1,5 @@
-SourceFunctions("/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling.R")
+s1 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling.R"
+source(s1)
 
 approximateNumberOfDistributions <- function(points, n, eps = 1, convergenceParam = 100, maxIt = 1000, withKdTree = TRUE, plotOnTheFly = FALSE){
   # points ... a content of pts-file
@@ -232,6 +233,8 @@ neighbors = 20
 closest = names(geoDists[which.minn(geoDists[which(rownames(geoDists) == "000_Trx"),],n = neighbors),1])
 length(which(closest %in% getFunctionalProteins() == TRUE))
 
+
+# wally
 
 
 all_protein_models_with_distances[[mergeInd]]$model$distributions
@@ -851,3 +854,62 @@ vals2 = calcDistSampledSimple(distributions1,distributions1)
 
 hist(vals, xlim = c(0,max(vals2,vals)), col = "red", breaks = 100)
 hist(vals2, add = TRUE, col = "blue", breaks = 100)
+
+
+#----------------------------------------------------------------------------------------------------------------
+n = 100
+m = 10
+times = 10
+OutputPath = "/home/willy/Schreibtisch/106Test/Output/"
+all_protein_models_with_distances = not_vectorized_get_allModels(OutputPath = OutputPath, n = n,m = m, times = times)
+DE_parallel = computeAllDistancesParallel(all_protein_models_with_distances)
+Emd_distance_matrix = emd_parallel(DE_parallel = DE_parallel,m = m)
+
+
+#--------------------------------------------------------------------------------
+# projectionMethod
+#--------------------------------------------------------------------------------
+
+
+mergeInd = 1
+projections_list = list()
+for(i in 1:length(all_protein_models_with_distances)){
+  projections_list[[i]] = project_geometry(all_protein_models = all_protein_models_with_distances, ind1 = mergeInd, ind2 = i)[(m+1):(2*m),]
+}
+
+p_merged = mergeProjections(projections_list, mergeInd = mergeInd, number = m)
+
+geoms = plotPrettyProjection(p_merged,getFunctionalProteins(), onlyGeomCenters = FALSE)
+
+geoDists = as.matrix(dist(geoms))
+neighbors = 20
+closest = names(geoDists[which.minn(geoDists[which(rownames(geoDists) == "000_Trx"),],n = neighbors),1])
+length(which(closest %in% getFunctionalProteins() == TRUE))
+
+DE_projected = as.matrix(dist(p_merged))
+Emd_distance_matrix_approx2 = emd_parallel(DE_parallel = DE_projected,m = m)
+
+cor(c(Emd_distance_matrix_approx2),c(Emd_distance_matrix_approx))
+
+Err = deletePointsWithHighError(all_protein_models_with_distances = all_protein_models_with_distances)
+Errors = Err
+nrow(Errors)
+
+th = 1
+mean(Errors[which(rowMeans(abs(Errors)) <= th), ])
+length(which(rowMeans(abs(Errors)) <= th)) 
+p_merged_cleaned = p_merged[-which(rowMeans(abs(Errors)) > th), ]
+
+
+geoms = plotPrettyProjection(p_merged_cleaned,getFunctionalProteins(), onlyGeomCenters = FALSE)
+geoDists = as.matrix(dist(geoms))
+neighbors = 20
+closest = names(geoDists[which.minn(geoDists[which(rownames(geoDists) == "000_Trx"),],n = neighbors),1])
+length(which(closest %in% getFunctionalProteins() == TRUE))
+
+
+
+
+Emd_distance_matrix2 = readDistanceMatrix1("/home/willy/Schreibtisch/106Test/Output/quickEmd_n_100_m_3.csv")
+
+

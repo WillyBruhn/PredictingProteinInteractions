@@ -852,7 +852,7 @@ project_geometry <- function(all_protein_models, ind1, ind2, plot = FALSE){
 # p = project_geometry(all_protein_models = all_protein_models,ind1 = 1,ind2 = 2)
 # p2 = project_geometry(all_protein_models = all_protein_models,ind1 = 1,ind2 = 4)
 
-preCalculateAllDistances <- function(all_protein_models,docailiez = TRUE, doProjection = FALSE){
+preCalculateAllDistances <- function(all_protein_models,docailiez = TRUE, doProjection = TRUE){
   all_proteins_out = list()
   
   projection1 = c()
