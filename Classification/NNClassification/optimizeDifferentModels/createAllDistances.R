@@ -182,8 +182,9 @@ c3_vals = c(0,1,0.5,0.1)
 n = opt$n
 m = opt$m
 
+m = 5000
 n_vals = c(2,5,10,50)
-
+n_vals = c(100)
 
 print(paste(n, m, sep = ""))
 
@@ -204,11 +205,11 @@ for(c1 in c1_vals){
   for(c2 in c2_vals){
     for(c3 in c3_vals){
       for(n in n_vals){
-      
+
       if(c1 == 0 && c2 == 0 && c3 == 0) break;
-      
+
         # if(count >= 2) break;
-  
+
         RepeatedSamplingArguments = list("path" = OutputPath,
                                          "outPath" = OutputFolderRepSamp,
                                          "proteinsToCompareFile_target" = paste(OutputPath,"names.txt",sep=""),
@@ -222,19 +223,19 @@ for(c1 in c1_vals){
                                          "emd_list_id" = "opt",
                                          "allParameterCombinations" = "0",
                                          "NNtoActCent" = "0")
-        
-        
+
+
         RepeatedSamplingArguments_distanceMatrix = paste("EMD_", RepeatedSamplingArguments$number_of_selected_points,
                                                          "_", RepeatedSamplingArguments$rounds, "_", RepeatedSamplingArguments$measure,
                                                          "_", RepeatedSamplingArguments$c1, "_", RepeatedSamplingArguments$c2, "_", RepeatedSamplingArguments$c3,
                                                          "_id_", RepeatedSamplingArguments$emd_list_id, "_NNact_", RepeatedSamplingArguments$NNtoActCent, sep ="")
-        
+
         RepeatedSamplingArguments_distanceMatrix_csv = paste(RepeatedSamplingArguments_distanceMatrix, ".csv", sep = "")
-        
+
         count = count + 1
         print(paste("Calculating ",n, c1, c2, c3, count, "/", length(c1_vals)*length(c2_vals)*length(c3_vals)*length(n_vals),sep = " "))
         if(!file.exists(paste(OutputFolderRepSamp,"/",RepeatedSamplingArguments_distanceMatrix_csv, sep = ""))) system2(paste(RepeatedSamplingPath,RepeatedSamplingExe, sep = ""), args = unlist(RepeatedSamplingArguments))
-   
+
       }
     }
   }

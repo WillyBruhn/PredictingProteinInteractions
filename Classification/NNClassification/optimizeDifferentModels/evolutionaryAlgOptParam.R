@@ -114,6 +114,7 @@ readInAllDistances <- function(path_list, type = 3){
   # path_list ... list of folders from which all csv-files are read in
   # type ... format of the distance-matrix
   #-------------------------------------------------------------------
+  print("Reading in all distances ...")
   
   distances_list = list()
   ind = 0
