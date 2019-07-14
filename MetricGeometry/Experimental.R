@@ -917,12 +917,57 @@ Emd_distance_matrix2 = readDistanceMatrix1("/home/willy/Schreibtisch/106Test/Out
 # projectionMethod
 #--------------------------------------------------------------------------------
 
+# pts = read_pts_file(OutputPath = OutputPath,protName = "000_Trx")
+# CDF = samplePointsAndCalculateCDFofEc(all_pts = pts,n = 100,plot = FALSE)
+# 
+# integralOfDistribution(CDF)
+# x = integrate(CDF, lower = 0, upper = 100)
+# x$value
+
+integrateStepFun <- function(F_, a){
+  
+  sup = 0
+  ind = 0
+  for(i in 1:length(knots(F_))){
+    if(knots(F_)[i] <= a){
+      sup = knots(F_)[i]
+      ind = i
+    } else{
+      break
+    }
+  }
+  
+  su = 0
+  
+  if(ind > 0){
+    for(i in 1:(ind-1)){
+      su = su + (knots(F_)[i+1]-knots(F_)[i])*F_(knots(F_)[i])
+    }
+    
+    su = su + (a-knots(F_)[ind])*F_(knots(F_)[ind])
+  }
+
+  return(su)
+}
+
+integrateStepFunInverse <- function(F_,b){
+  val_old = 0
+  for(i in seq(knots(F_)[1],knots(F_)[length(knots(F_))],0.1)){
+    val = integrateStepFun(F_,i)
+    if(val > b){
+      return(val_old)
+    }
+    val_old = val
+  }
+  return(NULL)
+}
 
 approximateCDF <- function(F_, q){
   # F_ ... cumulitive distribution function
   # q ... number of equal heights to approximate F_
   #-------------------------------------------------
   knots = knots(F_)
+  maxF = max(knots)
   n_F = length(knots)
 
   # print(knots)
@@ -930,32 +975,76 @@ approximateCDF <- function(F_, q){
   F_app = rep(0,q)
   for(i in 1:q){
     
-    # print(n_F*i/(q+1))
+    # ind = n_F*i/(q+1)
+    # 
+    # if(ind - floor(ind) > 0){
+    #   F_app[i] = (knots[n_F*i/(q+1)] + knots[(n_F*i+1)/(q+1)])/2
+    # } else{
+    #   F_app[i] = knots[n_F*i/(q+1)]
+    # }
     
-    ind = n_F*i/(q+1)
+    print((i/q)*(maxF))
+    F_app[i]  = integrateStepFun(F_,(i/q)*(maxF))
     
-    if(ind - floor(ind) > 0){
-      F_app[i] = (knots[n_F*i/(q+1)] + knots[(n_F*i+1)/(q+1)])/2
-    } else{
-      F_app[i] = knots[n_F*i/(q+1)]
-    }
-    
+    # F_app[i] = integrate(CDF, lower = 0, upper = (i/q)*(maxF-0.1))$value
     
   }
 
   return(F_app)  
 }
 
-plotDistWithApproximation <- function(F_,F_app){
-  
-  plot(F_)
-  
-  q = length(F_app)
-  
-  sfun = stepfun(F_app , y = c(0,seq(1/q,1,1/q)))
-  # points(x = F_app, y = seq(1/q,1,1/q))
-  plot(sfun, add = TRUE)
+pts = read_pts_file(OutputPath = OutputPath,protName = "000_Trx")
+CDF = samplePointsAndCalculateCDFofEc(all_pts = pts,n = 100,plot = FALSE)
+
+CDF_approx = approximateCDF(CDF,q = 2)
+
+integrateStepFunInverse(CDF,3.5)
+integrateStepFun(CDF,25)
+
+
+plotDistWithApproximation(CDF,CDF_approx)
+
+plotDistWithApproximation <- function(F_,F_app,plotToFile = NULL){
+
+  if(!is.null(plotToFile)){
+    pdf(file = plotToFile)
+  }
+    
+    n = length(knots(F_))
+    q = length(F_app)
+    sfun = stepfun(F_app , y = c(0,seq(1/q,1,1/q)))
+    
+    print(knots(F_)[n/2])
+    
+    
+    plot(F_, main = paste("n = ",n , ", q= ", q, sep = ""), xlim = c(0,knots(F_)[n/2]*2))
+    plot(sfun, add = TRUE)
+  if(!is.null(plotToFile)){
+    dev.off()
+  }  
 }
+
+plotDistWithApproximationDifferentQ <- function(OutputPath, protName, n = 100, qlist = c(1:9), pos =TRUE, plotToFile = NULL){
+  
+  pts = read_pts_file(OutputPath = OutputPath,protName = protName,pos = pos)
+  pos13_F1 = samplePointsAndCalculateCDFofEc(all_pts = pts,n = n,plot = FALSE)
+  
+  if(!is.null(plotToFile)){
+    pdf(file = plotToFile)
+  }
+  par(mfrow=c(sqrt(length(qlist)),sqrt(length(qlist))))
+  
+  for(i in 1:length(qlist)){
+    F_app1 = approximateCDF(pos13_F1,qlist[i])
+    plotDistWithApproximation(pos13_F1,F_app1)
+  }
+
+  if(!is.null(plotToFile)){
+    dev.off()
+  }  
+  
+}
+
 
 DifferenceOfIntegral_F_and_Approx <- function(F_, F_app){
   q = length(F_app)
@@ -1064,17 +1153,17 @@ getGeometricCenters <- function(df){
 #-------------------------------------------------------------------
 ## Example
 
-calcError <- function(all_pts, n = 100, q = 2, plot = TRUE, verbose = TRUE){
+calcError <- function(all_pts, n = 100, q = 2, plot = TRUE, verbose = TRUE, plotToFile = NULL){
   # q = 2
   # n = 100
-  pos13_F1 = samplePointsAndCalculateCDFofEc(all_pts = all_pts,n = n,plot = plot)
+  pos13_F1 = samplePointsAndCalculateCDFofEc(all_pts = all_pts,n = n,plot = FALSE)
   F_app1 = approximateCDF(pos13_F1,q)
-  plotDistWithApproximation(pos13_F1,F_app1)
+  plotDistWithApproximation(pos13_F1,F_app1,plotToFile)
   DifferenceOfIntegral_F_and_Approx(pos13_F1,F_app1)
   
-  pos13_F2 = samplePointsAndCalculateCDFofEc(all_pts = all_pts,n = n,plot = plot)
+  pos13_F2 = samplePointsAndCalculateCDFofEc(all_pts = all_pts,n = n,plot = FALSE)
   F_app2 = approximateCDF(pos13_F2,q)
-  plotDistWithApproximation(pos13_F2,F_app2)
+  plotDistWithApproximation(pos13_F2,F_app2,plotToFile)
   DifferenceOfIntegral_F_and_Approx(pos13_F2,F_app2)
   
   DE_exact = DifferenceOfIntegral(pos13_F1,pos13_F2)
@@ -1109,7 +1198,16 @@ caclErrorCurve <- function(all_pts, times = 100, n = 100, maxQ = 99, plot = FALS
 
 pts = read_pts_file(OutputPath = OutputPath, protName = "000_Trx")
 
-errors = calcErrors(pts, times = 100, n = 100, q = 2)
+calcError(pts, n = 100, q = 1, plot = TRUE, verbose = TRUE, 
+          plotToFile = "/home/willy/PredictingProteinInteractions/Results/QuickRepSampling/Examples/ecdf_example1.pdf")
+
+
+plotDistWithApproximationDifferentQ(OutputPath = OutputPath, protName = "000_Trx",n = 100, 
+                                    qlist = c(1,2,3,10),
+                                    plotToFile = "/home/willy/PredictingProteinInteractions/Results/QuickRepSampling/Examples/ecdf_exampleMultipleq1.pdf")
+
+
+errors = calcErrors(pts, times = 100, n = 100, q = 1)
 boxplot(errors, ylim = c(0,1))
 
 errors = calcErrors(pts, times = 100, n = 100, q = 10)
@@ -1208,7 +1306,7 @@ getManhattanProjection2d <- function(all_protein_F_approximations){
   return(df)
 }
 
-length(all_protein_F_approximations[[1]]$F$F_app_list[[1]])
+# length(all_protein_F_approximations[[1]]$F$F_app_list[[1]])
 
 getManhattanProjection <- function(all_protein_F_approximations){
   prot_number = length(all_protein_F_approximations)
@@ -1262,14 +1360,54 @@ quickRepSampling <- function(OutputPath, distance_path, fName, pos = TRUE, n = 1
 quickRepSampling(OutputPath = "/home/willy/Schreibtisch/106Test/Output/", distance_path = "/home/willy/Schreibtisch/106Test/Output/", fName = "distTest")
 
 library(rbenchmark)
-benchmark("quickRepSampling" = quickRepSampling(OutputPath = "/home/willy/Schreibtisch/106Test/Output/", distance_path = "/home/willy/Schreibtisch/106Test/Output/", fName = "distTest"),
-          "sapply" = quickRepSampling(OutputPath = "/home/willy/Schreibtisch/106Test/Output/", distance_path = "/home/willy/Schreibtisch/106Test/Output/", fName = "distTest"),replications = 2,
+bench = benchmark("quickRepSampling_n_100_m_22_q_2" = quickRepSampling(OutputPath = "/home/willy/Schreibtisch/106Test/Output/",
+                                                                distance_path = "/home/willy/Schreibtisch/106Test/Output/",
+                                                                fName = "distTest",
+                                                                n = 100,
+                                                                m = 22,
+                                                                q = 2),
+          "quickRepSampling_n_100_m_22_q_20" = quickRepSampling(OutputPath = "/home/willy/Schreibtisch/106Test/Output/",
+                                                                 distance_path = "/home/willy/Schreibtisch/106Test/Output/",
+                                                                 fName = "distTest",
+                                                                 n = 100,
+                                                                 m = 22,
+                                                                 q = 20),
+          "quickRepSampling_n_100_m_100_q_20" = quickRepSampling(OutputPath = "/home/willy/Schreibtisch/106Test/Output/",
+                                                                distance_path = "/home/willy/Schreibtisch/106Test/Output/",
+                                                                fName = "distTest",
+                                                                n = 100,
+                                                                m = 100,
+                                                                q = 20),
+          replications = 2,
           columns = c("test", "replications", "elapsed",
                       "relative", "user.self", "sys.self"))
 
-n = 4
+#---------------------------------------------------------------------------------------
+#                                 test replications elapsed relative user.self sys.self
+# 1  quickRepSampling_n_100_m_22_q_2              2  11.573    1.000    11.411    0.168
+# 2 quickRepSampling_n_100_m_22_q_20              2  15.741    1.360    15.550    0.217
+# 3 quickRepSampling_n_100_m_100_q_20             2  69.508    6.006    65.665    3.787
+#---------------------------------------------------------------------------------------
+
+#---------------------------------------------------------------------------------------
+# CompareProteinsCall
+#---------------------------------------------------------------------------------------
+compareProteinsCall = "/home/willy/PredictingProteinInteractions/MetricGeometry/ComparingProteins/./CompareIsosurfaces.R"
+compareProteinsParameterFile = "/home/willy/PredictingProteinInteractions/MetricGeometry/Benchmark/Parameter"
+system2(command = compareProteinsCall, args = compareProteinsParameterFile)
+
+
+
+library(rbenchmark)
+benchmark("CompareProteins" = system2(command = compareProteinsCall, args = compareProteinsParameterFile),
+          replications = 1,
+          columns = c("test", "replications", "elapsed",
+                      "relative", "user.self", "sys.self"))
+
+#---------------------------------------------------------------------------------------
+n = 100
 m = 100
-q = 3
+q = 2
 times = 2
 OutputPath = "/home/willy/Schreibtisch/106Test/Output/"
 all_protein_F_approximations = getAll_protein_F_approximations(OutputPath = OutputPath, m = m, q = q, n = n, pos = TRUE)
@@ -1283,7 +1421,7 @@ for(i in 1:length(all_protein_F_approximations)){
 # plot_all_F_approximations(all_protein_F_approximations, colors = colors, onlyGeo = TRUE, xli = c(16, 22), yli = c(1,6))
 
 
-plot_all_F_approximations(all_protein_F_approximations, colors = colors, onlyGeo = FALSE)
+plot_all_F_approximations(all_protein_F_approximations, colors = colors, onlyGeo = TRUE)
 
 
 

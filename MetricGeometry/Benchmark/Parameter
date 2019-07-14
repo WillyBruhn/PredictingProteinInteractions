@@ -1,0 +1,21 @@
+# Parameter file for the clustering of protein by there isosurfaces
+# comments are marked with an '#'
+# '=' is a seperator between paramtername and parameter
+#
+# Full Path to the protein files
+PathToData= /home/willy/Schreibtisch/106Test/Output/
+
+# Full path to the directory where the output should be stored
+PathToOutput= /home/willy/Schreibtisch/106Test/CompareProteinsOutput/
+
+# Number of points to select, normally 100
+n = 100
+
+# Numbe of of rounds, normaly 500
+m = 500
+
+
+############################################################################################
+# Path to the program, where the C++ and R code is stored, only change if the file is moved
+PathToRProgram= /home/willy/PredictingProteinInteractions/MetricGeometry/ComparingProteins/EMDandClustering/AllLowerB_EMD_Clust.R
+PathToCPPProgram= /home/willy/PredictingProteinInteractions/MetricGeometry/ComparingProteins/LowerBounds/FirstLowerBound/./main
