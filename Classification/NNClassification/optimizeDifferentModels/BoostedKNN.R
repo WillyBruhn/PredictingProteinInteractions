@@ -6,7 +6,7 @@
 library(doBy)
 
 readDistanceMatrix1 <- function(file = "/home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/d_matrix.csv"){
-  d = read.csv(file = "/home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/d_matrix.csv", header = TRUE, row.names = 1, check.names = FALSE)
+  d = read.csv(file = file, header = TRUE, row.names = 1, check.names = FALSE)
   d = data.matrix(frame = d)
   
   return(d)

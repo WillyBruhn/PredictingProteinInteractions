@@ -29,8 +29,8 @@ library(foreach)
 # install.packages("doMC")
 library(doMC)
 
-registerDoMC(cores=Sys.getenv('LSB_MAX_NUM_PROCESSORS'))
-registerDoMC(cores= 6)
+# registerDoMC(cores=Sys.getenv('LSB_MAX_NUM_PROCESSORS'))
+# registerDoMC(cores= 6)
 
 # install.packages("rlist")
 # library(rlist)
@@ -39,7 +39,7 @@ registerDoMC(cores= 6)
 # library(ade4)
 
 # install.packages("emdist")
-library(emdist)
+# library(emdist)
 
 print("done lodaing libraries")
 

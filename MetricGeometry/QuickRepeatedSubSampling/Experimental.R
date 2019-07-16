@@ -1464,10 +1464,79 @@ legend(x = 35, y = 10,legend = c("RepSamp", "QuickRepSamp"),lty = c(1,1), col = 
 
 
 
+#-----------------------------------------------------------------------------------------------------------------------------
+library(randomForest)
+library(mlbench)
+library(caret)
+
+# Load Dataset
+data(Sonar)
+dataset <- Sonar
+x <- dataset[,1:60]
+y <- dataset[,61]
+
+# Create model with default paramters
+control <- trainControl(method="repeatedcv", number=10, repeats=3)
+seed <- 7
+metric <- "Accuracy"
+set.seed(seed)
+mtry <- sqrt(ncol(x))
+tunegrid <- expand.grid(.mtry=mtry)
+rf_default <- train(Class~., data=dataset, method="rf", metric=metric, tuneGrid=tunegrid, trControl=control)
+print(rf_default)
+
+#----------------------------
+projection = read.csv(file = "/home/willy/Schreibtisch/106Test/UltraQuickRepSubSamp/quickEmd_n_30_m_50_projection.csv")
+x = projection[,3:(ncol(projection)-2)]
+colnames(x)
+
+functionals = which(projection[,1] %in% c(getFunctionalProteins(), "000_Trx"))
+
+y = rep("not_functional", nrow(x))
+y[functionals] = "functional"
+
+data = cbind(x,y)
+data[1:5,]
+
+control <- trainControl(method="repeatedcv", number=2, repeats=10)
+seed <- 7
+metric <- "Kappa"
+set.seed(seed)
+mtry <- data.frame(matrix(0, ncol = 3, nrow = 0))
+colnames(mtry) = c("kmax", "distance", "kernel")
+
+mtry[1,] = c(40,1,"rectangular")
+mtry[2,] = c(30,5,"inv")
+
+tunegrid <- expand.grid(.mtry=mtry)
+
+library(doParallel)
+cl <- makePSOCKcluster(5)
+registerDoParallel(cl)
+rf_default <- train(y~., data=data, method="kknn", metric=metric, tuneGrid=tunegrid, trControl=control)
+stopCluster(cl)
+
+print(rf_default)
+rf_default$finalModel
+
+
+?train
+
+m=getModelInfo()
+
+??kknn
+
+m$kknn$parameters
 
 
 
 
+
+pro = read.csv("/home/willy/Schreibtisch/106Test/UltraQuickRepSubSamp/run1_quickEmd_n_10_m_3_q_2_projection.csv")
+pro
+pro$name
+
+subset(pro, (n == 10 & name == "078"),select = c(3:ncol(pro)))
 
 
 
