@@ -1,0 +1,9 @@
+#----------------------------------------------------------------------------------------
+# To only get the MutCompOutput do the following
+#----------------------------------------------------------------------------------------
+
+# this creates the parametersfile
+../Classification/./predictingProteinInteractions.R --mode Noting --pdb_folder /home/sysgen/Documents/LWB/PredictingProteinInteractions/QuickStart/Test/pdb/ --MutCompOutPut /home/sysgen/Documents/LWB/PredictingProteinInteractions/QuickStart/Test/Proteins/ --doMutComp FALSE
+
+# modifiy the parametersfile accordingly, then type
+../Classification/./predictingProteinInteractions.R --mode Noting --pdb_folder /home/sysgen/Documents/LWB/PredictingProteinInteractions/QuickStart/Test/pdb/ --MutCompOutPut /home/sysgen/Documents/LWB/PredictingProteinInteractions/QuickStart/Test/Proteins/ --doMutComp TRUE

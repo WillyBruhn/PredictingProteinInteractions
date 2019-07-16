@@ -24,6 +24,8 @@
 #
 #     MutCompOutPut       ... output of MutComp (dx,pts, ...)
 #
+#     MutCompParametersFile ... full path to the parameters-file
+#
 #     doMutComp           ... compute MutComp
 #   
 #     doClustering        ... compute a clustering
@@ -150,7 +152,8 @@ spec = matrix(c(
   'royalNumber_train'   , 'n', 2, "numeric",
   'randoms_train'   , 'o', 2, "numeric",
   
-  'predictions_folder'   , 'p', 2, "character"
+  'predictions_folder'   , 'p', 2, "character",
+  'MutCompParametersFile', 'r', 2, "character"
 ), byrow=TRUE, ncol=4)
 opt = getopt(spec)
 
@@ -184,6 +187,8 @@ if ( is.null(opt$generations_train    ) ) { opt$generations_train    = 10    }
 if ( is.null(opt$royalNumber_train    ) ) { opt$royalNumber_train    = 1    }
 if ( is.null(opt$randoms_train    ) ) { opt$randoms_train    = 2    }
 
+if ( is.null(opt$MutCompParametersFile    ) ) { opt$MutCompParametersFile    =  ""   }
+
 if ( is.null(opt$predictions_folder    ) ) { opt$predictions_folder    = paste(funr::get_script_path(),"/../QuickStart/Predictions/",sep = "")   }
 
 if ( is.null(opt$verbose ) ) { opt$verbose = FALSE }
@@ -195,6 +200,10 @@ print(opt)
 s1 = paste(funr::get_script_path(), "/NNClassification/optimizeDifferentModels/BoostedKNN.R", sep = "")
 print(s1)
 source(s1)
+
+sQR = paste(funr::get_script_path(), "/../MetricGeometry/QuickRepeatedSubSampling/UltraQuickRepeatedSubSampling.R", sep = "")
+print(sQR)
+source(sQR)
 
 #-------------------------------------------------------------------------
 CreatALLdx <- function(ListOfProtNames,PathToProtData)
@@ -260,6 +269,7 @@ createFolderHierarchy <- function(folderName, pdbs){
   # the pdbs in the folder "pdbs" are copied to Input/pdb/
   #
   
+  print("Creating folder-hierarchy ...")
   
   if(!dir.exists(paste(folderName))) dir.create(folderName)
   
@@ -272,8 +282,11 @@ createFolderHierarchy <- function(folderName, pdbs){
   Output = paste(folderName, "/Output/", sep = "")
   if(!dir.exists(Output)) dir.create(Output)
   
+  print("copying pdbs ...")
   list.of.files <- list.files(pdbs, ".pdb", full.names = TRUE)
   file.copy(list.of.files, paste(Input, "/pdb/", sep = ""))
+  
+  print("... done creating hierarchy.")
   
 }
 #-------------------------------------------------------------------------
@@ -321,20 +334,28 @@ labels_train = opt$labels_train
 MutCompSettings = paste(funr::get_script_path(),"/predictingProteinInteractionsSettings/MutCompParametersDummy.txt",sep = "")
 
 createFolderHierarchy(PPIoutputFolder, pdbFolder)
-file.copy(labels_train, paste(PPIoutputFolder, "/Output/labels.txt", sep = ""))
+
+
+if(opt$mode == "Train") file.copy(labels_train, paste(PPIoutputFolder, "/Output/labels.txt", sep = ""))
 
 # df -h --total
 #-------------------------------------------------------------------------
 
 copyMutCompParameterDummy <- function(MutCompParametersPath,MutCompParametersFile, MutCompDummy){
+  print(paste("Creating MutCompParameterDummy or reading in existing parameters-file ..." , MutCompParametersPath,MutCompParametersFile, sep = ""))
+  
+  
   t2 = c()
   
   if(!file.exists(paste(MutCompParametersPath,MutCompParametersFile, sep = ""))) {
+    print(paste("found no parameters-file, will take the dummy-parameters from", MutCompDummy,sep = ""))
+    
     t = read.csv2(MutCompDummy, header = FALSE)
     t2 = data.frame(matrix(rep(0,nrow(t)), nrow = 1))
     colnames(t2) = t$V1
     t2[1,] = t$V2
   } else {
+    print(paste("found  parameters-file : ", MutCompParametersPath,MutCompParametersFile,sep = ""))
     t = read.csv2(paste(MutCompParametersPath,MutCompParametersFile, sep = ""), header = FALSE)
     t2 = data.frame(matrix(rep(0,nrow(t)), nrow = 1))
     colnames(t2) = t$V1
@@ -355,8 +376,14 @@ MutCompExe = "./process.sh"
 MutCompParametersPath = PPIoutputFolder
 MutCompParametersFile = "parameters.txt"
 
+MutCompParameters = c()
+if(opt$MutCompParametersFile == ""){
+  MutCompParameters = copyMutCompParameterDummy(MutCompParametersPath,MutCompParametersFile, MutCompSettings)
+}else {
+  MutCompParameters = copyMutCompParameterDummy("",opt$MutCompParametersFile, MutCompSettings)
+}
 
-MutCompParameters = copyMutCompParameterDummy(MutCompParametersPath,MutCompParametersFile, MutCompSettings)
+print("Hi")
 
 # change the parameters accordingly
 MutCompParameters$parametersPath = PPIoutputFolder
@@ -428,7 +455,9 @@ proteinNames = list.dirs(path = paste(PPIoutputFolder, "/Output/",sep=""), recur
 #                                                  "_", RepeatedSamplingArguments$c1, "_", RepeatedSamplingArguments$c2, "_", RepeatedSamplingArguments$c3,
 #                                                  "_id_", RepeatedSamplingArguments$emd_list_id, "_NNact_", RepeatedSamplingArguments$NNtoActCent, ".csv", sep ="")
 
-CreatALLdx(ListOfProtNames = proteinNames, PathToProtData = paste(PPIoutputFolder, "/Output/",sep=""))
+if(opt$mode == "Train" || opt$mode == "Predict" || opt$mode == "SingleDistance") {
+  CreatALLdx(ListOfProtNames = proteinNames, PathToProtData = paste(PPIoutputFolder, "/Output/",sep=""))
+}
 
 #-------------------------------------------------------------------------
 # 3.2 Training
@@ -519,24 +548,178 @@ if(mode == "Predict"){
 #-------------------------------------------------------------------------
 # 4. Clustering
 
+AllvsAll.Cluster <- function(outPath, distance_matrix, fname, plotToFile = TRUE, labels = NULL)
+{  
+  mydendrogramplot <- function(clust,xlim=NULL,ylim=NULL, title=NULL)
+  {
+    dendrogram <- as.dendrogram(clust)
+    dendro.data <- dendro_data(dendrogram)
+    
+    # print(length(dendro.data$labels))
+    
+    colors = rep("black", length(labels))
+    for(i in 1:length(labels)){
+      if(labels$label[i] == "functional")colors[i] = "red"
+    }
+    
+    
+    # p <- ggplot() +
+    #   geom_segment(data = dendro.data$segments,
+    #                aes_string(x = "x", y = "y", xend = "xend", yend = "yend"))+
+    #   theme_dendro()+
+    #   scale_x_continuous(breaks = seq_along(dendro.data$labels$label),
+    #                      labels = dendro.data$labels$label) +
+    #   theme(axis.text.x = element_text(angle = 90, hjust = 1,colour = colors)) +
+    #   theme(axis.text.y = element_text(angle = 90, hjust = 1)) +
+    #   ggtitle(title)
+    
+    
+    p <- ggplot() +
+      geom_segment(data = dendro.data$segments,
+                   aes_string(x = "x", y = "y", xend = "xend", yend = "yend"))+
+      theme_dendro()+
+      scale_x_continuous(breaks = seq_along(dendro.data$labels$label),
+                         labels = dendro.data$labels$label) +
+        geom_text(data=dendro.data$segments, aes(x, y, label=label, hjust=0, color=cluster),
+                  size=3) +
+      ggtitle(title)
+    
+    
+    # p <- ggplot() + 
+    #   geom_segment(data=segment(dendr), aes(x=x, y=y, xend=xend, yend=yend)) + 
+    #   geom_text(data=label(dendr), aes(x, y, label=label, hjust=0, color=cluster), 
+    #             size=3) +
+    #   coord_flip() + scale_y_reverse(expand=c(0.2, 0)) + 
+    #   theme(axis.line.y=element_blank(),
+    #         axis.ticks.y=element_blank(),
+    #         axis.text.y=element_blank(),
+    #         axis.title.y=element_blank(),
+    #         panel.background=element_rect(fill="white"),
+    #         panel.grid=element_blank())
+    
+    
+    
+    # text.df = merge(label(dendr),clust.gr,by.x="label",by.y="row.names")
+    
+    # p <- ggplot() +
+    #   geom_segment(data=segment(dendro.data), aes(x=x, y=y, xend=xend, yend=yend)) +
+    #   geom_text(data=text.df, aes(x=x, y=y, label=label, hjust=0,color=clust), size=3) +
+    #   coord_flip() + scale_y_reverse(expand=c(0.2, 0)) +
+    #   theme(axis.line.y=element_blank(),
+    #         axis.ticks.y=element_blank(),
+    #         axis.text.y=element_blank(),
+    #         axis.title.y=element_blank(),
+    #         panel.background=element_rect(fill="white"),
+    #         panel.grid=element_blank())
+    
+    
+    
+    if(is.null(xlim) &is.null(ylim))
+    {
+      p <- p +  coord_cartesian(xlim = xlim, ylim = ylim)
+      
+    }
+    p
+  }
+  
+  agnes.average.Neg <- agnes(x = distance_matrix, diss = T,method = "average",keep.diss = F,keep.data = F)
+  
+  p = mydendrogramplot(agnes.average.Neg,title = "UPGMA")
+  
+  # ggplot(p)
+  
+  # ?ggplot
+  ggsave(filename = paste(outPath,"/Dendrogram_", fname, ".pdf",sep=""),height=7, width = 14)
+  
+  
+  
+  
+}
+
+
+mydendrogramplot2 <- function(outPath, dist, labels,fName){
+  hc2 = hclust(dist(dist), "ave")
+  dendr2    <- dendro_data(hc2, type="rectangle") # convert for ggplot
+  clust2    <- cutree(hc2,k=2)                    # find 2 clusters
+  clust2.df <- data.frame(label=names(clust2), cluster=factor(labels$label))
+  
+  dendr2[["labels"]] <- merge(dendr2[["labels"]],clust2.df, by="label")
+  
+  p <- ggplot() + geom_segment(data=segment(dendr2), aes(x=x, y=y, xend=xend, yend=yend)) + 
+    geom_text(data=label(dendr2), aes(x, y, label=label, hjust=0, color=cluster), 
+              size=3) +
+    coord_flip() + scale_y_reverse(expand=c(0.2, 0)) + 
+    theme(axis.line.y=element_blank(),
+          axis.ticks.y=element_blank(),
+          axis.text.y=element_blank(),
+          axis.title.y=element_blank(),
+          panel.background=element_rect(fill="white"),
+          panel.grid=element_blank())
+  
+  print(paste(outPath,"/Dendrogram_", fName, ".pdf",sep=""))
+  ggsave(filename = paste(outPath,"/Dendrogram_", fName, ".pdf",sep=""),height=7, width = 14)
+  
+}
+
+# mydendrogramplot2(OutputPath,dist,labels, "test")
+
+
 if(mode == "SingleDistance"){
   #-------------------------------------------------------------------------
   # comput one distance-matrix with RepSubSample
   #-------------------------------------------------------------------------
   
-  RepeatedSamplingPath = paste(funr::get_script_path(),"/../MetricGeometry/RepeatedSubsampling/FirstLowerBoundRelationOfPosAndNeg/cmakeBin/",sep = "")
-  RepeatedSamplingExe = "./main"
+  # RepeatedSamplingPath = paste(funr::get_script_path(),"/../MetricGeometry/RepeatedSubsampling/FirstLowerBoundRelationOfPosAndNeg/cmakeBin/",sep = "")
+  # RepeatedSamplingExe = "./main"
+  # 
+  # positive = getRepeatedSampling(RepeatedSamplingPath,RepeatedSamplingExe,
+  #                                path = pathToProteins,
+  #                                outPath = opt$distances_train, 
+  #                                proteinsToCompareFile_target = names_file, 
+  #                                proteinsToCompareFile = names_file,
+  #                                measure = 1,
+  #                                number_of_selected_points = opt$numberOfPoints,
+  #                                rounds = opt$rounds,
+  #                                c1 = 1, c2 = 0, c3 = 0)
   
-  positive = getRepeatedSampling(RepeatedSamplingPath,RepeatedSamplingExe,
-                                 path = pathToProteins,
-                                 outPath = opt$distances_train, 
-                                 proteinsToCompareFile_target = names_file, 
-                                 proteinsToCompareFile = names_file,
-                                 measure = 1,
-                                 number_of_selected_points = opt$numberOfPoints,
-                                 rounds = opt$rounds,
-                                 c1 = 1, c2 = 0, c3 = 0)
+  # UQRepeatedSamplingPath = paste(funr::get_script_path(),"/../MetricGeometry/QuickRepeatedSubSampling/",sep = "")
+  # UQRepeatedSamplingExe = "./UltraQuickRepeatedSubSamplingExecutable.R"
+  # 
+  # positive = getRepeatedSampling(RepeatedSamplingPath,RepeatedSamplingExe,
+  #                                path = pathToProteins,
+  #                                outPath = opt$distances_train, 
+  #                                proteinsToCompareFile_target = names_file, 
+  #                                proteinsToCompareFile = names_file,
+  #                                measure = 1,
+  #                                number_of_selected_points = opt$numberOfPoints,
+  #                                rounds = opt$rounds,
+  #                                c1 = 1, c2 = 0, c3 = 0)
   
+  
+  # functionals = labels$name[which(labels$label == "functional")]
+  
+  
+  # n = opt$n
+  # m = opt$m
+  
+  
+  n = 100
+  m = 400
+  
+  q = 2
+  distName = paste(opt$distance_name,"_quickEmd_n_",n,"_m_",m,"_q_",2,sep ="")
+  
+  positive = quickRepSampling(OutputPath = pathToProteins, 
+                   distance_path = opt$distances_train,
+                   n = n,
+                   m = m,
+                   q = q,
+                   pos = "pos",
+                   fName = distName,
+                   plot = TRUE,
+                   functionals = NULL,
+                   distance_method = "geo")
+
   
   # negative = getRepeatedSampling(RepeatedSamplingPath,RepeatedSamplingExe,
   #                                path = pathToProteins,
@@ -549,64 +732,73 @@ if(mode == "SingleDistance"){
   #                                c1 = 0, c2 = 1, c3 = 0)
   
   
-  AllvsAll.Cluster <- function(outPath, distance_matrix, fname)
-  {  
-    mydendrogramplot <- function(clust,xlim=NULL,ylim=NULL, title=NULL)
-    {
-      
-      dendrogram <- as.dendrogram(clust)
-      dendro.data <- dendro_data(dendrogram)
-      
-      p <- ggplot() +
-        geom_segment(data = dendro.data$segments,
-                     aes_string(x = "x", y = "y", xend = "xend", yend = "yend"))+
-        theme_dendro()+
-        scale_x_continuous(breaks = seq_along(dendro.data$labels$label), 
-                           labels = dendro.data$labels$label) + 
-        theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
-        theme(axis.text.y = element_text(angle = 90, hjust = 1)) +
-        ggtitle(title)
-      
-      if(is.null(xlim) &is.null(ylim))
-      {
-        p <- p +  coord_cartesian(xlim = xlim, ylim = ylim)
-        
-      }
-      p
-    }
-    # data = distance_matrix
-    # 
-    # ProtList <- unique(c(as.character(data[,1]),as.character(data[,2])))
-    # print(ProtList)
-    # 
-    # print(data$emd_distance)
-    # 
-    # matr.Neg <- matrix(0,nrow = NROW(ProtList),ncol = NROW(ProtList), dimnames = list(ProtList,ProtList))
-    # 
-    # 
-    # 
-    # k <- 1
-    # for(i in 1:(NROW(ProtList)-1))
-    # {
-    #   for(j in (i+1):NROW(ProtList))
-    #   {
-    #     if(k <= NROW(data)){
-    #       matr.Neg[i,j] <- data[k,3]
-    #       matr.Neg[j,i] <- data[k,3]
-    #     }
-    #     k <- k+1
-    #   }
-    # }
-    
-    agnes.average.Neg <- agnes(x = distance_matrix, diss = T,method = "average",keep.diss = F,keep.data = F)
-    mydendrogramplot(agnes.average.Neg,title = "UPGMA")
-    ggsave(filename = paste(outPath,"/Dendrogram_", fname, ".pdf",sep=""),height=7, width = 14)
-  }
+  # AllvsAll.Cluster <- function(outPath, distance_matrix, fname, plotToFile = TRUE)
+  # {  
+  #   mydendrogramplot <- function(clust,xlim=NULL,ylim=NULL, title=NULL)
+  #   {
+  #     
+  #     dendrogram <- as.dendrogram(clust)
+  #     dendro.data <- dendro_data(dendrogram)
+  #     
+  #     p <- ggplot() +
+  #       geom_segment(data = dendro.data$segments,
+  #                    aes_string(x = "x", y = "y", xend = "xend", yend = "yend"))+
+  #       theme_dendro()+
+  #       scale_x_continuous(breaks = seq_along(dendro.data$labels$label), 
+  #                          labels = dendro.data$labels$label) + 
+  #       theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  #       theme(axis.text.y = element_text(angle = 90, hjust = 1)) +
+  #       geom_point(color=rep("darkblue",length(dendro.data$labels))) +
+  #       ggtitle(title)
+  #     
+  #     if(is.null(xlim) &is.null(ylim))
+  #     {
+  #       p <- p +  coord_cartesian(xlim = xlim, ylim = ylim)
+  #       
+  #     }
+  #     p
+  #   }
+  #   # data = distance_matrix
+  #   # 
+  #   # ProtList <- unique(c(as.character(data[,1]),as.character(data[,2])))
+  #   # print(ProtList)
+  #   # 
+  #   # print(data$emd_distance)
+  #   # 
+  #   # matr.Neg <- matrix(0,nrow = NROW(ProtList),ncol = NROW(ProtList), dimnames = list(ProtList,ProtList))
+  #   # 
+  #   # 
+  #   # 
+  #   # k <- 1
+  #   # for(i in 1:(NROW(ProtList)-1))
+  #   # {
+  #   #   for(j in (i+1):NROW(ProtList))
+  #   #   {
+  #   #     if(k <= NROW(data)){
+  #   #       matr.Neg[i,j] <- data[k,3]
+  #   #       matr.Neg[j,i] <- data[k,3]
+  #   #     }
+  #   #     k <- k+1
+  #   #   }
+  #   # }
+  #   
+  #   agnes.average.Neg <- agnes(x = distance_matrix, diss = T,method = "average",keep.diss = F,keep.data = F)
+  #   
+  #   mydendrogramplot(agnes.average.Neg,title = "UPGMA")
+  #   # ggsave(filename = paste(outPath,"/Dendrogram_", fname, ".pdf",sep=""),height=7, width = 14)
+  # }
   
-  positive_name = paste("positive_n_", opt$numberOfPoints, "_m_", opt$rounds, sep = "")
+
+  labels = read.table("/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/106Model/Proteins/Output/labels.txt", header = TRUE)
+
+  
+  positive_name = paste("positive_n_", n, "_m_", opt$rounds, sep = "")
   # negative_name = paste("negative_n_", opt$numberOfPoints, "_m_", opt$rounds, sep = "")
   
-  if(doClustering) AllvsAll.Cluster(outPath = pathToProteins, distance_matrix = positive, positive_name)
+  if(doClustering) {
+    # AllvsAll.Cluster(outPath = pathToProteins, distance_matrix = positive, positive_name)
+    mydendrogramplot2(pathToProteins,positive,labels, distName)
+  }
   # if(doClustering) AllvsAll.Cluster(outPath = pathToProteins, distance_matrix = negative, negative_name)
   
   
@@ -620,12 +812,78 @@ if(mode == "SingleDistance"){
 
 
 
+readDistanceMatrix1 <- function(file = "/home/willy/RedoxChallenges/MasterThesis/IsoSurfSimilarity/data/Output/d_matrix.csv"){
+  d = read.csv(file = file, header = TRUE, row.names = 1, check.names = FALSE)
+  d = data.matrix(frame = d)
+  
+  return(d)
+}
+
+# dist = readDistanceMatrix1("/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/106Model/RepeatedSubSamplingSingleDistance/_quickEmd_n_100_m_3_q_2_geo.csv")
+# 
+# labels = read.table("/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/106Model/Proteins/Output/labels.txt", header = TRUE)
+# 
+# AllvsAll.Cluster(outPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/106Model/Proteins/Output/", distance_matrix = dist, "test", plotToFile = FALSE, labels = labels)
+# 
+# 
 
 
 
+#--------------------------------------------------------
 
 
-
-
-
-
+# mydendrogramplot2 <- function(outPath, dist, labels,fName){
+#   hc2 = hclust(dist(dist), "ave")
+#   dendr2    <- dendro_data(hc2, type="rectangle") # convert for ggplot
+#   clust2    <- cutree(hc2,k=2)                    # find 2 clusters
+#   clust2.df <- data.frame(label=names(clust2), cluster=factor(labels$label))
+#   
+#   dendr2[["labels"]] <- merge(dendr2[["labels"]],clust2.df, by="label")
+#   
+#   p <- ggplot() + geom_segment(data=segment(dendr2), aes(x=x, y=y, xend=xend, yend=yend)) + 
+#     geom_text(data=label(dendr2), aes(x, y, label=label, hjust=0, color=cluster), 
+#               size=3) +
+#     coord_flip() + scale_y_reverse(expand=c(0.2, 0)) + 
+#     theme(axis.line.y=element_blank(),
+#           axis.ticks.y=element_blank(),
+#           axis.text.y=element_blank(),
+#           axis.title.y=element_blank(),
+#           panel.background=element_rect(fill="white"),
+#           panel.grid=element_blank())
+#   
+#   ggsave(filename = paste(outPath,"/Dendrogram_", fName, ".pdf",sep=""),height=7, width = 14)
+#   
+# }
+# 
+# mydendrogramplot2(OutputPath,dist,labels, "test")
+# 
+# #-------------------------
+# 
+# 
+# 
+# df   <- USArrests                 # really bad idea to muck up internal datasets
+# labs <- paste("sta_",1:50,sep="") # new labels
+# rownames(df) <- labs              # set new row names
+# 
+# library(ggplot2)
+# library(ggdendro)
+# hc       <- hclust(dist(df), "ave")           # heirarchal clustering
+# dendr    <- dendro_data(hc, type="rectangle") # convert for ggplot
+# clust    <- cutree(hc,k=2)                    # find 2 clusters
+# clust.df <- data.frame(label=names(clust), cluster=factor(clust))
+# 
+# # dendr[["labels"]] has the labels, merge with clust.df based on label column
+# dendr[["labels"]] <- merge(dendr[["labels"]],clust.df, by="label")
+# 
+# # plot the dendrogram; note use of color=cluster in geom_text(...)
+# ggplot() + 
+#   geom_segment(data=segment(dendr), aes(x=x, y=y, xend=xend, yend=yend)) + 
+#   geom_text(data=label(dendr), aes(x, y, label=label, hjust=0, color=cluster), 
+#             size=3) +
+#   coord_flip() + scale_y_reverse(expand=c(0.2, 0)) + 
+#   theme(axis.line.y=element_blank(),
+#         axis.ticks.y=element_blank(),
+#         axis.text.y=element_blank(),
+#         axis.title.y=element_blank(),
+#         panel.background=element_rect(fill="white"),
+#         panel.grid=element_blank())

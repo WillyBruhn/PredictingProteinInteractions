@@ -6,10 +6,12 @@
 #
 #---------------------------------------------------------------------------------------------------------
 
-
-s1 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/QuickRepeatedSubSampling.R"
+# s1 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/QuickRepeatedSubSampling.R"
+s1 = paste(funr::get_script_path(),"/QuickRepeatedSubSampling.R",sep ="")
+print(paste("sourcing ", s1, " ... ", sep =""))
 source(s1)
 
+print(paste("... done sourcing ", s1, sep =""))
 library(emdist)
 
 #--------------------------------------------------------------------------------
@@ -550,6 +552,8 @@ quickRepSampling <- function(OutputPath, distance_path, fName, pos = TRUE, n = 1
     plotPseudoRoc(geoDistances = protein_distances,ind = which(rownames(protein_distances) == functionalMainTarget),functionals = functionals)
     dev.off()
   }
+  
+  return(protein_distances)
 }
 
 

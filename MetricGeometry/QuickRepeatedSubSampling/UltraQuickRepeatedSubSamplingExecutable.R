@@ -68,18 +68,18 @@ if ( !is.null(opt$help) ) {
 
 # set some reasonable defaults for the options that are needed,
 # but were not specified.
-if ( is.null(opt$ProteinsPath    ) ) { opt$ProteinsPath    = "/home/willy/Schreibtisch/106Test/Output/"     }
-if ( is.null(opt$distance_path    ) ) { opt$distance_path    = "/home/willy/Schreibtisch/106Test/UltraQuickRepSubSamp/"     }
-if ( is.null(opt$labels    ) ) { opt$labels    = "/home/willy/PredictingProteinInteractions/data/labels.txt"  }
-if ( is.null(opt$distance_method    ) ) { opt$distance_method    = "emd"   }
-if ( is.null(opt$n    ) ) { opt$n    = 10   }
-if ( is.null(opt$m    ) ) { opt$m    = 5  }
+if ( is.null(opt$ProteinsPath    ) ) { opt$ProteinsPath    = paste(funr::get_script_path(),"/../../data/106Model/Proteins/Output/", sep ="")     }
+if ( is.null(opt$distance_path    ) ) { opt$distance_path    = paste(funr::get_script_path(),"/../../data/106Model/Proteins/UltraQuickRepSubSamp/", sep ="")     }
+if ( is.null(opt$labels    ) ) { opt$labels    = paste(funr::get_script_path(),"/../../data/labels.txt", sep ="")  }
+if ( is.null(opt$distance_method    ) ) { opt$distance_method    = "geo"   }
+if ( is.null(opt$n    ) ) { opt$n    = 100   }
+if ( is.null(opt$m    ) ) { opt$m    = 100  }
 if ( is.null(opt$q    ) ) { opt$q    = 2  }
 if ( is.null(opt$plot    ) ) { opt$plot    = TRUE  }
 if ( is.null(opt$potential    ) ) { opt$potential    = "pos"  }
 if ( is.null(opt$cores    ) ) { 
   opt$cores = Sys.getenv('LSB_MAX_NUM_PROCESSORS')
-  if ( is.null(opt$cores)) opt$cores = 6
+  if ( is.null(opt$cores)) opt$cores = 10
 }
 
 # list.files(opt$distance_path)
@@ -95,10 +95,10 @@ SourceFunctions<-function(file) {
 }
 
 # s1 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/UltraQuickRepeatedSubSampling.R"
-s1 = paste(funr::get_script_path(),"/UltraQuickRepeatedSubSampling.R",sep ="")
-print(paste("sourcing ", s1, " ..."))
-source(s1)
-print(paste(" ... done sourcing ", s1))
+s2 = paste(funr::get_script_path(),"/UltraQuickRepeatedSubSampling.R",sep ="")
+print(paste("sourcing ", s2, " ..."))
+source(s2)
+print(paste(" ... done sourcing ", s2))
 registerDoMC(cores= opt$cores)
 #---------------------------------------------------------------------------------------------------------------------
 # Samples the points,
@@ -108,7 +108,12 @@ registerDoMC(cores= opt$cores)
 # use the geometric center for the actual distance between the proteins,
 # write the distance-matrix to "distTest"
 #---------------------------------------------------------------------------------------------------------------------
-labels = read.table(file = opt$labels, header = TRUE)
+if(!file.exists(opt$labels)){
+  print(paste("Can't open ", opt$labels, sep = ""))
+}else{
+  labels = read.table(file = opt$labels, header = TRUE)
+}
+
 functionals = labels$name[which(labels$label == "functional")]
 
 distName = paste(opt$distance_name,"_quickEmd_n_",opt$n,"_m_",opt$m,"_q_",opt$q,sep ="")
