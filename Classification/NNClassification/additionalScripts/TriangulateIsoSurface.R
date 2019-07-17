@@ -38,10 +38,10 @@ if(!is.installed("xtable")){install.packages("xtable")}
 library("xtable")
 
 # if(!is.installed("spatstat")){install.packages("spatstat")}
-# library("spatstat")
+library("spatstat")
 
 # if(!is.installed("igraph")){install.packages("igraph")}
-# library("igraph")
+library("igraph")
 
 
 

@@ -20,4 +20,5 @@ QuickStart/Predictions/
 
 
 data/106Model/
-
+data/MNist/
+data/nonRigidWorld/

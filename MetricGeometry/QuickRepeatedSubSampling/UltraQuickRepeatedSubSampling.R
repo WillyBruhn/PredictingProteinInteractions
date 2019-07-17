@@ -460,8 +460,8 @@ getManhattanProjection <- function(all_protein_F_approximations){
       df[ind+j,2] = n
       
       df[ind+j,1+1+1] = all_protein_F_approximations[[i]]$F$F_app_list[[j]][1]
-      for(k in 1:q){
-        df[ind+j,k+1+1] = all_protein_F_approximations[[i]]$F$F_app_list[[j]][k] - df[ind+j,q]
+      for(k in 2:q){
+        df[ind+j,k+1+1] = all_protein_F_approximations[[i]]$F$F_app_list[[j]][k] - df[ind+j,k+1]
       }
       
     }

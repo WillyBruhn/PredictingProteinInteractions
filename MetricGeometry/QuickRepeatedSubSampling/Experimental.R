@@ -1486,8 +1486,16 @@ rf_default <- train(Class~., data=dataset, method="rf", metric=metric, tuneGrid=
 print(rf_default)
 
 #----------------------------
-projection = read.csv(file = "/home/willy/Schreibtisch/106Test/UltraQuickRepSubSamp/quickEmd_n_30_m_50_projection.csv")
-x = projection[,3:(ncol(projection)-2)]
+
+quickRepSampling(OutputPath = "/home/willy/Schreibtisch/106Test/Output/",
+                 distance_path = "/home/willy/Schreibtisch/106Test/UltraQuickRepSubSamp/",
+                 fName = "yolo",
+                 n = 500,
+                 m = 500,
+                 q = 10,
+                 distance_method = "geo")
+projection = read.csv(file = "/home/willy/Schreibtisch/106Test/UltraQuickRepSubSamp/yolo_projection.csv")
+x = projection[,3:(ncol(projection))]
 colnames(x)
 
 functionals = which(projection[,1] %in% c(getFunctionalProteins(), "000_Trx"))
@@ -1498,46 +1506,40 @@ y[functionals] = "functional"
 data = cbind(x,y)
 data[1:5,]
 
-control <- trainControl(method="repeatedcv", number=2, repeats=10)
-seed <- 7
-metric <- "Kappa"
+library(randomForest)
+library(mlbench)
+library(caret)
+
+control <- trainControl(method="repeatedcv", number=5, repeats=10)
+seed <- 71
+metric <- "Accuracy"
 set.seed(seed)
-mtry <- data.frame(matrix(0, ncol = 3, nrow = 0))
-colnames(mtry) = c("kmax", "distance", "kernel")
 
-mtry[1,] = c(40,1,"rectangular")
-mtry[2,] = c(30,5,"inv")
+mtry <- data.frame(matrix(0, ncol = 1, nrow = 0))
+colnames(mtry) = c("k")
+mtry[1,] = c(10)
 
-tunegrid <- expand.grid(.mtry=mtry)
 
 library(doParallel)
 cl <- makePSOCKcluster(5)
 registerDoParallel(cl)
-rf_default <- train(y~., data=data, method="kknn", metric=metric, tuneGrid=tunegrid, trControl=control)
+rf_default <- train(y~., data=data, method="knn", metric=metric, tuneGrid=mtry, trControl=control)
 stopCluster(cl)
 
-print(rf_default)
-rf_default$finalModel
+rf_default
 
-
-?train
-
-m=getModelInfo()
-
-??kknn
-
-m$kknn$parameters
-
-
-
-
-
-pro = read.csv("/home/willy/Schreibtisch/106Test/UltraQuickRepSubSamp/run1_quickEmd_n_10_m_3_q_2_projection.csv")
-pro
-pro$name
-
-subset(pro, (n == 10 & name == "078"),select = c(3:ncol(pro)))
-
+# No pre-processing
+# Resampling: Cross-Validated (5 fold, repeated 10 times) 
+# Summary of sample sizes: 42400, 42400, 42400, 42400, 42400, 42400, ... 
+# Resampling results:
+#   
+#   Accuracy   Kappa    
+# 0.9040019  0.6317817
+#
+# seed 71
+#
+#
+#
 
 
 
