@@ -45,6 +45,9 @@
 #
 #     rounds                ... number of repetitions
 #
+#     q                     ... number that indicates how fine the approximation should be 
+#                               (higher => more accurate, but slower)
+#
 #     -------------------------------------------------------------------
 #     evolutionary algorithm to find optimal boosted model
 #     -------------------------------------------------------------------
@@ -143,6 +146,7 @@ spec = matrix(c(
   'distances_train'   , 'f', 2, "character",
   'numberOfPoints'   , 'g', 2, "numeric",
   'rounds'   , 'Q', 2, "numeric",
+  'q_val'   , 's', 2, "numeric",
   
   'labels_train'   , 'i', 2, "character",
   'bestModelDirectory'   , 'j', 2, "character",
@@ -186,6 +190,8 @@ if ( is.null(opt$popSize_train    ) ) { opt$popSize_train    = 20    }
 if ( is.null(opt$generations_train    ) ) { opt$generations_train    = 10    }
 if ( is.null(opt$royalNumber_train    ) ) { opt$royalNumber_train    = 1    }
 if ( is.null(opt$randoms_train    ) ) { opt$randoms_train    = 2    }
+
+if ( is.null(opt$q_val    ) ) { opt$q_val    = opt$rounds - 1    }
 
 if ( is.null(opt$MutCompParametersFile    ) ) { opt$MutCompParametersFile    =  ""   }
 
@@ -703,21 +709,28 @@ if(mode == "SingleDistance"){
   # m = opt$m
   
   
-  n = 100
-  m = 400
+  # n = 100
+  # m = 400
   
-  q = 2
-  distName = paste(opt$distance_name,"_quickEmd_n_",n,"_m_",m,"_q_",2,sep ="")
+  # q = 2
+  
+  
+  distName = paste(opt$distance_name,"_quickEmd_n_",opt$numberOfPoints,"_m_",opt$rounds,"_q_",opt$q_val,sep ="")
+
+  
+  labels = read.table(opt$labels_train, header = TRUE)
+    
+  functionals = labels$name[which(labels$label == "functional")]
   
   positive = quickRepSampling(OutputPath = pathToProteins, 
                    distance_path = opt$distances_train,
-                   n = n,
-                   m = m,
-                   q = q,
+                   n = opt$numberOfPoints,
+                   m = opt$rounds,
+                   q = opt$q_val,
                    pos = "pos",
                    fName = distName,
                    plot = TRUE,
-                   functionals = NULL,
+                   functionals = functionals,
                    distance_method = "geo")
 
   
@@ -789,10 +802,10 @@ if(mode == "SingleDistance"){
   # }
   
 
-  labels = read.table("/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/106Model/Proteins/Output/labels.txt", header = TRUE)
+  # labels = read.table("/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/106Model/Proteins/Output/labels.txt", header = TRUE)
 
   
-  positive_name = paste("positive_n_", n, "_m_", opt$rounds, sep = "")
+  positive_name = paste("positive_n_", opt$numberOfPoints, "_m_", opt$rounds, sep = "")
   # negative_name = paste("negative_n_", opt$numberOfPoints, "_m_", opt$rounds, sep = "")
   
   if(doClustering) {
