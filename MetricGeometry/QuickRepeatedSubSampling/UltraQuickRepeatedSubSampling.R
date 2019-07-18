@@ -84,7 +84,7 @@ integrateStepFunInverse <- function(F_,b){
   return(NULL)
 }
 
-approximateCDF <- function(F_, q){
+approximateCDF <- function(F_, q, type = 1){
   # F_ ... cumulitive distribution function
   # q ... number of equal heights to approximate F_
   #-------------------------------------------------
@@ -94,30 +94,49 @@ approximateCDF <- function(F_, q){
   
   # print(knots)
   
-  F_app = rep(0,q)
-  # int = integrateStepFun(F_,maxF)
-  for(i in 1:q){
-    ind = n_F*i/(q+1)
-
-    if(ind - floor(ind) > 0){
-      F_app[i] = (knots[n_F*i/(q+1)] + knots[(n_F*i+1)/(q+1)])/2
-    } else{
-      F_app[i] = knots[n_F*i/(q+1)]
-    }
+  
+  quants = quantile(F_, probs = seq(0,1,1/(q+1)), type = 1)
+  # points(x = quants, y = rep(0,length(quants)), col = "red")
+  
+  
+  # F_app = rep(0,q)
+  # # int = integrateStepFun(F_,maxF)
+  # for(i in 1:q){
+  #   ind = n_F*i/(q+1)
+  # 
+  #   if(ind - floor(ind) > 0){
+  #     F_app[i] = (knots[n_F*i/(q+1)] + knots[(n_F*i+1)/(q+1)])/2
+  #   } else{
+  #     F_app[i] = knots[n_F*i/(q+1)]
+  #   }
+  
+  # F_app = rep(0,length(quants))
+  # 
+  # for(i in 1:length(quants)){
+  #   F_app[i] = 
+  # }
     
     # print((i/(q+1))*(maxF))
     # F_app[i]  = integrateStepFunInverse(F_,v)
     # F_app[i] = integrate(CDF, lower = 0, upper = (i/q)*(maxF-0.1))$value
-  }
+  # }
   
-  return(F_app)  
+  return(quants)  
 }
 
 # pts = read_pts_file(OutputPath = OutputPath,protName = "000_Trx")
-# CDF = samplePointsAndCalculateCDFofEc(all_pts = pts,n = 4,plot = TRUE)
+# CDF = samplePointsAndCalculateCDFofEc(all_pts = pts,n = 100,plot = TRUE)
 # 
-# CDF_approx = approximateCDF(CDF,q = 3)
+# # ?quantile
+# q = 1
+# quants = quantile(CDF, probs = seq(0,1,1/(q+1)))
+# points(x = quants, y = rep(0,length(quants)), col = "red")
+# 
+# CDF_approx = approximateCDF(CDF,q = 10, type = 1)
 # plotDistWithApproximation(CDF,CDF_approx)
+# 
+# DifferenceOfIntegral_F_and_Approx(CDF,CDF_approx)
+
 
 plotDistWithApproximation <- function(F_,F_app,plotToFile = NULL){
   
@@ -126,7 +145,7 @@ plotDistWithApproximation <- function(F_,F_app,plotToFile = NULL){
   }
   
   n = length(knots(F_))
-  q = length(F_app)
+  q = length(F_app)# 1st and last quantile -2???
   sfun = stepfun(F_app , y = c(0,seq(1/q,1,1/q)))
   
   print(knots(F_)[n/2])
