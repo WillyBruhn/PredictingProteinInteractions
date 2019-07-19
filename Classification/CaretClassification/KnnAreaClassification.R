@@ -320,19 +320,6 @@ evaluateAccuracyQuantileNN <- function(model = model,df_proj_test, m = m){
   accuracy(predict(object = model, newdata = x),y)
 }
 
-getClassNamesFromSubClasses <- function(subClasses, splitPattern = "-"){
-  # gets the className from a subclass
-  # e.g.
-  # Lion-01 --> Lion
-  #-------------------------------------------------------
-  
-  classNames = rep("", length(subClasses))
-  for(i in 1:length(subClasses)){
-    classNames[i] = strsplit(as.character(subClasses[i]),split = splitPattern)[[1]][1]
-  }
-  
-  return(classNames)
-}
 
 splitTrainTest <- function(df_proj, trainSplitRatio){
   numOfObjects = length(unique(df_proj[,1]))

@@ -38,9 +38,9 @@ getAllModel_F_approximations <- function(model_vec, num, n = 100, m = 50, q = 2)
   return(distributions_lists)
 }
 
-n = 100
-m = 5
-q = 8
+n = 500
+m = 100
+q = 10
 
 model_vec = getMemoliModelsInPath(n_s_euclidean = 4000, n_s_dijkstra = 50)
 
@@ -49,10 +49,13 @@ length(model_vec)
 
 models_all = getAllModel_F_approximations(model_vec, 72, n = n,m = m,q = q)
 
+
+quants = readQuantilesFromFile(n = n,m=m,q=q)
+writeQuantilesToFileAnimal(model_vec = models_all,n = n,m=m,q=q)
+
+
 df = getManhattanProjection(models_all)
-
 writeProjectionToFile(proj = df,n = n,m = m,q = q,path = "/home/willy/PredictingProteinInteractions/data/animals/",fName = "proj")
-
 
 
 # grap the test names
