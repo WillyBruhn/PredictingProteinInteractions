@@ -1,3 +1,6 @@
+library(rfUtilities)
+library(RSNNS)
+
 generateFileName <- function(n,m,q,fName,path){
   return(paste(path, "/", fName,"_n_", n, "_m_", m, "_q_", q, ".csv", sep = ""))
 }

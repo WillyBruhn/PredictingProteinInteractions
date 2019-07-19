@@ -7,6 +7,8 @@ s2 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubS
 source(s2)
 
 
+s3 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/helperFunctions.R"
+source(s3)
 
 
 generateF_approximations_3dModel <- function(model_points, n = 100, m = 10, q = 2, pos =TRUE){
@@ -37,8 +39,8 @@ getAllModel_F_approximations <- function(model_vec, num, n = 100, m = 50, q = 2)
 }
 
 n = 100
-m = 100
-q = 100
+m = 5
+q = 8
 
 model_vec = getMemoliModelsInPath(n_s_euclidean = 4000, n_s_dijkstra = 50)
 
@@ -48,6 +50,10 @@ length(model_vec)
 models_all = getAllModel_F_approximations(model_vec, 72, n = n,m = m,q = q)
 
 df = getManhattanProjection(models_all)
+
+writeProjectionToFile(proj = df,n = n,m = m,q = q,path = "/home/willy/PredictingProteinInteractions/data/animals/",fName = "proj")
+
+
 
 # grap the test names
 testNames = sample(unique(df[,1]), size = 72*0.3,replace = FALSE)

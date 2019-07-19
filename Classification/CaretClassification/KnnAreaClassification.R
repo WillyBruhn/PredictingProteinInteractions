@@ -87,6 +87,8 @@ library(caret)
 library(doParallel)
 library(doBy)
 
+library(caret)
+
 s1 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/helperFunctions.R"
 source(s1)
 
@@ -169,6 +171,153 @@ trainNeuralNetOnEachDistribution <- function(df_proj_train, splitPattern, numClu
   stopCluster(cl)
   
   return(nn)
+}
+
+
+transformToInputNodes <- function(matRow){
+  
+  name  = as.character(unique(matRow[,1])[1])
+  # print(name)
+  
+  matRow = matRow[do.call(order,matRow),]
+
+  matRow = matRow[,-c(1:2)]
+  # print(matRow)
+  
+  m = nrow(matRow)
+  q = ncol(matRow)
+  inputNodes = data.frame(matrix(0,ncol = m*q+1, nrow = 1 ))
+  
+  # print(inputNodes)
+  
+  for(i in 1:m){
+    
+    start= (i-1)*q+1+1
+    end = start+q-1
+    
+    # print(paste(i,q,start,end))
+    
+    # print(matRow[i,])
+    # print(inputNodes)
+    inputNodes[1,start:end] = matRow[i,]
+  }
+  
+  inputNodes[1,1] = name
+  # colnames(inputNodes)[1] = "name"
+
+  return(inputNodes)
+}
+
+
+# dd[order(-dd[,4], dd[,1]), ]
+# 
+# order(df_proj[1:m,])
+# 
+# df_proj[1:m,]
+# 
+# transformToInputNodes(df_proj[1:10,])
+# 
+# 
+# 
+# require(stats)
+# 
+# (ii <- order(x <- c(1,1,3:1,1:4,3), y <- c(9,9:1), z <- c(2,1:9)))
+# ## 6  5  2  1  7  4 10  8  3  9
+# rbind(x, y, z)[,ii] # shows the reordering (ties via 2nd & 3rd arg)
+# 
+# 
+# 
+# dd <- transform(data.frame(x, y, z),z = factor(z, labels = LETTERS[9:1]))
+# ## Either as above {for factor 'z' : using internal coding}:
+# dd[ order(x, -y, z), ]
+# ## or along 1st column, ties along 2nd, ... *arbitrary* no.{columns}:
+# dd[ do.call(order, dd), ]
+# sub = df_proj[1:10,]
+
+
+
+# t = transformToInputNodes(df_proj[1:10,])
+# t
+
+transformAllToInputNodes <- function(df_proj,m){
+  q_temp = ncol(df_proj)-2
+  inputNodes = data.frame(matrix(0,ncol = m*q_temp+1, nrow = nrow(df_proj)/m ))
+  
+  for(i in 1:nrow(inputNodes)){
+    print(i/nrow(inputNodes))
+    start = (i-1)*m+1
+    end = start+m-1
+    
+    inputNodes[i,] = transformToInputNodes(df_proj[start:end,])
+  }
+  
+  colnames(inputNodes) = c("name", make.names(seq(1:(q_temp*m))))
+  
+  return(inputNodes)
+}
+
+
+
+# transformAllToInputNodes(df_proj[1:100,], 10)
+
+
+trainNeuralNetOnEachDistributionQuantiles <- function(df_proj_train, m, splitPattern, numClusters = 5, size =c(10), thresh = 0.75, k = 2, number = 2, decay = c(0.1)){
+  # for each point the probability is learned that it belongs to a certain subclass
+  # later the classes are predicted based on these subclasses
+  #-------------------------------------------------------------------
+  print("Training model neural-network ...")
+  
+  print("Preprocessing ...")
+  nodes = transformAllToInputNodes(df_proj_train, m)
+  
+  x = nodes[,2:ncol(nodes)]
+  y = as.character(nodes[,1])
+  
+  y = getClassNamesFromSubClasses(y,splitPattern = splitPattern)
+  
+  print(y)
+  
+  print(x[1:5,])
+  
+  data_train = cbind(x,y)
+  
+  write.csv(x = data_train, file = "/home/willy/Schreibtisch/test.csv", row.names = FALSE)
+  
+  print("... done preprocessing")
+  
+  seed <- 71
+  metric <- "Accuracy"
+  # set.seed(seed)
+  
+  
+  numFolds <- trainControl(method = 'cv', number = number, classProbs = TRUE, verboseIter = TRUE, preProcOptions = list(thresh = thresh, ICAcomp = 3, k = k))
+  
+  cl <- makePSOCKcluster(numClusters)
+  registerDoParallel(cl)
+  nn <- caret::train(y~., data=data_train, method="nnet", metric=metric, trControl=numFolds, tuneGrid=expand.grid(size=size, decay=decay))
+  stopCluster(cl)
+  
+  return(nn)
+}
+
+evaluateAccuracyQuantileNN <- function(model = model,df_proj_test, m = m){
+  print("Preprocessing ...")
+  nodes = transformAllToInputNodes(df_proj_test, m)
+  
+  x = nodes[,2:ncol(nodes)]
+  y = as.character(nodes[,1])
+  
+  y = getClassNamesFromSubClasses(y,splitPattern = splitPattern)
+  
+  print(y)
+  
+  print(x[1:5,])
+  
+  data_train = cbind(x,y)
+  
+  print("... done preprocessing")
+  
+  accuracy(predict(object = model, newdata = x),y)
 }
 
 getClassNamesFromSubClasses <- function(subClasses, splitPattern = "-"){
@@ -328,13 +477,26 @@ path = opt$pathToProjection
 n = 30
 m = 100
 q = 10
-opt$mode = "nn"
+opt$mode = "nnQuantiles"
 path = "/home/willy/PredictingProteinInteractions/data/ModelNet10/projections/"
 trainSplitRatio = 0.8
 numClusters = 5
 
 ModelName = paste(path,"/NNArea.RData", sep = "") 
 splitPattern = "_"
+#-----------
+#------------
+# manual tests 2
+n = 100
+m = 20
+q = 2
+opt$mode = "nnQuantiles"
+path = "/home/willy/PredictingProteinInteractions/data/animals/"
+trainSplitRatio = 0.8
+numClusters = 5
+
+ModelName = paste(path,"/NNArea.RData", sep = "") 
+splitPattern = "-"
 #-----------
 
 
@@ -369,17 +531,21 @@ if(opt$mode == "knn"){
   print(paste("saving model to ", ModelName, " ...", sep =""))
   # save the model
   saveRDS(nn, file = ModelName)
+}else if (opt$mode == "nnQuantiles"){
+
+  TrainAndTest = splitTrainTest(df_proj = df_proj,trainSplitRatio = trainSplitRatio)
+  
+  # Train model
+  nn = trainNeuralNetOnEachDistributionQuantiles(df_proj_train = TrainAndTest$train, m = m, splitPattern = splitPattern)
+  
+  print(paste("saving model to ", ModelName, " ...", sep =""))
+  # save the model
+  saveRDS(nn, file = ModelName)
 }
-# } else {
-#   
-#   knnSubClasses = readRDS("/home/willy/PredictingProteinInteractions/data/animals/KnnArea.RData")
-#   TrainAndTest = knnSubClasses$
-# }
 
 
 
 model = readRDS(ModelName)
-
 
 
 
@@ -395,4 +561,6 @@ y_test = getClassNamesFromSubClasses(y_test, splitPattern = splitPattern)
 evaluateAccuracy(model = model,x_test = x_test, y_test = y_test, m = m, probs = FALSE)
 
 
+
+evaluateAccuracyQuantileNN(model = model,df_proj_test = TrainAndTest$test, m = m)
   
