@@ -5,30 +5,6 @@ source(s1)
 s2 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/UltraQuickRepeatedSubSampling.R"
 source(s2)
 
-# library(readmnist)
-
-# test_images <- Read.mnist("/home/willy/PredictingProteinInteractions/data/MNist/t10k-images-idx3-ubyte")
-# test_labels <- Read.mnist("/home/willy/PredictingProteinInteractions/data/MNist/t10k-labels-idx1-ubyte")
-# train_images <- Read.mnist("/home/willy/PredictingProteinInteractions/data/MNist/train-images-idx3-ubyte")
-# train_labels <- Read.mnist("/home/willy/PredictingProteinInteractions/data/MNist/train-labels-idx1-ubyte")
-
-
-# plotNumber <- function(number){
-#   plot(x = 0, y = 0, xlim = c(0,28), ylim = c(0,28))
-#   for(i in 1:nrow(number)){
-#     for(j in 1:ncol(number)){
-#       points(x = i, y = j, col = number[i,j])
-#     }
-#   }
-# }
-# 
-# 
-# test_labels$labels[3]
-# 
-# print(matrix(test_images$pic[3,], ncol = 28, byrow = FALSE))
-# plotNumber(matrix(test_images$pic[3,], ncol = 28, byrow = FALSE))
-
-
 # install.packages("keras")
 library(keras)
 mnist <- dataset_mnist()
@@ -128,7 +104,7 @@ n_train = length(x_train)/28/28
 maxNum = 60000
 
 imagesFile = "/home/willy/PredictingProteinInteractions/data/MNist/allImages.RData"
-recreateImages = TRUE
+recreateImages = FALSE
 
 if(!file.exists(imagesFile) || recreateImages){
   images = list()
@@ -157,7 +133,7 @@ q = 8
 
 projectionFile = paste("/home/willy/PredictingProteinInteractions/data/MNist/proj_n_", n, "_m_", m, "_q_", q,"_maxNum_",maxNum,".csv",sep ="")
 maxNum = 10000
-recreateProj = TRUE
+recreateProj = FALSE
 
 if(!file.exists(projectionFile) || recreateProj){
   allDigits = getAllModel_F_approximationsDigits(model_vec = images,
@@ -189,6 +165,7 @@ df = read.csv(projectionFile, header = TRUE)
 
 x = df[,3:ncol(df)]
 colnames(x)
+nrow(x)
 
 y = as.factor(df[,1])
 
@@ -223,7 +200,7 @@ y_test = mnist$test$y
 
 n_test = length(x_test)/28/28
 
-maxNum_test = min(maxNum*0.4,n_test)
+maxNum_test = min(maxNum*0.04,n_test)
 
 images_test = list()
 for(i in 1:(maxNum_test)){
@@ -245,9 +222,17 @@ df_test = getManhattanProjection(allDigits_test)
 x_test2 = df_test[,3:ncol(df_test)]
 colnames(x_test2)
 
-y_test2 = as.factor(df_test[,1])
+nrow(x_test2)
+length(y_test2)
 
-y_pred = predict(rf_default, newdata = x_test2)
+y_test2 = as.factor(df_test[,1])
+length(y_test2)
+
+knn = readRDS("/home/willy/PredictingProteinInteractions/data/MNist/knn.RData")
+
+evaluateAccuracy(knn, x_test2, y_test2)
+
+y_pred = predict(knn, newdata = x_test2)
 y_pred2 = matrix(y_pred, ncol = m, byrow = TRUE)
 
 nrow(y_pred2)

@@ -470,7 +470,7 @@ getManhattanProjection <- function(all_protein_F_approximations){
   colnames(df) = c("name","n", na)
   
   for(i in 1:prot_number) {
-    print(all_protein_F_approximations[[i]]$name)
+    print(paste(all_protein_F_approximations[[i]]$name, i/prot_number))
     name = all_protein_F_approximations[[i]]$name
     
     ind = (i-1)*m

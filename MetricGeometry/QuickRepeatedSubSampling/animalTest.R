@@ -36,9 +36,9 @@ getAllModel_F_approximations <- function(model_vec, num, n = 100, m = 50, q = 2)
   return(distributions_lists)
 }
 
-n = 500
-m = 500
-q = 10
+n = 100
+m = 100
+q = 100
 
 model_vec = getMemoliModelsInPath(n_s_euclidean = 4000, n_s_dijkstra = 50)
 
@@ -114,7 +114,7 @@ set.seed(seed)
 
 mtry <- data.frame(matrix(0, ncol = 1, nrow = 0))
 colnames(mtry) = c("k")
-mtry[1:2,] = c(1,10)
+mtry[1:3,] = c(1,10,30)
 
 library(doParallel)
 cl <- makePSOCKcluster(5)
@@ -122,6 +122,7 @@ registerDoParallel(cl)
 knn <- train(y~., data=data_train, method="knn", metric=metric, tuneGrid=mtry, trControl=control)
 stopCluster(cl)
 
+knn
 
 
 # Testing on testset
