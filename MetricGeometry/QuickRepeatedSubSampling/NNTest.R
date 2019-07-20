@@ -135,7 +135,7 @@ Y1 = getPoints(n1 = 1000, mean = c(1,1), sd = c(1,2))
 
 mat_both = rbind(X1,X2,X3,Y1)
 
-pdf("/home/willy/PredictingProteinInteractions/Results/Images/NN2dExample.pdf")
+# pdf("/home/willy/PredictingProteinInteractions/Results/Images/NN2dExample.pdf")
 par(mfrow = c(1,3))
 xli = c(-6,15)
 yli = c(-6,15)
@@ -144,10 +144,10 @@ plot(Y1, col = "blue", pch = 19, xlab = "", ylab ="", xlim = xli, ylim = yli)
 plot(mat_both, col = "red", pch = 19, xlab = "", ylab ="", xlim = xli, ylim = yli)
 points(x = Y1[,1], y = Y1[,2], col ="blue", pch = 19)
 legend(x = 5,y = 10, legend = c("X","Y"),col = c("red", "blue"),pch = 19)
-dev.off()
+# dev.off()
 
 
-pdf("/home/willy/PredictingProteinInteractions/Results/Images/NN2dExampleSampleX1vsY1.pdf")
+# pdf("/home/willy/PredictingProteinInteractions/Results/Images/NN2dExampleSampleX1vsY1.pdf")
 par(mfrow = c(1,2))
 plot(mat_both, col = "red", pch = 19, xlab = "", ylab ="", xlim = xli, ylim = yli)
 points(x = Y1[,1], y = Y1[,2], col ="blue", pch = 19)
@@ -160,7 +160,7 @@ plot(mat_both, col = "red", pch = 19, xlab = "", ylab ="", xlim = xli, ylim = yl
 points(x = Y1[,1], y = Y1[,2], col ="blue", pch = 19)
 legend(x = 5,y = 10, legend = c("X","Y"),col = c("red", "blue"),pch = 19)
 X1_demo = sampleDistributions(mat1 = X1,k = 1,"X",m = 20,TRUE, col ="green")
-dev.off()
+# dev.off()
 
 # generate training set and test set
 k = 200
@@ -180,6 +180,16 @@ train = All[-inds,]
 
 #-----------------------------------------------------------------------
 # Example 3
+
+install_keras(method = c("auto", "virtualenv", "conda"),
+              conda = "auto", version = "default", tensorflow = "default",
+              extra_packages = c("tensorflow-hub"))
+
+
+
+install_keras(tensorflow = "gpu")
+
+
 
 y = train[,1]
 

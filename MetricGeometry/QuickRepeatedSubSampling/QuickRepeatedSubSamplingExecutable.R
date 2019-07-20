@@ -82,13 +82,13 @@ Emd_distance_matrix = emd_parallel(DE_parallel = DE_parallel,m = m)
 write.csv(Emd_distance_matrix,file = paste(ProteinsPath,"/",distance_name,sep =""))
 #---------------------------------------------------------------------------------------------------------------------
 
-source("/home/sysgen/Documents/LWB/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling.R")
-n = 100
-m = 22
-times = 1
-OutputPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/106Model/Proteins/Output/"
-all_protein_models_with_distances = not_vectorized_get_allModels(OutputPath = OutputPath, n = n,m = m, times = times)
-DE_parallel = computeAllDistancesParallel(all_protein_models_with_distances)
-Emd_distance_matrix = emd_parallel(DE_parallel = DE_parallel,m = m)
+# source("/home/sysgen/Documents/LWB/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling.R")
+# n = 100
+# m = 22
+# times = 1
+# OutputPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/106Model/Proteins/Output/"
+# all_protein_models_with_distances = not_vectorized_get_allModels(OutputPath = OutputPath, n = n,m = m, times = times)
+# DE_parallel = computeAllDistancesParallel(all_protein_models_with_distances)
+# Emd_distance_matrix = emd_parallel(DE_parallel = DE_parallel,m = m)
 
 

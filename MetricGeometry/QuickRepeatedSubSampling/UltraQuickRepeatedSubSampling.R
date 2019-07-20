@@ -504,7 +504,7 @@ quickRepSampling <- function(OutputPath, distance_path, fName, pos = TRUE, n = 1
   fName_final_projection = paste(distance_path,"/",fName, "_projection.csv",sep ="")
   fName_final_geometricCenters = paste(distance_path,"/",fName, "_geometricCenters.csv",sep ="")
   
-  if(!file.exists(fName_final) || !file.exists(fName_final_projection) || TRUE){
+  if(!file.exists(fName_final) || !file.exists(fName_final_projection)){
     print(paste("Creating ",fName_final))
     if(!dir.exists(distance_path)){
       dir.create(distance_path)
@@ -570,7 +570,17 @@ quickRepSampling <- function(OutputPath, distance_path, fName, pos = TRUE, n = 1
     pdf(fName_final_projection_pseudoRoc)
     plotPseudoRoc(geoDistances = protein_distances,ind = which(rownames(protein_distances) == functionalMainTarget),functionals = functionals)
     dev.off()
-  }
+  } 
+  
+  
+  
+  print(fName_final)
+  protein_distances = read.csv(fName_final, header = TRUE, row.names = 1)
+  
+  # print(protein_distances)
+  
+  # print(nrow(protein_distances))
+  # print(ncol(protein_distances))
   
   return(protein_distances)
 }

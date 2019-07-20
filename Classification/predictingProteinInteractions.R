@@ -216,6 +216,8 @@ CreatALLdx <- function(ListOfProtNames,PathToProtData)
 {
   print("Creating .pts-files from dx-files. This might take a while ...")
   
+  print(PathToProtData)
+  
   for(i in 1:NROW(ListOfProtNames)){
     # needs only name without extension
     fileName <- ListOfProtNames[i]
@@ -644,6 +646,22 @@ AllvsAll.Cluster <- function(outPath, distance_matrix, fname, plotToFile = TRUE,
 
 
 mydendrogramplot2 <- function(outPath, dist, labels,fName){
+  
+  # print(dist)
+  
+  
+  print(labels)
+  if(is.null(labels)){
+    print("no labels specified ...")
+    labels = data.frame(matrix(0, ncol = 2, nrow = nrow(dist)))
+    # print(nrow(labels))
+    # print(nrow(dist))
+    
+    colnames(labels) = c("name","label")
+    labels[,2] = rep("label_unknown",nrow(dist))
+  }
+  # print(labels)
+  
   hc2 = hclust(dist(dist), "ave")
   dendr2    <- dendro_data(hc2, type="rectangle") # convert for ggplot
   clust2    <- cutree(hc2,k=2)                    # find 2 clusters
@@ -717,21 +735,27 @@ if(mode == "SingleDistance"){
   
   distName = paste(opt$distance_name,"_quickEmd_n_",opt$numberOfPoints,"_m_",opt$rounds,"_q_",opt$q_val,sep ="")
 
-  
-  labels = read.table(opt$labels_train, header = TRUE)
+  labels = NULL
+  if(opt$labels_train !="NOLABELS") labels = read.table(opt$labels_train, header = TRUE)
     
   functionals = labels$name[which(labels$label == "functional")]
   
+  
+  fullName = paste(opt$distances_train,"/",distName, sep ="")
+  
   positive = quickRepSampling(OutputPath = pathToProteins, 
-                   distance_path = opt$distances_train,
-                   n = opt$numberOfPoints,
-                   m = opt$rounds,
-                   q = opt$q_val,
-                   pos = "pos",
-                   fName = distName,
-                   plot = TRUE,
-                   functionals = functionals,
-                   distance_method = "geo")
+                              distance_path = opt$distances_train,
+                              n = opt$numberOfPoints,
+                              m = opt$rounds,
+                              q = opt$q_val,
+                              pos = "pos",
+                              fName = distName,
+                              plot = TRUE,
+                              functionals = functionals,
+                              distance_method = "geo")
+
+  
+  # read.csv
 
   
   # negative = getRepeatedSampling(RepeatedSamplingPath,RepeatedSamplingExe,
