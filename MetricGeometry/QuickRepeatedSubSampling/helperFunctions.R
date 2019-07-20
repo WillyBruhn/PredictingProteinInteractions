@@ -33,7 +33,7 @@ writeQuantilesToFileAnimal <- function(model_vec, path = "/home/willy/Predicting
       out[ind+j,2:(q+3)] = model_vec[[i]]$F$F_app_list[[j]]
       out[ind+j,1] = model_vec[[i]]$name
       
-      print(ind+j)
+      print(j/(length(model_vec[[i]]$F$F_app_list)*length(model_vec)))
     }
   }
   

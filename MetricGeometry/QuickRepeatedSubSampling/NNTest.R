@@ -14,6 +14,8 @@ library(doBy)
 # install.packages("rfUtilities")
 library(rfUtilities)
 
+library(keras)
+
 unfold2dProj <- function(mat){
   # x, y
   
@@ -28,9 +30,8 @@ unfold2dProj <- function(mat){
   return(distributions)
 }
 
-sampleDistributions <- function(mat1, k, classLabel, m){
+sampleDistributions <- function(mat1, k, classLabel, m, plot = FALSE, col = NULL){
   # mat1 ... points in 2d-space
-  
   # simulate sampling m distributions  for k times
   
   dataOut = data.frame(matrix(0, ncol = m+1, nrow = k))
@@ -40,8 +41,10 @@ sampleDistributions <- function(mat1, k, classLabel, m){
   
   for(j in 1:k){
     mat1_sample = mat1[sample(nrow(mat1), size = m, replace = FALSE),]
-    # points(x = mat1_sample[,1], y = mat1_sample[,2], col ="green", pch = 19, cex = 1)
-    
+    if(plot == TRUE){
+      points(x = mat1_sample[,1], y = mat1_sample[,2], pch = 19, cex = 1, col = col)
+    }
+      
     distributions = unfold2dProj(mat1_sample)
     distributions_ordered = distributions[order(distributions[,1]),]
     
@@ -131,8 +134,33 @@ X3 = getPoints(1000, c(0,4), c(1,3))
 Y1 = getPoints(n1 = 1000, mean = c(1,1), sd = c(1,2))
 
 mat_both = rbind(X1,X2,X3,Y1)
-plot(mat_both, col = "red", pch = 19)
+
+pdf("/home/willy/PredictingProteinInteractions/Results/Images/NN2dExample.pdf")
+par(mfrow = c(1,3))
+xli = c(-6,15)
+yli = c(-6,15)
+plot(mat_both, col = "red", pch = 19, xlab = "", ylab ="", xlim = xli, ylim = yli)
+plot(Y1, col = "blue", pch = 19, xlab = "", ylab ="", xlim = xli, ylim = yli)
+plot(mat_both, col = "red", pch = 19, xlab = "", ylab ="", xlim = xli, ylim = yli)
 points(x = Y1[,1], y = Y1[,2], col ="blue", pch = 19)
+legend(x = 5,y = 10, legend = c("X","Y"),col = c("red", "blue"),pch = 19)
+dev.off()
+
+
+pdf("/home/willy/PredictingProteinInteractions/Results/Images/NN2dExampleSampleX1vsY1.pdf")
+par(mfrow = c(1,2))
+plot(mat_both, col = "red", pch = 19, xlab = "", ylab ="", xlim = xli, ylim = yli)
+points(x = Y1[,1], y = Y1[,2], col ="blue", pch = 19)
+legend(x = 5,y = 10, legend = c("X","Y"),col = c("red", "blue"),pch = 19)
+
+Y_demo = sampleDistributions(mat1 = Y1,k = 1,"Y",m = 20,TRUE, col = "green")
+
+# par(mfrow = c(1,1))
+plot(mat_both, col = "red", pch = 19, xlab = "", ylab ="", xlim = xli, ylim = yli)
+points(x = Y1[,1], y = Y1[,2], col ="blue", pch = 19)
+legend(x = 5,y = 10, legend = c("X","Y"),col = c("red", "blue"),pch = 19)
+X1_demo = sampleDistributions(mat1 = X1,k = 1,"X",m = 20,TRUE, col ="green")
+dev.off()
 
 # generate training set and test set
 k = 200
@@ -145,7 +173,68 @@ Y_s = sampleDistributions(mat1 = Y1,k = k,"Y",m = 10)
 
 All = rbind(X1_s,X2_s,X3_s,Y_s)
 
-fitNNModel(All)
+inds = sample((1:nrow(All)), size = nrow(All)*0.3, replace = FALSE)
+test = All[inds,]
+train = All[-inds,]
+
+
+#-----------------------------------------------------------------------
+# Example 3
+
+y = train[,1]
+
+classLevels = unique(y)
+numClasses = length(classLevels)
+
+y_train = as.numeric(as.factor(y))-1
+x_train = as.matrix(train[,-1])
+colnames(x_train) = seq(1:ncol(x_train))
+
+y_train <- to_categorical(y_train, numClasses)
+
+
+x_test = as.matrix(test[,-1])
+y_test = as.numeric(as.factor(test[,1]))-1
+y_test <- to_categorical(y_test, numClasses)
+
+
+model <- keras_model_sequential() 
+model %>% 
+  layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_train))) %>% 
+  layer_dropout(rate = 0.1) %>%
+  layer_dense(units = 10, activation = 'relu') %>% 
+  layer_dropout(rate = 0.1) %>%
+  layer_dense(units = 10, activation = 'relu') %>% 
+  layer_dropout(rate = 0.1) %>%
+  layer_dense(units = numClasses, activation = 'softmax')
+
+model %>% compile(
+  loss = 'categorical_crossentropy',
+  optimizer = optimizer_rmsprop(),
+  metrics = c('accuracy')
+)
+
+history <- model %>% fit(
+  x_train, y_train, 
+  epochs = 30, batch_size = 10, 
+  validation_split = 0.1
+)
+
+model %>% evaluate(x_test, y_test)
+# 240/240 [==============================] - 0s 23us/sample - loss: 0.2200 - acc: 0.9667
+# $loss
+# [1] 0.2200407
+# 
+# $acc
+# [1] 0.9666666
+
+pdf("/home/willy/PredictingProteinInteractions/Results/Images/NN2dExampleHistoryTraining.pdf")
+plot(history)
+dev.off()
+
+model %>% predict_classes(x_test)
+#----------------------------------------------------------------------------------------------------
+
 
 
 

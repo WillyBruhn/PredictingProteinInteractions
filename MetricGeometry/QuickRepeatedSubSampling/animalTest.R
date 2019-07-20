@@ -13,7 +13,7 @@ source(s3)
 
 generateF_approximations_3dModel <- function(model_points, n = 100, m = 10, q = 2, pos =TRUE){
   
-  print(nrow(model_points))
+  # print(nrow(model_points))
   
   pos13_F_list = list()
   pos13_F_approx_list = list()
@@ -31,6 +31,8 @@ getAllModel_F_approximations <- function(model_vec, num, n = 100, m = 50, q = 2)
   distributions_lists = list()
   
   for(i in 1:num){
+    print(i/num)
+    
     F_app = generateF_approximations_3dModel(model_vec[3+(i-1)*5][[1]],n = n,q = q, m = m)
     distributions_lists[[i]] =  list("name" = model_vec[1+(i-1)*5],"F" = F_app)
   }
@@ -38,9 +40,9 @@ getAllModel_F_approximations <- function(model_vec, num, n = 100, m = 50, q = 2)
   return(distributions_lists)
 }
 
-n = 500
-m = 100
-q = 10
+n = 100
+m = 1000
+q = 1
 
 model_vec = getMemoliModelsInPath(n_s_euclidean = 4000, n_s_dijkstra = 50)
 
@@ -50,12 +52,42 @@ length(model_vec)
 models_all = getAllModel_F_approximations(model_vec, 72, n = n,m = m,q = q)
 
 
-quants = readQuantilesFromFile(n = n,m=m,q=q)
+# quants = readQuantilesFromFile(n = n,m=m,q=q)
 writeQuantilesToFileAnimal(model_vec = models_all,n = n,m=m,q=q)
 
 
 df = getManhattanProjection(models_all)
 writeProjectionToFile(proj = df,n = n,m = m,q = q,path = "/home/willy/PredictingProteinInteractions/data/animals/",fName = "proj")
+
+
+
+classes = unique(getClassNamesFromSubClasses(df[,1]))
+colors = as.numeric(as.factor(classes))
+colorMap = c("red", "blue", "green", "yellow", "black", "pink", "orange")
+for(i in 1:length(colorMap)){
+  print(paste(classes[i], colorMap[i]))
+  
+  if(!(classes[i] == "head")){
+    inds = which(getClassNamesFromSubClasses(df[,1]) == classes[i])
+    # print(inds)
+    points3d(x = df[inds,2], y = df[inds,3], z = df[inds,4],colorMap[i], add = TRUE,size = 10)
+    
+    geox = sum(df[inds,2])/length(inds)+0.01
+    geoy = sum(df[inds,3])/length(inds)
+    geoz = sum(df[inds,4])/length(inds)
+    
+    text3d(x = geox, y = geoy, z = geoz,texts = classes[i],cex = 2)
+  }
+}
+
+x_sd = sd(df[,2])
+y_sd = sd(df[,3])
+z_sd = sd(df[,4])
+
+#
+rgl.snapshot("/home/willy/PredictingProteinInteractions/Results/Images/animals3dProjectionExample.png")
+
+
 
 
 # grap the test names
