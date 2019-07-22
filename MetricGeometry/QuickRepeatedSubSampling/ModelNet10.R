@@ -109,43 +109,13 @@ getAllModels <- function(dataSet, maxNum = NULL){
 }
 
 
-#------------------------------------------------------------------------
-n = 30
-m = 100
-q = 10
-
-pathToProjection = "/home/willy/PredictingProteinInteractions/data/ModelNet10/projections/"
-
-datasetPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10/"
-
-
-
-# get all the file names and information if it belongs to train or test
-dataSet = getDataSet(datasetPath)
-
-dataSetTrain = dataSet[which(dataSet[,2] == "train"),]
-
-i = 1000
-
-
-mod = downsampleEuclideanAndGetGeodesicModel10Net(objPath = dataSetTrain[i,3], n_s_euclidean = 1000, n_s_dijkstra = 100, plot = TRUE)
-
-mod
-
-unique(unlist(mod[[c(1:length(mod[1]))]]))
-
-
-points3d(mod$centers, col = "blue", size = 30)
-
-
-
 downsampleEuclideanAndGetGeodesicModel10Net <- function(objPath, n_s_euclidean = 4000, n_s_dijkstra = 50, plot = FALSE, doGeo = TRUE){
   model_rgl = read.obj(objPath, convert.rgl = FALSE)
   model_rgl_plot = read.obj(objPath, convert.rgl = TRUE)
-
+  
   print("plotting")
   if(plot) shade3d(model_rgl_plot)
-
+  
   points = t(model_rgl$shapes[[1]]$positions)
   edges = t(model_rgl$shapes[[1]]$indices)+1
   
@@ -195,16 +165,110 @@ downsampleEuclideanAndGetGeodesicModel10Net <- function(objPath, n_s_euclidean =
   } else {
     d_surface = as.matrix(dist(points[sampled_indices2,]))
   }
-    # rgl.open()
-    if(FALSE) plotDownsampledPoints(model_rgl,points,sampled_indices[sampled_indices2],FALSE, col = "blue", size = 51)
-    
-    v2 = myVoronoi(points[sampled_indices[sampled_indices2],], points)
-    v_n = v2/sum(v2)
+  # rgl.open()
+  if(FALSE) plotDownsampledPoints(model_rgl,points,sampled_indices[sampled_indices2],FALSE, col = "blue", size = 51)
+  
+  v2 = myVoronoi(points[sampled_indices[sampled_indices2],], points)
+  v_n = v2/sum(v2)
   
   
   l = list("centers" = points[sampled_indices[sampled_indices2],], "mu" = v_n, "indices_order" = sampled_indices[sampled_indices2], "d_surface" = d_surface[sampled_indices2,sampled_indices2], "sampled_indices_geo" = sampled_indices)
   return(l)
 }
+
+
+
+getSmallDataSet <- function(dataSet,NumOfObjectsFromEachClass = 10){
+  
+  dataSetTrain = dataSet[which(dataSet[,2] == "train"),]
+  
+  classNames = rep("", nrow(dataSetTrain))
+  
+  for(i in 1:length(dataSetTrain[,1])){
+    t = strsplit(dataSetTrain[i,1], split = "_")[[1]]
+    classNames[i] = paste(t[1:(length(t)-1)], collapse = '_')
+  }
+  
+  classLevels = unique(classNames)
+  numClasses = length(classLevels)
+  
+  print(classLevels)
+  
+  smallDataSet = data.frame(matrix(0,ncol = 3, nrow = numClasses*NumOfObjectsFromEachClass))
+  colnames(smallDataSet) = colnames(dataSetTrain)
+  
+  for(i in 1:length(classLevels)){
+    inds = which(classNames == classLevels[i])[1:NumOfObjectsFromEachClass]
+    
+    start = (i-1)*NumOfObjectsFromEachClass+1
+    end = start+NumOfObjectsFromEachClass-1
+    
+    smallDataSet[start:end,] = dataSetTrain[inds,]
+  }
+  
+  return(smallDataSet)
+}
+#------------------------------------------------------------------------
+n = 30
+m = 100
+q = 10
+
+pathToProjection = "/home/willy/PredictingProteinInteractions/data/ModelNet10/projections/"
+
+datasetPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10/"
+
+
+# get all the file names and information if it belongs to train or test
+# dataSet = getDataSet(datasetPath)
+
+
+smallDataSet = getSmallDataSet(dataSet,20)
+
+smallDataSet
+
+getSurfaceSampledModels <- function(dataSet, n_s_euclidean = 1000, n_s_dijkstra = 100, plot = TRUE){
+  
+  for(i in 1:nrow(dataSet)){
+    # close all other rgl-windows
+    while (rgl.cur() > 0) { rgl.close() }
+    
+    # get folder
+    t = strsplit(dataSet[i,3],"/")[[1]]
+    dir = paste(t[1:(length(t)-1)],collapse = "/")
+    
+    # check if distance folder is allready existent
+    distancesDir = paste(dir, "/Distances/", sep ="")
+    if(!dir.exists(distancesDir)) dir.create(distancesDir)
+    
+    distanceFile = getGeoDistanceName(path = distancesDir,ind = 0,n_s_euclidean = n_s_euclidean,n_s_dijkstra = n_s_dijkstra,fname = dataSet[i,1])
+    
+    # check if distance-file allready exists
+    if(!file.exists(distanceFile)){
+      mod = downsampleEuclideanAndGetGeodesicModel10Net(objPath = dataSet[i,3], n_s_euclidean = n_s_euclidean, n_s_dijkstra = n_s_dijkstra, plot = plot)
+      write.csv(mod$d_surface,file = distanceFile, row.names = FALSE)
+      
+      points3d(mod$centers, col = "blue", size = 20)
+      rgl.snapshot(paste(distancesDir, "/", dataSet[i,1], ".png", sep =""))
+    }
+  }
+}
+
+
+getSurfaceSampledModels(smallDataSet)
+
+
+mod = downsampleEuclideanAndGetGeodesicModel10Net(objPath = dataSetTrain[i,3], n_s_euclidean = 1000, n_s_dijkstra = 100, plot = TRUE)
+mod$
+
+
+unique(unlist(mod[[c(1:length(mod[1]))]]))
+
+
+points3d(mod$centers, col = "blue", size = 30)
+
+
+
+
 
 
 # install.packages("geomorph")
