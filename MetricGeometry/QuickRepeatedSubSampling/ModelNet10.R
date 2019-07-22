@@ -11,6 +11,9 @@ source(s1)
 s2 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/UltraQuickRepeatedSubSampling.R"
 source(s2)
 
+s3 = "/home/willy/PredictingProteinInteractions/Classification/NNClassification/additionalScripts/TriangulateIsoSurface.R"
+source(s3)
+
 library(rgl)
 
 getModel10Net <- function(fName, plot = FALSE){
@@ -23,19 +26,42 @@ getModel10Net <- function(fName, plot = FALSE){
 }
 
 getDataSet <- function(datasetPath){
-  allFiles = list.files(datasetPath, recursive = TRUE, full.names = TRUE)
+  allFiles_off = list.files(datasetPath, recursive = TRUE, full.names = TRUE,pattern = ".off")
   
-  dataSet = data.frame(matrix(0,nrow = length(allFiles), ncol = 3))
+  dataSet = data.frame(matrix(0,nrow = length(allFiles_off), ncol = 3))
   colnames(dataSet) = c("model", "trainTest", "file")
 
-  for(i in 1:length(allFiles)){
-    vec = strsplit(allFiles[i],split = "/")[[1]]
+  for(i in 1:length(allFiles_off)){
+    vec = strsplit(allFiles_off[i],split = "/")[[1]]
     vecSmall = vec[(length(vec)-1):length(vec)]
     
     trainTest = vecSmall[1]
     modelName = strsplit(vecSmall[2],split = ".off")[[1]]
     
-    dataSet[i,] = c(modelName, trainTest, allFiles[i])
+    print(allFiles_off[i])
+    
+    objNameIn = paste(strsplit(allFiles_off[i],split = ".off")[[1]][1],".objPre", sep ="")
+    objNameOut = paste(strsplit(allFiles_off[i],split = ".off")[[1]][1],".obj", sep ="")
+    # print(objName)
+    
+    if(!file.exists(objNameIn)){
+      print(paste("Creating obj file ", objNameIn ,"...", sep =""))
+      
+      # from off 2 obj
+      system(paste("off2obj ",allFiles_off[i] ," > ", objNameIn, sep =""))
+    }
+    
+    if(!file.exists(objNameOut)){
+      # make watertight
+      # obj = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10/bathtub/test/bathtub_0110.obj"
+      path2Manifold = "/home/willy/Manifold/build/"
+      manifoldCommand = "./manifold"
+      args = paste(" ",objNameIn," ",objNameOut, " 2000 ", sep="")
+      system(paste(path2Manifold,manifoldCommand,args, sep =""))
+      
+    }
+    
+    dataSet[i,] = c(modelName, trainTest, objNameOut)
   }  
 
   return(dataSet)
@@ -97,16 +123,138 @@ datasetPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNe
 # get all the file names and information if it belongs to train or test
 dataSet = getDataSet(datasetPath)
 
-
 dataSetTrain = dataSet[which(dataSet[,2] == "train"),]
 
-all_models = getAllModels(dataSetTrain)
+i = 1000
 
-distributions_all = getAllModel_F_approximations(model_vec = all_models,n = n,m = m,q = q)
 
-projection = getManhattanProjection(distributions_all)
+mod = downsampleEuclideanAndGetGeodesicModel10Net(objPath = dataSetTrain[i,3], n_s_euclidean = 1000, n_s_dijkstra = 100, plot = TRUE)
 
-writeProjectionToFile(proj = projection,path = pathToProjection, n = n, m = m, q = q, fName = "proj")
+mod
+
+unique(unlist(mod[[c(1:length(mod[1]))]]))
+
+
+points3d(mod$centers, col = "blue", size = 30)
+
+
+
+downsampleEuclideanAndGetGeodesicModel10Net <- function(objPath, n_s_euclidean = 4000, n_s_dijkstra = 50, plot = FALSE, doGeo = TRUE){
+  model_rgl = read.obj(objPath, convert.rgl = FALSE)
+  model_rgl_plot = read.obj(objPath, convert.rgl = TRUE)
+
+  print("plotting")
+  if(plot) shade3d(model_rgl_plot)
+
+  points = t(model_rgl$shapes[[1]]$positions)
+  edges = t(model_rgl$shapes[[1]]$indices)+1
+  
+  
+  # model = read.ply(objPath)
+  # points = t(model$vb)[,1:3]
+  # edges = t(model$it)
+  # 
+  # if(plot) shade3d(model)
+  
+  print(paste("model has ", nrow(points),", points", nrow(edges), " endges", sep ="" ))
+  
+  ob = preProcessMesh(points = points, edges = edges, plot = FALSE)
+  print(paste("processed model has ", nrow(ob$points), "points", sep ="" ))
+  
+  graph = ob$graph
+  edges = ob$edges
+  
+  # return(ob)
+  
+  # points = points[unique(unlist(graph[[c(1:length(graph[1]))]])),]
+  
+  # return(graph)
+  
+  library(rdist)
+  print("step 1: euclidean fps ...")
+  
+  sampled_indices = c(1:nrow(points))
+  if(n_s_euclidean < nrow(points)){
+    sampled_indices = myFarthestPointSampling(points, k = n_s_euclidean)
+  }
+  
+  if(plot) {
+    points3d(points[sampled_indices,], size = 10, col = "green")
+  }
+  
+  sampled_indices2 = c(1:length(sampled_indices))
+  if(doGeo){
+    # furthermore subsample with the distances on the surface
+    print("step 2: surface distance of sampled points ...")
+    d_surface = myShortestDistances(graph,sampled_indices)
+    
+    print("step 3: surface fps ...")
+    # ??farthest_point_sampling
+    fps_surface <- farthest_point_sampling(d_surface)
+    sampled_indices2 = fps_surface[1:n_s_dijkstra]
+  } else {
+    d_surface = as.matrix(dist(points[sampled_indices2,]))
+  }
+    # rgl.open()
+    if(FALSE) plotDownsampledPoints(model_rgl,points,sampled_indices[sampled_indices2],FALSE, col = "blue", size = 51)
+    
+    v2 = myVoronoi(points[sampled_indices[sampled_indices2],], points)
+    v_n = v2/sum(v2)
+  
+  
+  l = list("centers" = points[sampled_indices[sampled_indices2],], "mu" = v_n, "indices_order" = sampled_indices[sampled_indices2], "d_surface" = d_surface[sampled_indices2,sampled_indices2], "sampled_indices_geo" = sampled_indices)
+  return(l)
+}
+
+
+# install.packages("geomorph")
+library(geomorph)
+
+
+# ob = read.ply("/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10/bed/test/bed_0516.ply")
+
+
+mod = downsampleEuclideanAndGetGeodesicModel10Net(objPath = "/home/willy/Manifold/examples/manifold.obj",
+                                                  n_s_euclidean = 100,
+                                                  n_s_dijkstra = 50,
+                                                  plot = TRUE,
+                                                  doGeo = TRUE)
+
+points3d(mod$centers, col = "blue", size = 20)
+
+
+model_rgl = read.obj("/home/willy/PredictingProteinInteractions/data/psb_db0-3/benchmark/db/0/m0/m0.obj", convert.rgl = FALSE)
+model_rgl_plot = read.obj("/home/willy/PredictingProteinInteractions/data/psb_db0-3/benchmark/db/0/m0/m0.obj", convert.rgl = TRUE)
+
+print("plotting")
+if(TRUE) shade3d(model_rgl_plot)
+
+points = t(model_rgl$shapes[[1]]$positions)
+edges = t(model_rgl$shapes[[1]]$indices)+1
+
+
+
+points3d(points, col = "blue", size = 20)
+
+
+obj = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10/bathtub/test/bathtub_0140.obj"
+path2Manifold = "/home/willy/Manifold/build/"
+manifoldCommand = "./manifold"
+args = paste(" ",obj," ",obj, " 2000 ", sep="")
+system(paste(path2Manifold,manifoldCommand,args, sep =""), ignore.stdout = TRUE, ignore.stderr = TRUE)
+
+?system
+
+
+mod = downsampleEuclideanAndGetGeodesicModel10Net(objPath = obj,
+                                                  n_s_euclidean = 100,
+                                                  n_s_dijkstra = 50,
+                                                  plot = TRUE,
+                                                  doGeo = TRUE)
+
+points3d(mod$centers, col = "blue", size = 20)
+
+
 
 
 

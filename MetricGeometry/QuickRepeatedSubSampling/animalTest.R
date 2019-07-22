@@ -10,6 +10,156 @@ source(s2)
 s3 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/helperFunctions.R"
 source(s3)
 
+downsampleEuclideanAndGetGeodesic <- function(objPath, n_s_euclidean = 4000, n_s_dijkstra = 50, plot = FALSE){
+  model_rgl = read.obj(objPath, convert.rgl = FALSE)
+  model_rgl_plot = read.obj(objPath, convert.rgl = TRUE)
+  
+  print("plotting")
+  if(plot) shade3d(model_rgl_plot)
+  points = t(model_rgl$shapes[[1]]$positions)
+  edges = t(model_rgl$shapes[[1]]$indices)+1
+  
+  # if(checkForLargerModel(path,proteinName = name,n_s_euclidean = n_s_euclidean, n_s_dijkstra = n_s_dijkstra) == FALSE)
+  print(paste("model has ", nrow(points),", ", nrow(edges), " points", sep ="" ))
+  
+  ob = preProcessMesh(points = points, edges = edges, plot = FALSE)
+  
+  print(paste("processed model has ", nrow(ob$points), "points", sep ="" ))
+  
+  graph = ob$graph
+  edges = ob$edges
+  
+  
+  library(rdist)
+  print("step 1: euclidean fps ...")
+  
+  sampled_indices = myFarthestPointSampling(points, k = n_s_euclidean)
+  if(plot) plotDownsampledPoints(model_rgl,ob$points,sampled_indices, plotModel = FALSE)
+  
+  # furthermore subsample with the distances on the surface
+  print("step 2: surface distance of sampled points ...")
+  d_surface = myShortestDistances(graph,sampled_indices)
+  
+  print("step 3: surface fps ...")
+  # ??farthest_point_sampling
+  fps_surface <- farthest_point_sampling(d_surface)
+  sampled_indices2 = fps_surface[1:n_s_dijkstra]
+  
+  # rgl.open()
+  if(plot) plotDownsampledPoints(model_rgl,points,sampled_indices[sampled_indices2],FALSE, col = "blue", size = 51)
+  
+  v2 = myVoronoi(points[sampled_indices[sampled_indices2],], points)
+  v_n = v2/sum(v2)
+  
+  l = list("centers" = points[sampled_indices[sampled_indices2],], "mu" = v_n, "indices_order" = sampled_indices[sampled_indices2], "d_surface" = d_surface[sampled_indices2,sampled_indices2], "sampled_indices_geo" = sampled_indices)
+  return(l)
+}
+
+# getGeoDistanceName <- function(path,ind,n_s_euclidean,n_s_dijkstra){
+#   return(paste(path,"/geoDist_ind_",ind, "_nE_", n_s_euclidean, "_nD_", n_s_dijkstra, ".csv", sep =""))
+# }
+# 
+# getGeoDistanceQuantileName <- function(path,ind,n_s_euclidean,n_s_dijkstra, n, m, q){
+#   return(paste(path,"/Quantiles_ind_",ind, "_nE_", n_s_euclidean, "_nD_", n_s_dijkstra,
+#                "_n_", n, "_m_", m, "_q_",q,".csv", sep =""))
+# }
+
+
+getAllModelsFromAnimal <- function(path = "/home/willy/PredictingProteinInteractions/data/animals/models/",
+                                   name = "camel",
+                                   n_s_euclidean = 100,
+                                   n_s_dijkstra = 50,
+                                   n = 10,
+                                   m = 3,
+                                   q = 1,
+                                   plot = TRUE){
+  
+  path_final = paste(path, "/", name, "-poses/", sep ="")
+  all.files = list.files(path_final, recursive = FALSE,pattern = ".obj", full.names = TRUE)
+  
+  all.names = list.files(path_final, recursive = FALSE,pattern = ".obj", full.names = FALSE)
+  all.names_final = unlist(strsplit(all.names, split = ".obj"))
+  
+  distances_path = paste(path_final,"/geoDistances/", sep ="")
+  if(!dir.exists(distances_path)) dir.create(distances_path)
+  
+  quantilesOut = data.frame(matrix(0,ncol = q+3, nrow = 0))
+  colnames(quantilesOut) = c("class", as.vector(paste(c("q"),c(1:(q+2)), sep = "")))
+  
+  for(i in 1:length(all.names_final)){
+    quantilesName = getGeoDistanceQuantileName(distances_path,i,n_s_euclidean,n_s_dijkstra,n = n,m = m,q = q)
+    if(!file.exists(quantilesName)){
+      geoDistanceName = getGeoDistanceName(distances_path,i,n_s_euclidean,n_s_dijkstra)
+      
+      if(!file.exists(geoDistanceName)){
+        mod = downsampleEuclideanAndGetGeodesic(objPath = all.files[i],
+                                                n_s_euclidean = n_s_euclidean,
+                                                n_s_dijkstra = n_s_dijkstra,
+                                                plot = plot)
+        
+        write.csv(x = mod$d_surface, file = geoDistanceName,row.names = FALSE)
+      }
+      
+      geoDist = read.csv(geoDistanceName)
+      
+      Fapp = generateF_approximations_3dModelWithMetric(d = geoDist,n = n,m = m,q = q)
+      
+      quantiles = data.frame(matrix(0,ncol = q+3, nrow = m))
+      colnames(quantiles) = c("class", as.vector(paste(c("q"),c(1:(q+2)), sep = "")))
+      
+      quantiles[,1] = rep(all.names_final[i], m)
+      for(i in 1:length(Fapp$F_app_list)){
+        quantiles[i,2:ncol(quantiles)] = Fapp$F_app_list[[i]]  
+      }
+      
+      write.csv(x = quantiles, quantilesName)
+    }
+    
+    quantiles = read.csv(quantilesName, row.names = 1)
+    
+    quantilesOut = rbind(quantilesOut,quantiles)
+  }
+  
+  return(quantilesOut)
+}
+
+n_s_euclidean = 300
+n_s_dijkstra = 50
+
+n = 48
+
+camel = getAllModelsFromAnimal(name = "camel",n_s_euclidean =n_s_euclidean,n_s_dijkstra = n_s_dijkstra, n = n,m = 100,q = 1)
+cat = getAllModelsFromAnimal(name = "cat",n_s_euclidean =n_s_euclidean,n_s_dijkstra = n_s_dijkstra, n = n,m = 100,q = 1)
+lion = getAllModelsFromAnimal(name = "lion",n_s_euclidean =n_s_euclidean,n_s_dijkstra = n_s_dijkstra, n = n,m = 100,q = 1)
+elephant = getAllModelsFromAnimal(name = "elephant",n_s_euclidean =n_s_euclidean,n_s_dijkstra = n_s_dijkstra, n = n,m = 100,q = 1)
+flam = getAllModelsFromAnimal(name = "flam",n_s_euclidean =n_s_euclidean,n_s_dijkstra = n_s_dijkstra, n = n,m = 100,q = 1)
+horse = getAllModelsFromAnimal(name = "horse",n_s_euclidean =n_s_euclidean,n_s_dijkstra = n_s_dijkstra, n = n,m = 100,q = 1)
+head = getAllModelsFromAnimal(name = "head",n_s_euclidean =n_s_euclidean,n_s_dijkstra = n_s_dijkstra, n = n,m = 100,q = 1)
+
+all_models = rbind(camel,cat,lion,elephant,flam,horse,head)
+
+write.csv(all_models,file ="/home/willy/PredictingProteinInteractions/data/animals/models/all_models_nE_200_nS_50_n_48_m_100_q_1.csv", row.names = FALSE)
+
+
+
+subClassNames = unique(camel[,1])
+colMap = c("black", "green", "yellow", "green", "pink", "red", "blue", "lightblue", "lightgreen", "brown", "grey")
+
+for(i in 1:length(colMap)){
+  inds = which(camel[,1] == subClassNames[i])
+  points3d(camel[inds,-1], col = colMap[i])
+}
+
+points3d(camel[,-1], col = "red")
+# points3d(camel[sample(c(1:nrow(camel)), size = 20),-1], col = "green", size = 10)
+
+points3d(cat[,-1], col = "orange")
+points3d(lion[,-1], col = "darkblue")
+points3d(elephant[,-1], col = "blue")
+points3d(horse[,-1], col = "yellow")
+points3d(flam[,-1], col = "black")
+# points3d(head[,-1], col = "lightgreen")
+
 
 generateF_approximations_3dModel <- function(model_points, n = 100, m = 10, q = 2, pos =TRUE){
   
@@ -25,6 +175,21 @@ generateF_approximations_3dModel <- function(model_points, n = 100, m = 10, q = 
   
   return(list("F_list" = pos13_F_list, "F_app_list" = pos13_F_approx_list))
 }
+
+# generateF_approximations_3dModelWithMetric <- function(d, n = 100, m = 10, q = 2, pos =TRUE){
+#   
+#   # print(nrow(model_points))
+#   
+#   pos13_F_list = list()
+#   pos13_F_approx_list = list()
+#   
+#   for(i in 1:m){
+#     pos13_F_list[[i]] = sampleDistancesAndCalculateCDFofEcWith(d, n = n,plot = FALSE)
+#     pos13_F_approx_list[[i]] = approximateCDF(pos13_F_list[[i]],q)
+#   }
+#   
+#   return(list("F_list" = pos13_F_list, "F_app_list" = pos13_F_approx_list))
+# }
 
 getAllModel_F_approximations <- function(model_vec, num, n = 100, m = 50, q = 2){
   
@@ -48,6 +213,10 @@ model_vec = getMemoliModelsInPath(n_s_euclidean = 4000, n_s_dijkstra = 50)
 
 # 5 values consecutive values form one model
 length(model_vec)
+
+points3d(model_vec[[4]])
+model_vec[[5]]
+
 
 models_all = getAllModel_F_approximations(model_vec, 72, n = n,m = m,q = q)
 
@@ -322,6 +491,10 @@ rf_default
 
 
 #------------------------------------------------------------------------------------------
-# readMnist
+# new approach again geodesic distances
 
+
+downsampleEuclideanAndGetGeodesic(objPath = "/home/willy/RedoxChallenges/MasterThesis/memoliModels/Models/camel-poses/camel-01.obj",
+                                  n_s_euclidean = 1000,
+                                  n_s_dijkstra = 50,plot = TRUE)
 

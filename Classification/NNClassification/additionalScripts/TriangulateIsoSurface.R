@@ -263,7 +263,7 @@ downsampleMemoliMethod <- function(model_rgl,points, edges, graph, n_s_euclidean
   
   v_n = v2/sum(v2)
   
-  l = list("centers" = points[sampled_indices[sampled_indices2],], "mu" = v_n, "indices_order" = sampled_indices[sampled_indices2])
+  l = list("centers" = points[sampled_indices[sampled_indices2],], "mu" = v_n, "indices_order" = sampled_indices[sampled_indices2], "d_surface" = d_surface[sampled_indices2,sampled_indices2], "sampled_indices_large" = sampled_indices)
   return(l)
 }
 
@@ -595,10 +595,6 @@ preProcessMesh <- function(points, edges, plot = FALSE){
   
   g = simplify(g, remove.multiple = TRUE, remove.loops = TRUE)
   
-
-  
-
-  
   bg = getBiggestConnectedComponent(g)
   
   if(plot){
@@ -747,19 +743,19 @@ getMemoliModel <- function(model_rgl,points, path = "", name="", edges, graph, m
     # but n_s_dijkstra has to be larger in another model. In that case we can use only the first few points
     # of that model
     
-    largerModelFile = c()
-    if(length(strfind(memoliOrderPath, "pos")) > 0){
-      largerModelFile = checkForLargerModel(path, name,n_s_euclidean, n_s_dijkstra, positive = TRUE)
-    } else {
-      largerModelFile = checkForLargerModel(path, name,n_s_euclidean, n_s_dijkstra, positive = FALSE)
-    }
+    # largerModelFile = c()
+    # if(length(strfind(memoliOrderPath, "pos")) > 0){
+    #   largerModelFile = checkForLargerModel(path, name,n_s_euclidean, n_s_dijkstra, positive = TRUE)
+    # } else {
+    #   largerModelFile = checkForLargerModel(path, name,n_s_euclidean, n_s_dijkstra, positive = FALSE)
+    # }
 
     mem = c()
-    if(largerModelFile == FALSE){
+    # if(largerModelFile == FALSE){
       mem = downsampleMemoliMethod(model_rgl, points = points, edges = edges, graph = graph,  n_s_euclidean = n_s_euclidean, n_s_dijkstra = n_s_dijkstra)
-    } else {
-      mem = getModelFromLargerModel(largerModelFile,points,n_s_dijkstra)
-    }
+    # } else {
+    #   mem = getModelFromLargerModel(largerModelFile,points,n_s_dijkstra)
+    # }
     
     
     print("writing model to file ...")
@@ -767,6 +763,8 @@ getMemoliModel <- function(model_rgl,points, path = "", name="", edges, graph, m
     write.table(mem$mu,file=memoliMuPath, row.names = FALSE, col.names = c("mu"))
     
     write.table(mem$indices_order, file = memoliOrderPath, row.names = FALSE, col.names = c("pointInd"))
+    
+    # write.table(mem$d_surface, file = memoliDSurfacePath)
   }
   
   pts = read.table(file = memoliPtsPath, header = TRUE, colClasses = c("numeric", "numeric", "numeric"), stringsAsFactors=FALSE)
@@ -775,7 +773,7 @@ getMemoliModel <- function(model_rgl,points, path = "", name="", edges, graph, m
 
   mu = as.numeric(mu2)
     
-  l = list("centers" = pts, "mu" = mu)
+  l = list("centers" = pts, "mu" = mu, "geoDistances" = mem$d_surface)
   return(l)
 }
 
@@ -812,10 +810,10 @@ getMemoliModel3 <- function(path = "/home/willy/RedoxChallenges/MasterThesis/mem
   memoliPtsPath = paste(memoliModelPath, "/PtsAndMu/", model_name, ext,  ".pts",sep ="")
   memoliMuPath = paste(memoliModelPath, "/PtsAndMu/", model_name, ext, ".mu",sep = "")
   
+  
   memoliOrderPath = paste(memoliModelPath, "/PtsAndMu/", model_name, ext, ".order",sep = "")
-  
-  
   memoliObjPath = paste(path, model_name, ".obj", sep ="")
+  
   
   horse_sampled = getMemoliModel2(memoliObjPath = memoliObjPath, memoliPtsPath = memoliPtsPath, memoliMuPath = memoliMuPath, memoliOrderPath = memoliOrderPath, n_s_euclidean = n_s_euclidean, n_s_dijkstra = n_s_dijkstra)
   

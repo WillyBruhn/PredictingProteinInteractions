@@ -60,3 +60,13 @@ getClassNamesFromSubClasses <- function(subClasses, splitPattern = "-"){
   
   return(classNames)
 }
+
+
+getGeoDistanceName <- function(path,ind,n_s_euclidean,n_s_dijkstra, fname = "geoDist"){
+  return(paste(path,"/",fname,"_ind_",ind, "_nE_", n_s_euclidean, "_nD_", n_s_dijkstra, ".csv", sep =""))
+}
+
+getGeoDistanceQuantileName <- function(path,ind,n_s_euclidean,n_s_dijkstra, n, m, q, fname = "Quantiles"){
+  return(paste(path,"/",fname,"_ind_",ind, "_nE_", n_s_euclidean, "_nD_", n_s_dijkstra,
+               "_n_", n, "_m_", m, "_q_",q,".csv", sep =""))
+}

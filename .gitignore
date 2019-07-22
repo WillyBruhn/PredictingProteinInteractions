@@ -25,3 +25,9 @@ data/nonRigidWorld/
 
 data/ModelNet10/
 data/animals/
+
+data/ModelNet10.zip
+data/ObjectNet3D_cads.zip
+data/ObjectNet3D_cads/
+data/psb_db0-3.zip
+data/psb_db0-3/

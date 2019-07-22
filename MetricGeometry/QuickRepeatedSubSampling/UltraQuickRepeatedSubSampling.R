@@ -238,6 +238,22 @@ plot2d_dist_approx <-function(pos13_F_approx_list, name=NULL, col = "red", xli =
   }
 }
 
+generateF_approximations_3dModelWithMetric <- function(d, n = 100, m = 10, q = 2, pos =TRUE){
+  
+  # print(nrow(model_points))
+  
+  pos13_F_list = list()
+  pos13_F_approx_list = list()
+  
+  for(i in 1:m){
+    pos13_F_list[[i]] = sampleDistancesAndCalculateCDFofEcWith(d, n = n,plot = FALSE)
+    pos13_F_approx_list[[i]] = approximateCDF(pos13_F_list[[i]],q)
+  }
+  
+  return(list("F_list" = pos13_F_list, "F_app_list" = pos13_F_approx_list))
+}
+
+
 generateF_approximations <- function(OutputPath, protName, n = 100, m = 10, q = 2, pos =TRUE){
   
   pos13 = read_pts_file(OutputPath = OutputPath,protName = protName, pos = pos)

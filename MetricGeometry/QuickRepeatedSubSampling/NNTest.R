@@ -30,6 +30,27 @@ unfold2dProj <- function(mat){
   return(distributions)
 }
 
+unfoldProjArbitraryDim <- function(mat){
+  # x, y
+  
+  distributions = data.frame(matrix(0,ncol = ncol(mat), nrow = nrow(mat)))
+  colnames(distributions) = c("class", seq(1:(ncol(mat)-1)))
+  
+  for(i in 1:nrow(mat)){
+    # name
+    distributions[i,1] = as.character(mat[i,1])
+    
+    # 1st quantile
+    distributions[i,2] = abs(mat[i,2])
+    for(j in 3:ncol(mat))
+    distributions[i,j] = distributions[i,j-1] + mat[i,j]
+  }
+  
+  return(distributions)
+}
+
+
+
 sampleDistributions <- function(mat1, k, classLabel, m, plot = FALSE, col = NULL){
   # mat1 ... points in 2d-space
   # simulate sampling m distributions  for k times
@@ -62,6 +83,8 @@ sampleDistributions <- function(mat1, k, classLabel, m, plot = FALSE, col = NULL
   
   return(dataOut)
 }
+
+
 
 generateExample1 <- function(){
   # emd vs geo
@@ -118,7 +141,7 @@ fitNNModel <- function(All, splitRatio = 0.8){
 # Example 1
 All = generateExample1()
 
-fitNNModel(All)
+# fitNNModel(All)
 
 
 #-----------------------------------------------------------------------------------------------
@@ -181,13 +204,13 @@ train = All[-inds,]
 #-----------------------------------------------------------------------
 # Example 3
 
-install_keras(method = c("auto", "virtualenv", "conda"),
-              conda = "auto", version = "default", tensorflow = "default",
-              extra_packages = c("tensorflow-hub"))
+# install_keras(method = c("auto", "virtualenv", "conda"),
+#               conda = "auto", version = "default", tensorflow = "default",
+#               extra_packages = c("tensorflow-hub"))
+# 
 
 
-
-install_keras(tensorflow = "gpu")
+# install_keras(tensorflow = "gpu")
 
 
 
@@ -244,7 +267,233 @@ dev.off()
 
 model %>% predict_classes(x_test)
 #----------------------------------------------------------------------------------------------------
+# 3dim
+getPointsArbitraryDim <- function(n1,mean1,sd1, className){
+  points = data.frame(matrix(rnorm(n1*length(mean1),mean = mean1, sd = sd1), ncol = length(mean1), byrow = TRUE))
+  
+  points = abs(points)
+  
+  points = cbind(rep(className,nrow(points)), points)
+  colnames(points)[1] = "class"
+  return(points)
+}
+
+
+sampleDistributionsArbitraryDim <- function(mat1, sampleTimes, m, sampleSize, plot = FALSE, col = NULL, pointPlotSize = 10){
+  # mat1 ... points in 2d-space
+  # simulate sampling m distributions  for k times
+  
+  dataOut = data.frame(matrix(0, ncol = sampleSize*(ncol(mat1)-1)+1, nrow = sampleTimes))
+  colnames(dataOut)[1] = "class"
+  
+  for(j in 1:sampleTimes){
+    mat1_sample = mat1[sample(nrow(mat1), size = sampleSize, replace = FALSE),]
+    if(plot == TRUE && ncol(mat1) == 3+1){
+      if(is.null(col)) col = "green"
+      points3d(x = mat1_sample[,2], y = mat1_sample[,3], z = mat1_sample[,4], pch = 19, size = pointPlotSize, col = col, add = TRUE)
+    }
+    
+    # print(mat1_sample[,1])
+    distributions = unfoldProjArbitraryDim(mat1_sample)
+    # distributions_ordered = distributions[order(distributions[,1]),]
+    
+    distributions_ordered = distributions[ do.call(order, distributions), ]
+    
+    # print(distributions_ordered)
+    
+    q = ncol(distributions_ordered)-1
+
+    # input-nodes
+    inputNodes = data.frame(matrix(0, ncol = q*sampleSize+1, nrow = 1))
+    inputNodes[1,1] = distributions[1,1]
+    colnames(inputNodes) = c("class", seq(1:(ncol(inputNodes)-1)))
+    
+
+    for( i in 1:sampleSize){
+      start = (i-1)*q+1+1
+      end = start+q-1
+
+      # print(paste(start,end))
+      length(distributions_ordered[i,])
+      # print(inputNodes)
+      inputNodes[1,start:end] = distributions_ordered[i,-1]
+    }
+
+    # print(inputNodes)
+    
+    dataOut[j,] = inputNodes
+  }
+  
+  return(dataOut)
+}
+
+plotBoth <- function(all){
+  classes = unique(all[,1])
+  
+  colMap = c("red", "blue", "yellow", "green", "pink","black")
+  for(i in 1:length(classes)){
+    pts = all[which(all[,1] == classes[i]),]
+    
+    print(pts[1,])
+    
+    flag = TRUE
+    if(i == 1) flag == FALSE
+    points3d(x = pts[,2], y = pts[,3], z = pts[,4], col = colMap[i], add = flag)
+  }
+}
+
+
+library(rgl)
 
 
 
+NNexampleArbitraryDim <- function(mat_both_sampled,trainTestSplit = 0.3, epochs = 300){
+  
+  inds = sample((1:nrow(mat_both_sampled)), size = nrow(mat_both_sampled)*trainTestSplit, replace = FALSE)
+  test = mat_both_sampled[inds,]
+  train = mat_both_sampled[-inds,]
+  
+  #----------------------------------------------------
+  y = train[,1]
+  
+  classLevels = unique(y)
+  numClasses = length(classLevels)
+  
+  y_train = as.numeric(as.factor(y))-1
+  x_train = as.matrix(train[,-1])
+  colnames(x_train) = seq(1:ncol(x_train))
+  
+  y_train <- to_categorical(y_train, numClasses)
+  
+  x_test = as.matrix(test[,-1])
+  y_test = as.numeric(as.factor(test[,1]))-1
+  y_test <- to_categorical(y_test, numClasses)
+  
+  model <- keras_model_sequential() 
+  model %>% 
+    layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_train))) %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 10, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 10, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = numClasses, activation = 'softmax')
+  
+  model %>% compile(
+    loss = 'categorical_crossentropy',
+    optimizer = optimizer_rmsprop(),
+    metrics = c('accuracy')
+  )
+  
+  history <- model %>% fit(
+    x_train, y_train, 
+    epochs = epochs, batch_size = 10, 
+    validation_split = 0.1
+  )
+  
+  return(model %>% evaluate(x_test, y_test))
+}
 
+#--------------------------------------
+# example1
+X1 = getPointsArbitraryDim(n1 = 1000, mean1 = c(0,0,0), sd1 = c(1,1,1), className = "X")
+Y1 = getPointsArbitraryDim(n1 = 1000, mean1 = c(1,0,0), sd1 = c(1,1,1), className = "Y")
+
+sampleSize = 100
+sampleTimes = 200
+
+both_all = rbind(X1,Y1)
+
+# plotBoth(both_all)
+X1_s = sampleDistributionsArbitraryDim(mat1 = X1,sampleTimes = sampleTimes,sampleSize = sampleSize, m = 10, plot = FALSE,pointPlotSize = 10)
+Y1_s = sampleDistributionsArbitraryDim(mat1 = Y1,sampleTimes = sampleTimes,sampleSize = sampleSize, m = 10, plot = FALSE,pointPlotSize = 10)
+
+mat_both_sampled = rbind(X1_s,Y1_s)
+
+NNexampleArbitraryDim(mat_both_sampled = mat_both_sampled,trainTestSplit = 0.3,epochs = 300)
+
+
+#--------------------------------------
+# example2
+X1 = getPointsArbitraryDim(n1 = 1000, mean1 = c(0,0,0), sd1 = c(1,1,1), className = "X")
+X2 = getPointsArbitraryDim(n1 = 1000, mean1 = c(0,1,0), sd1 = c(1,1,1), className = "X")
+X3 = getPointsArbitraryDim(n1 = 1000, mean1 = c(0,0,1), sd1 = c(1,1,1), className = "X")
+Y1 = getPointsArbitraryDim(n1 = 1000, mean1 = c(1,0,0), sd1 = c(1,1,1), className = "Y")
+
+sampleSize = 100
+sampleTimes = 200
+
+both_all = rbind(X1,Y1,X2,X3)
+
+# plotBoth(both_all)
+X1_s = sampleDistributionsArbitraryDim(mat1 = X1,sampleTimes = sampleTimes,sampleSize = sampleSize, m = 10, plot = FALSE,pointPlotSize = 10)
+X2_s = sampleDistributionsArbitraryDim(mat1 = X2,sampleTimes = sampleTimes,sampleSize = sampleSize, m = 10, plot = FALSE,pointPlotSize = 10)
+X3_s = sampleDistributionsArbitraryDim(mat1 = X3,sampleTimes = sampleTimes,sampleSize = sampleSize, m = 10, plot = FALSE,pointPlotSize = 10)
+# X1_s = sampleDistributionsArbitraryDim(mat1 = X1,sampleTimes = sampleTimes,sampleSize = sampleSize, m = 10, plot = FALSE,pointPlotSize = 10)
+
+Y1_s = sampleDistributionsArbitraryDim(mat1 = Y1,sampleTimes = sampleTimes,sampleSize = sampleSize, m = 10, plot = FALSE,pointPlotSize = 10)
+
+mat_both_sampled = rbind(X1_s,Y1_s,X2_s,X3_s)
+
+NNexampleArbitraryDim(mat_both_sampled = mat_both_sampled,trainTestSplit = 0.3,epochs = 30)
+# $loss
+# [1] 0.08430995
+# 
+# $acc
+# [1] 0.9833333
+
+#--------------------------------------
+# example3
+# this should not be possible to predict. If it separates the classes, then the method does not
+# work.
+X1 = getPointsArbitraryDim(n1 = 1000, mean1 = c(0,0,0), sd1 = c(1,1,1), className = "X")
+Y1 = getPointsArbitraryDim(n1 = 1000, mean1 = c(0,0,0), sd1 = c(1,1,1), className = "Y")
+
+sampleSize = 100
+sampleTimes = 200
+
+both_all = rbind(X1,Y1)
+
+# plotBoth(both_all)
+X1_s = sampleDistributionsArbitraryDim(mat1 = X1,sampleTimes = sampleTimes,sampleSize = sampleSize, m = 10, plot = FALSE,pointPlotSize = 10)
+Y1_s = sampleDistributionsArbitraryDim(mat1 = Y1,sampleTimes = sampleTimes,sampleSize = sampleSize, m = 10, plot = FALSE,pointPlotSize = 10)
+
+mat_both_sampled = rbind(X1_s,Y1_s)
+
+NNexampleArbitraryDim(mat_both_sampled = mat_both_sampled,trainTestSplit = 0.3,epochs = 30)
+# $loss
+# [1] 0.7091806
+# 
+# $acc
+# [1] 0.475
+
+
+#--------------------------------------
+# example4
+# more than two classes
+X1 = getPointsArbitraryDim(n1 = 1000, mean1 = c(0,0,0), sd1 = c(1,1,1), className = "X")
+Y1 = getPointsArbitraryDim(n1 = 1000, mean1 = c(0,0,0), sd1 = c(2,1,1), className = "Y")
+Z1 = getPointsArbitraryDim(n1 = 1000, mean1 = c(0,0,0), sd1 = c(1,2,1), className = "Z")
+P1 = getPointsArbitraryDim(n1 = 1000, mean1 = c(1,0,0), sd1 = c(1,1,1), className = "P")
+Q1 = getPointsArbitraryDim(n1 = 1000, mean1 = c(1,0,0), sd1 = c(1,2,1), className = "Q")
+sampleSize = 100
+sampleTimes = 200
+
+both_all = rbind(X1,Y1,Z1,P1,Q1)
+
+plotBoth(both_all)
+X1_s = sampleDistributionsArbitraryDim(mat1 = X1,sampleTimes = sampleTimes,sampleSize = sampleSize, m = 10, plot = FALSE,pointPlotSize = 10)
+Y1_s = sampleDistributionsArbitraryDim(mat1 = Y1,sampleTimes = sampleTimes,sampleSize = sampleSize, m = 10, plot = FALSE,pointPlotSize = 10)
+Z1_s = sampleDistributionsArbitraryDim(mat1 = Z1,sampleTimes = sampleTimes,sampleSize = sampleSize, m = 10, plot = FALSE,pointPlotSize = 10)
+P1_s = sampleDistributionsArbitraryDim(mat1 = P1,sampleTimes = sampleTimes,sampleSize = sampleSize, m = 10, plot = FALSE,pointPlotSize = 10)
+Q1_s = sampleDistributionsArbitraryDim(mat1 = Q1,sampleTimes = sampleTimes,sampleSize = sampleSize, m = 10, plot = FALSE,pointPlotSize = 10)
+
+mat_both_sampled = rbind(X1_s,Y1_s,Z1_s, P1_s, Q1_s)
+
+
+NNexampleArbitraryDim(mat_both_sampled = mat_both_sampled,trainTestSplit = 0.3,epochs = 300)
+# $loss
+# [1] 0.4626881
+# 
+# $acc
+# [1] 0.8866667

@@ -96,9 +96,6 @@ transformToNodes <- function(quantiles, sSize){
     start = (i-1)*qPlusTwo+1+1
     end = start+qPlusTwo-1
     
-    # print(paste(start,end))
-    # print(out[1,])
-    # print(quantiles[i,])
     out[1,start:end] = as.vector(quantiles[i,])
   }
   
@@ -131,50 +128,108 @@ getNNInputFromQuantiles <- function(quantiles,m, sampleSize=m, sampleTimes=1){
 }
 
 #------------------------------------------------------------------
+library(rgl)
 
-
-n = 100
-m = 1000
+n = 40
+m = 100
 q = 1
 
 sampleSize = 20
-sampleTimes = 100
+sampleTimes = 200
 
-path = "/home/willy/PredictingProteinInteractions/data/animals/"
-fName = "quantiles"
-quantiles = readQuantilesFromFile(path = path, fName = fName, n = n, m= m, q = q)
+# path = "/home/willy/PredictingProteinInteractions/data/animals/"
+# fName = "quantiles"
+# quantiles = readQuantilesFromFile(path = path, fName = fName, n = n, m= m, q = q)
 
-
-
-
+quantiles = read.csv(file ="/home/willy/PredictingProteinInteractions/data/animals/models/all_models_nE_200_nS_50_n_48_m_100_q_1.csv")
 
 
-NNInput = getNNInputFromQuantiles(quantiles,m,sampleSize = sampleSize,sampleTimes = sampleTimes)
+# df = quantiles
+# #
+# # df = readProjectionFromFile(n = n,m = m,q = q,path = "/home/willy/PredictingProteinInteractions/data/animals/",fName = "proj")
+# classes = unique(getClassNamesFromSubClasses(df[,1]))
+# colors = as.numeric(as.factor(classes))
+# colorMap = c("red", "blue", "green", "yellow", "black", "pink", "orange")
+# for(i in 1:length(colorMap)){
+#   print(paste(classes[i], colorMap[i]))
+# 
+#   if(!(classes[i] == "head")){
+#     inds = which(getClassNamesFromSubClasses(df[,1]) == classes[i])
+#     # print(inds)
+#     points3d(x = df[inds,2], y = df[inds,3], z = df[inds,4],colorMap[i], add = TRUE,size = 10)
+# 
+#     geox = sum(df[inds,2])/length(inds)
+#     geoy = sum(df[inds,3])/length(inds)
+#     geoz = sum(df[inds,4])/length(inds)
+# 
+#     textCoord = c(geox-0.1,geoy-0.1,geoz)
+#     if(classes[i] == "horse") {
+#       textCoord = c(geox+0.1,geoy+0.1,geoz)
+#       text3d(x = textCoord[1]+0.05, y = textCoord[2]+0.05, z = textCoord[3],texts = classes[i],cex = 2)
+#       
+#       arrow3d(p0 = textCoord, c(geox+0.05,geoy+0.05,geoz), col = "black")
+#     }else{
+#       text3d(x = textCoord[1]-0.05, y = textCoord[2]-0.05, z = textCoord[3],texts = classes[i],cex = 2)
+#       
+#       arrow3d(p0 = textCoord, c(geox-0.05,geoy-0.05,geoz), col = "black")
+#     }
+#     
+# 
+# 
+#   }
+# }
+# 
+# rgl.snapshot("/home/willy/PredictingProteinInteractions/Results/Images/animals3dProjectionExample.png")
 
-y = getClassNamesFromSubClasses(NNInput[,1],splitPattern = "-")
-
-classLevels = unique(y)
-numClasses = length(classLevels)
 
 
-y_train = as.numeric(as.factor(y))-1
-x_train = as.matrix(NNInput[,-1])
+
+subClassNames = unique(quantiles[,1])
+numObjects = length(subClassNames)
+
+numClasses = length(unique(getClassNamesFromSubClasses(quantiles[,1],splitPattern = "-")))
+
+subClassNames_test_ind = sample(c(1:numObjects), size = numObjects*0.3, replace = FALSE)
+subClassNames_test =subClassNames[subClassNames_test_ind]
+subClassNames_train =subClassNames[-subClassNames_test_ind]
 
 
+NNInput_train = getNNInputFromQuantiles(quantiles[which(quantiles[,1] %in% subClassNames_train),],
+                                        m,sampleSize = sampleSize,sampleTimes = sampleTimes)
+
+# install.packages("permute")
+library(permute)
+NNInput_train = NNInput_train[shuffle(1:nrow(NNInput_train)), ]
+
+NNInput_test = getNNInputFromQuantiles(quantiles[which(quantiles[,1] %in% subClassNames_test),],
+                                        m,sampleSize = sampleSize,sampleTimes = sampleTimes)
+
+y_train = getClassNamesFromSubClasses(NNInput_train[,1],splitPattern = "-")
+
+classLevels = unique(y_train)
+y_train = as.numeric(as.factor(y_train))-1
+x_train = as.matrix(NNInput_train[,-1])
 y_train <- to_categorical(y_train, numClasses)
+
+
+
+y_test = getClassNamesFromSubClasses(NNInput_test[,1],splitPattern = "-")
+y_test = as.numeric(as.factor(y_test))-1
+x_test = as.matrix(NNInput_test[,-1])
+y_test <- to_categorical(y_test, numClasses)
+
 
 # y_test <- to_categorical(y_test, 10)
 
 #---------------------------------------------------------
-model <- keras_model_sequential() 
+model <- keras_model_sequential()
 model %>% 
-  layer_dense(units = 120, activation = 'relu', input_shape = c(ncol(NNInput)-1)) %>% 
+  layer_dense(units = 300, activation = 'relu', input_shape = c(ncol(x_train))) %>% 
   layer_dropout(rate = 0.1) %>%
   layer_dense(units = 10, activation = 'relu') %>% 
   layer_dropout(rate = 0.1) %>%
   layer_dense(units = 10, activation = 'relu') %>% 
   layer_dropout(rate = 0.1) %>%
-  layer_dense(units = 10, activation = 'relu') %>% 
   layer_dense(units = numClasses, activation = 'softmax')
 
 model %>% compile(
@@ -183,13 +238,28 @@ model %>% compile(
   metrics = c('accuracy')
 )
 
+# history <- model %>% fit(
+#   x_train, y_train, 
+#   epochs = 30, batch_size = 10, 
+#   validation_split = 0.01
+# )
+
 history <- model %>% fit(
   x_train, y_train, 
-  epochs = 100, batch_size = 10, 
-  validation_split = 0.4
+  epochs = 30, batch_size = 10, 
+  validation_split = 0.2
 )
 
+model %>% evaluate(x_test, y_test)
 
-history$metrics$val_los
+# 4200/4200 [==============================] - 0s 27us/sample - loss: 0.0453 - acc: 0.9936
+# $loss
+# [1] 0.04529072
+# 
+# $acc
+# [1] 0.9935714
+
+
+
 
 

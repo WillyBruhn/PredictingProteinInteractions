@@ -114,6 +114,22 @@ samplePointsAndCalculateCDFofEc <- function(all_pts,n, plot = FALSE){
   return(F_)
 }
 
+sampleDistancesAndCalculateCDFofEcWith <- function(d,n, plot = FALSE){
+  if(nrow(d) < n ) print(paste("Error: n too large. nrow(d) = ", nrow(d), " < ", n, " = n", sep =""))
+  
+  sample_ind = sample(1:nrow(d), size = n, replace = FALSE)
+  
+  d_samp = d[sample_ind,sample_ind]
+  
+  F_ = DistributionOfEccentricities(d_samp)
+  
+  if(plot){
+    plot(F_)
+  }
+  
+  return(F_)
+}
+
 DifferenceOfIntegral <- function(F_,G_){
   # F_ ... ecdf
   # G_ ... ecdf
