@@ -401,7 +401,7 @@ models = getSurfaceSampledModels(smallDataSet)
 # # randomly sample and calculate DE
 quantiles = distributionOfDE(models = models,
                              n = 10,
-                             m =1000,
+                             m =100,
                              q = 1)
 
 
@@ -409,12 +409,19 @@ quantiles = distributionOfDE(models = models,
 
 quantiles = distributionOfDEAllLocalities(models = models,
                                            n = 12,
-                                           q = 1)
+                                           q = 10)
 
 
-# write.csv()
+quantOut = quantiles
 
+for(i in 1:nrow(quantiles)){
+  print(i/nrow(quantiles))
+  quantOut[i,2] = quantiles[i,2]
+  quantOut[i,3] = quantiles[i,3]-quantiles[i,2]
+  quantOut[i,4] = quantiles[i,4]-quantiles[i,3]
+}
 
+quantiles = quantOut
 
 
 sub = which(getClassNamesFromSubClasses(quantiles[,1], splitPattern = "_") %in% c("sofa"))
@@ -425,7 +432,7 @@ plotQuantiles(quantiles)
 
 subQuantiles = quantiles
 
-pca <- prcomp(subQuantiles[,2:4], center = TRUE,scale. = FALSE)$x
+pca <- prcomp(subQuantiles[,2:4], center = TRUE,scale. = TRUE)$x
 
 pca[,1] = pca[,1] - min(pca[,1])+1
 pca[,2] = pca[,2] - min(pca[,2])+1
@@ -438,12 +445,12 @@ logSubQuantiles[,3] = log(pca[,2])
 logSubQuantiles[,4] = log(pca[,3])
 
 plotQuantiles(logSubQuantiles)
-# plotQuantiles(quantiles)
+plotQuantiles(quantiles)
 
 which(quantiles[,1] %in% c("sofa_0001"))
 
-points3d(logSubQuantiles[which(quantiles[,1] %in% c("sofa_0001")),2:4], col = "blue", size = 20)
-points3d(logSubQuantiles[which(quantiles[,1] %in% c("table_0001")),2:4], col = "red", size = 20)
+points3d(logSubQuantiles[which(logSubQuantiles[,1] %in% c("sofa_0001")),2:4], col = "blue", size = 20)
+points3d(logSubQuantiles[which(logSubQuantiles[,1] %in% c("table_0001")),2:4], col = "red", size = 20)
 
 
 # points3d(x = logSubQuantiles[,2], y = logSubQuantiles[,3], z = logSubQuantiles[,4], col = "red", alpha = 0.7, aspect = c(1, 1, 0.5))
@@ -452,9 +459,9 @@ x_dim = c(min(logSubQuantiles[,2]),max(logSubQuantiles[,2]))
 y_dim = c(min(logSubQuantiles[,3]),max(logSubQuantiles[,3]))
 z_dim = c(min(logSubQuantiles[,4]),max(logSubQuantiles[,4]))
 
-d_x = x_dim[2]-x_dim[1]
-d_y = y_dim[2]-y_dim[1]
-d_z = z_dim[2]-z_dim[1]
+d_x = x_dim[2]-0
+d_y = y_dim[2]-0
+d_z = z_dim[2]-0
 
 d_x
 d_y
@@ -464,25 +471,22 @@ nZ = 100
 nY = nZ*d_y/d_z
 nX = nZ*d_x/d_z
 
-grid3d(c("x", "y+", "z"), n = c(nX,nY,nZ))
+g = grid3d(c("x", "y+", "z"), n = c(nX,nY,nZ))
 
 nZ*nY*nX
 
+g[1,1]
+
+for(i in 1:nX){
+  for(j in 1:nX){
+    for(k in 1:nX){
+      
+    } 
+  }
+}
 
 
 
-
-
-
-
-
-
-x <- 1:10
-y <- 1:10
-z <- matrix(outer(x - 5, y - 5) + rnorm(100), 10, 10)
-open3d()
-persp3d(x, y, z, col = "red", alpha = 0.7, aspect = c(1, 1, 0.5))
-grid3d(c("x", "y+", "z"))
 
 
 
