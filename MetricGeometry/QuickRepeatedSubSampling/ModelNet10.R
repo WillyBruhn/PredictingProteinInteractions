@@ -131,6 +131,11 @@ downsampleEuclideanAndGetGeodesicModel10Net <- function(objPath, n_s_euclidean =
   ob = preProcessMesh(points = points, edges = edges, plot = FALSE)
   print(paste("processed model has ", nrow(ob$points), "points", sep ="" ))
   
+  if(ob$numOfConComps != 1){
+    print(paste(" ... and ", ob$numOfConComps, " connected components.", sep =""))
+    return(NULL)
+  }
+  
   graph = ob$graph
   edges = ob$edges
   
@@ -208,27 +213,14 @@ getSmallDataSet <- function(dataSet,NumOfObjectsFromEachClass = 10){
   
   return(smallDataSet)
 }
-#------------------------------------------------------------------------
-n = 30
-m = 100
-q = 10
-
-pathToProjection = "/home/willy/PredictingProteinInteractions/data/ModelNet10/projections/"
-
-datasetPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10/"
-
-
-# get all the file names and information if it belongs to train or test
-# dataSet = getDataSet(datasetPath)
-
-
-smallDataSet = getSmallDataSet(dataSet,20)
-
-smallDataSet
 
 getSurfaceSampledModels <- function(dataSet, n_s_euclidean = 1000, n_s_dijkstra = 100, plot = TRUE){
   
+  models = list()
+  
   for(i in 1:nrow(dataSet)){
+    print(paste(dataSet[i,3], i/nrow(dataSet)))
+    
     # close all other rgl-windows
     while (rgl.cur() > 0) { rgl.close() }
     
@@ -245,78 +237,116 @@ getSurfaceSampledModels <- function(dataSet, n_s_euclidean = 1000, n_s_dijkstra 
     # check if distance-file allready exists
     if(!file.exists(distanceFile)){
       mod = downsampleEuclideanAndGetGeodesicModel10Net(objPath = dataSet[i,3], n_s_euclidean = n_s_euclidean, n_s_dijkstra = n_s_dijkstra, plot = plot)
-      write.csv(mod$d_surface,file = distanceFile, row.names = FALSE)
       
-      points3d(mod$centers, col = "blue", size = 20)
-      rgl.snapshot(paste(distancesDir, "/", dataSet[i,1], ".png", sep =""))
+      if(is.null(mod)){
+        # write.csv("NumberOfConCompsTooLarge",file = distanceFile, row.names = FALSE)
+      } else {
+        write.csv(mod$d_surface,file = distanceFile, row.names = FALSE)
+        
+        points3d(mod$centers, col = "blue", size = 20)
+        rgl.snapshot(paste(distancesDir, "/", dataSet[i,1], ".png", sep =""))
+      }
+    }
+    
+    info = file.info(distanceFile)
+    
+    if(info$size > 1){
+      distance_matrix = read.csv(distanceFile,header = TRUE)
+      
+      models[[i]] = list("d_surface" = distance_matrix, "name" = dataSet[i,1], "path" = dataSet[i,3], "n_s_euclidean" = n_s_euclidean, "n_s_dijkstra" = n_s_dijkstra)
     }
   }
+  
+  models[sapply(models, is.null)] <- NULL
+  
+  return(models)
+}
+
+distributionOfDE <- function(models,
+                             n = 10,
+                             m = 3,
+                             q = 1,
+                             plot = TRUE){
+  
+  quantilesOut = data.frame(matrix(0,ncol = q+3, nrow = 0))
+  colnames(quantilesOut) = c("class", as.vector(paste(c("q"),c(1:(q+2)), sep = "")))
+
+  for(i in 1:length(models)){
+    print(paste(models[[i]]$name, i/length(models)))
+    
+    path = strsplit(models[[i]]$path,split = models[[i]]$name)[[1]][1]
+    quantilesDir = paste(path, "/Quantiles/", sep = "")
+    
+    if(!dir.exists(quantilesDir)) dir.create(quantilesDir)
+    
+    quantilesName = getGeoDistanceQuantileName(quantilesDir,0,models[[i]]$n_s_euclidean,models[[i]]$n_s_dijkstra,n = n,m = m,q = q, fname = models[[i]]$name)
+    if(!file.exists(quantilesName)){
+      Fapp = generateF_approximations_3dModelWithMetric(d = models[[i]]$d_surface, n = n,m = m,q = q)
+
+      quantiles = data.frame(matrix(0,ncol = q+3, nrow = m))
+      colnames(quantiles) = c("class", as.vector(paste(c("q"),c(1:(q+2)), sep = "")))
+      
+      quantiles[,1] = rep(models[[i]]$name, m)
+      for(i in 1:length(Fapp$F_app_list)){
+        quantiles[i,2:ncol(quantiles)] = Fapp$F_app_list[[i]]  
+      }
+      
+      write.csv(x = quantiles, quantilesName)
+    }
+    quantiles = read.csv(quantilesName, row.names = 1)
+    
+    quantilesOut = rbind(quantilesOut,quantiles)
+  }
+  
+  return(quantilesOut)
+}
+#------------------------------------------------------------------------
+n = 30
+m = 100
+q = 10
+
+pathToProjection = "/home/willy/PredictingProteinInteractions/data/ModelNet10/projections/"
+
+datasetPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10/"
+
+
+# get all the file names and information if it belongs to train or test
+# dataSet = getDataSet(datasetPath)
+
+# get the first 20 models from each class
+smallDataSet = getSmallDataSet(dataSet,20)
+
+# apply farthest point sampling and store the geodesic distances
+models = getSurfaceSampledModels(smallDataSet)
+
+# randomly sample and calculate DE
+quantiles = distributionOfDE(models = models,
+                             n = 10,
+                             m =1000,
+                             q = 1)
+
+
+
+classes = getClassNamesFromSubClasses(quantiles[,1],splitPattern = "_")
+classLevels = unique(classes)
+numOfClasses = length(classLevels)
+
+colMap = c("red", "blue", "green", "black", "brown", "yellow", "pink", "lightgreen", "darkblue", "grey")
+
+
+for(i in 1:10){
+  inds = which(classes == classLevels[i])
+  points3d(quantiles[inds,-1], col = colMap[i])  
 }
 
 
-getSurfaceSampledModels(smallDataSet)
-
-
-mod = downsampleEuclideanAndGetGeodesicModel10Net(objPath = dataSetTrain[i,3], n_s_euclidean = 1000, n_s_dijkstra = 100, plot = TRUE)
-mod$
-
-
-unique(unlist(mod[[c(1:length(mod[1]))]]))
-
-
-points3d(mod$centers, col = "blue", size = 30)
 
 
 
 
 
 
-# install.packages("geomorph")
-library(geomorph)
 
-
-# ob = read.ply("/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10/bed/test/bed_0516.ply")
-
-
-mod = downsampleEuclideanAndGetGeodesicModel10Net(objPath = "/home/willy/Manifold/examples/manifold.obj",
-                                                  n_s_euclidean = 100,
-                                                  n_s_dijkstra = 50,
-                                                  plot = TRUE,
-                                                  doGeo = TRUE)
-
-points3d(mod$centers, col = "blue", size = 20)
-
-
-model_rgl = read.obj("/home/willy/PredictingProteinInteractions/data/psb_db0-3/benchmark/db/0/m0/m0.obj", convert.rgl = FALSE)
-model_rgl_plot = read.obj("/home/willy/PredictingProteinInteractions/data/psb_db0-3/benchmark/db/0/m0/m0.obj", convert.rgl = TRUE)
-
-print("plotting")
-if(TRUE) shade3d(model_rgl_plot)
-
-points = t(model_rgl$shapes[[1]]$positions)
-edges = t(model_rgl$shapes[[1]]$indices)+1
-
-
-
-points3d(points, col = "blue", size = 20)
-
-
-obj = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10/bathtub/test/bathtub_0140.obj"
-path2Manifold = "/home/willy/Manifold/build/"
-manifoldCommand = "./manifold"
-args = paste(" ",obj," ",obj, " 2000 ", sep="")
-system(paste(path2Manifold,manifoldCommand,args, sep =""), ignore.stdout = TRUE, ignore.stderr = TRUE)
-
-?system
-
-
-mod = downsampleEuclideanAndGetGeodesicModel10Net(objPath = obj,
-                                                  n_s_euclidean = 100,
-                                                  n_s_dijkstra = 50,
-                                                  plot = TRUE,
-                                                  doGeo = TRUE)
-
-points3d(mod$centers, col = "blue", size = 20)
 
 
 

@@ -595,6 +595,7 @@ preProcessMesh <- function(points, edges, plot = FALSE){
   
   g = simplify(g, remove.multiple = TRUE, remove.loops = TRUE)
   
+  numOfConComps = clusters(g)$no
   bg = getBiggestConnectedComponent(g)
   
   if(plot){
@@ -608,7 +609,7 @@ preProcessMesh <- function(points, edges, plot = FALSE){
   g = induced_subgraph(g,bg)
   # ob = makeMyEdges(points,l$edges)
 
-  return(list("points" = points, "edges" = ob$edges, "graph" = g))
+  return(list("points" = points, "edges" = ob$edges, "graph" = g, "numOfConComps" = numOfConComps))
 }
 
 # 
