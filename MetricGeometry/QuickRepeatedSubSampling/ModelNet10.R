@@ -239,7 +239,7 @@ getSurfaceSampledModels <- function(dataSet, n_s_euclidean = 1000, n_s_dijkstra 
       mod = downsampleEuclideanAndGetGeodesicModel10Net(objPath = dataSet[i,3], n_s_euclidean = n_s_euclidean, n_s_dijkstra = n_s_dijkstra, plot = plot)
       
       if(is.null(mod)){
-        # write.csv("NumberOfConCompsTooLarge",file = distanceFile, row.names = FALSE)
+        write.csv("",file = distanceFile, row.names = FALSE)
       } else {
         write.csv(mod$d_surface,file = distanceFile, row.names = FALSE)
         
@@ -249,6 +249,7 @@ getSurfaceSampledModels <- function(dataSet, n_s_euclidean = 1000, n_s_dijkstra 
     }
     
     info = file.info(distanceFile)
+    print(info)
     
     if(info$size > 1){
       distance_matrix = read.csv(distanceFile,header = TRUE)
@@ -263,6 +264,7 @@ getSurfaceSampledModels <- function(dataSet, n_s_euclidean = 1000, n_s_dijkstra 
 }
 
 distributionOfDE <- function(models,
+                             AllQuantilesPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/",
                              n = 10,
                              m = 3,
                              q = 1,
@@ -298,8 +300,85 @@ distributionOfDE <- function(models,
     quantilesOut = rbind(quantilesOut,quantiles)
   }
   
+  
+  if(!dir.exists(AllQuantilesPath)) dir.create(AllQuantilesPath)
+  allQuantiles = getGeoDistanceQuantileName(AllQuantilesPath,0,models[[1]]$n_s_euclidean,models[[1]]$n_s_dijkstra,n = n,m = m,q = q, fname = "All")
+  
+  write.csv(quantilesOut,allQuantiles)
+  
   return(quantilesOut)
 }
+
+distributionOfDEAllLocalities <- function( models,
+                                           AllQuantilesPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDir/",
+                                           n = 10,
+                                           m = 3,
+                                           q = 1,
+                                           plot = TRUE){
+  #-------------------------------------------------------------------------------
+  # for each point in the model take the closest n neighbors and calculate the DE
+  #-------------------------------------------------------------------------------
+  
+  quantilesOut = data.frame(matrix(0,ncol = q+3, nrow = 0))
+  colnames(quantilesOut) = c("class", as.vector(paste(c("q"),c(1:(q+2)), sep = "")))
+  
+  for(i in 1:length(models)){
+    print(paste(models[[i]]$name, i/length(models)))
+    
+    path = strsplit(models[[i]]$path,split = models[[i]]$name)[[1]][1]
+    quantilesDir = paste(path, "/QuantilesNearestNeighbors/", sep = "")
+    
+    quantilesName = getGeoDistanceQuantileName(quantilesDir,0,models[[i]]$n_s_euclidean,models[[i]]$n_s_dijkstra,n = n,m = m,q = q, fname = models[[i]]$name)
+    
+    if(!dir.exists(quantilesDir)) dir.create(quantilesDir)
+    
+    d_tmp = models[[i]]$d_surface
+    
+    if(!file.exists(quantilesName)){
+      Fapp = generateF_approximations_3dModelWithMetricAllAroundSurface(d = d_tmp, n = n, q = q)
+      
+      quantiles = data.frame(matrix(0,ncol = q+3, nrow = nrow(d_tmp)))
+      colnames(quantiles) = c("class", as.vector(paste(c("q"),c(1:(q+2)), sep = "")))
+      
+      quantiles[,1] = rep(models[[i]]$name, nrow(d_tmp))
+      for(i in 1:length(Fapp$F_app_list)){
+        quantiles[i,2:ncol(quantiles)] = Fapp$F_app_list[[i]]  
+      }
+      
+      write.csv(x = quantiles, quantilesName)
+    }
+    quantiles = read.csv(quantilesName, row.names = 1)
+    
+    quantilesOut = rbind(quantilesOut,quantiles)
+  }
+  
+  if(!dir.exists(AllQuantilesPath)) dir.create(AllQuantilesPath)
+  allQuantiles = getGeoDistanceQuantileName(AllQuantilesPath,0,models[[1]]$n_s_euclidean,models[[1]]$n_s_dijkstra,n = n,m = m,q = q, fname = "All")
+  
+  write.csv(quantilesOut,allQuantiles)
+  
+  return(quantilesOut)
+}
+
+
+plotQuantiles <- function(quantiles){
+  classes = getClassNamesFromSubClasses(quantiles[,1],splitPattern = "_")
+  classLevels = unique(classes)
+  numOfClasses = length(classLevels)
+  
+  print(classLevels)
+  
+  print(paste("number of classes: ", numOfClasses))
+  
+  colMap = c("red", "blue", "green", "black", "brown", "yellow", "pink", "lightgreen", "darkblue", "grey")
+  
+  
+  for(i in 1:numOfClasses){
+    inds = which(classes == classLevels[i])
+    points3d(quantiles[inds,-1], col = colMap[i])  
+  }
+}
+
 #------------------------------------------------------------------------
 n = 30
 m = 100
@@ -319,7 +398,7 @@ smallDataSet = getSmallDataSet(dataSet,20)
 # apply farthest point sampling and store the geodesic distances
 models = getSurfaceSampledModels(smallDataSet)
 
-# randomly sample and calculate DE
+# # randomly sample and calculate DE
 quantiles = distributionOfDE(models = models,
                              n = 10,
                              m =1000,
@@ -327,26 +406,83 @@ quantiles = distributionOfDE(models = models,
 
 
 
-classes = getClassNamesFromSubClasses(quantiles[,1],splitPattern = "_")
-classLevels = unique(classes)
-numOfClasses = length(classLevels)
 
-colMap = c("red", "blue", "green", "black", "brown", "yellow", "pink", "lightgreen", "darkblue", "grey")
+quantiles = distributionOfDEAllLocalities(models = models,
+                                           n = 12,
+                                           q = 1)
 
 
-for(i in 1:10){
-  inds = which(classes == classLevels[i])
-  points3d(quantiles[inds,-1], col = colMap[i])  
-}
+# write.csv()
 
 
 
 
+sub = which(getClassNamesFromSubClasses(quantiles[,1], splitPattern = "_") %in% c("sofa"))
+
+plotQuantiles(quantiles[sub,])
+plotQuantiles(quantiles)
+
+
+subQuantiles = quantiles
+
+pca <- prcomp(subQuantiles[,2:4], center = TRUE,scale. = FALSE)$x
+
+pca[,1] = pca[,1] - min(pca[,1])+1
+pca[,2] = pca[,2] - min(pca[,2])+1
+pca[,3] = pca[,3] - min(pca[,3])+1
+
+logSubQuantiles = quantiles
+
+logSubQuantiles[,2] = log(pca[,1])
+logSubQuantiles[,3] = log(pca[,2])
+logSubQuantiles[,4] = log(pca[,3])
+
+plotQuantiles(logSubQuantiles)
+# plotQuantiles(quantiles)
+
+which(quantiles[,1] %in% c("sofa_0001"))
+
+points3d(logSubQuantiles[which(quantiles[,1] %in% c("sofa_0001")),2:4], col = "blue", size = 20)
+points3d(logSubQuantiles[which(quantiles[,1] %in% c("table_0001")),2:4], col = "red", size = 20)
+
+
+# points3d(x = logSubQuantiles[,2], y = logSubQuantiles[,3], z = logSubQuantiles[,4], col = "red", alpha = 0.7, aspect = c(1, 1, 0.5))
+
+x_dim = c(min(logSubQuantiles[,2]),max(logSubQuantiles[,2]))
+y_dim = c(min(logSubQuantiles[,3]),max(logSubQuantiles[,3]))
+z_dim = c(min(logSubQuantiles[,4]),max(logSubQuantiles[,4]))
+
+d_x = x_dim[2]-x_dim[1]
+d_y = y_dim[2]-y_dim[1]
+d_z = z_dim[2]-z_dim[1]
+
+d_x
+d_y
+d_z
+
+nZ = 100
+nY = nZ*d_y/d_z
+nX = nZ*d_x/d_z
+
+grid3d(c("x", "y+", "z"), n = c(nX,nY,nZ))
+
+nZ*nY*nX
 
 
 
 
 
+
+
+
+
+
+x <- 1:10
+y <- 1:10
+z <- matrix(outer(x - 5, y - 5) + rnorm(100), 10, 10)
+open3d()
+persp3d(x, y, z, col = "red", alpha = 0.7, aspect = c(1, 1, 0.5))
+grid3d(c("x", "y+", "z"))
 
 
 

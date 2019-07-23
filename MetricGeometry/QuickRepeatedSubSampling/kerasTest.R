@@ -259,6 +259,195 @@ model %>% evaluate(x_test, y_test)
 # $acc
 # [1] 0.9935714
 
+#-------------------------------------------------------------------------------------------------------------
+# ModelNet10
+# example bathtub vs toilet
+#
+
+sampleSize = 20
+m = 100
+sampleTimes = 100
+
+
+# fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDir/All_ind_0_nE_1000_nD_100_n_90_m_3_q_1.csv"
+#
+fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDir/All_ind_0_nE_1000_nD_100_n_12_m_3_q_1.csv"
+quantiles = read.csv(file =fName, header = TRUE, row.names = 1)
+
+sub = which(getClassNamesFromSubClasses(quantiles[,1], splitPattern = "_") %in% c("bathtub", "toilet"))
+quantiles = quantiles[sub,]
+
+subClassNames = unique(quantiles[,1])
+numObjects = length(subClassNames)
+
+numClasses = length(unique(getClassNamesFromSubClasses(quantiles[,1],splitPattern = "_")))
+
+subClassNames_test_ind = sample(c(1:numObjects), size = numObjects*0.1, replace = FALSE)
+subClassNames_test =subClassNames[subClassNames_test_ind]
+subClassNames_train =subClassNames[-subClassNames_test_ind]
+
+
+NNInput_train = getNNInputFromQuantiles(quantiles[which(quantiles[,1] %in% subClassNames_train),],
+                                        m = m,
+                                        sampleSize = sampleSize,
+                                        sampleTimes = sampleTimes)
+
+# install.packages("permute")
+library(permute)
+NNInput_train = NNInput_train[shuffle(1:nrow(NNInput_train)), ]
+
+NNInput_test = getNNInputFromQuantiles(quantiles[which(quantiles[,1] %in% subClassNames_test),],
+                                       m,sampleSize = sampleSize,sampleTimes = sampleTimes)
+
+y_train = getClassNamesFromSubClasses(NNInput_train[,1],splitPattern = "_")
+
+classLevels = unique(y_train)
+y_train = as.numeric(as.factor(y_train))-1
+x_train = as.matrix(NNInput_train[,-1])
+y_train <- to_categorical(y_train, numClasses)
+
+
+
+y_test = getClassNamesFromSubClasses(NNInput_test[,1],splitPattern = "_")
+y_test = as.numeric(as.factor(y_test))-1
+x_test = as.matrix(NNInput_test[,-1])
+y_test <- to_categorical(y_test, numClasses)
+
+
+# y_test <- to_categorical(y_test, 10)
+
+#---------------------------------------------------------
+model <- keras_model_sequential()
+model %>% 
+  layer_dense(units = 300, activation = 'relu', input_shape = c(ncol(x_train))) %>% 
+  layer_dropout(rate = 0.1) %>%
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_dropout(rate = 0.1) %>%
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_dropout(rate = 0.1) %>%
+  layer_dense(units = 10, activation = 'relu') %>% 
+  layer_dropout(rate = 0.1) %>%
+  layer_dense(units = numClasses, activation = 'softmax')
+
+model %>% compile(
+  loss = 'categorical_crossentropy',
+  optimizer = optimizer_rmsprop(),
+  metrics = c('accuracy')
+)
+
+# history <- model %>% fit(
+#   x_train, y_train, 
+#   epochs = 30, batch_size = 10, 
+#   validation_split = 0.01
+# )
+
+history <- model %>% fit(
+  x_train, y_train, 
+  epochs = 50, batch_size = 10, 
+  validation_split = 0.2
+)
+
+model %>% evaluate(x_test, y_test)
+# $loss
+# [1] 0.3235773
+# 
+# $acc
+# [1] 0.865
+
+#-------------------------------------------------------------------------------------------------------------
+# ModelNet10
+# example bathtub vs toilet
+#
+
+sampleSize = 20
+m = 100
+sampleTimes = 100
+
+
+# fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDir/All_ind_0_nE_1000_nD_100_n_90_m_3_q_1.csv"
+#
+fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDir/All_ind_0_nE_1000_nD_100_n_12_m_3_q_1.csv"
+quantiles = read.csv(file =fName, header = TRUE, row.names = 1)
+
+sub = which(getClassNamesFromSubClasses(quantiles[,1], splitPattern = "_") %in% c("bathtub", "toilet", "sofa"))
+quantiles = quantiles[sub,]
+
+subClassNames = unique(quantiles[,1])
+numObjects = length(subClassNames)
+
+numClasses = length(unique(getClassNamesFromSubClasses(quantiles[,1],splitPattern = "_")))
+
+subClassNames_test_ind = sample(c(1:numObjects), size = numObjects*0.1, replace = FALSE)
+subClassNames_test =subClassNames[subClassNames_test_ind]
+subClassNames_train =subClassNames[-subClassNames_test_ind]
+
+
+NNInput_train = getNNInputFromQuantiles(quantiles[which(quantiles[,1] %in% subClassNames_train),],
+                                        m = m,
+                                        sampleSize = sampleSize,
+                                        sampleTimes = sampleTimes)
+
+# install.packages("permute")
+library(permute)
+NNInput_train = NNInput_train[shuffle(1:nrow(NNInput_train)), ]
+
+NNInput_test = getNNInputFromQuantiles(quantiles[which(quantiles[,1] %in% subClassNames_test),],
+                                       m,sampleSize = sampleSize,sampleTimes = sampleTimes)
+
+y_train = getClassNamesFromSubClasses(NNInput_train[,1],splitPattern = "_")
+
+classLevels = unique(y_train)
+y_train = as.numeric(as.factor(y_train))-1
+x_train = as.matrix(NNInput_train[,-1])
+y_train <- to_categorical(y_train, numClasses)
+
+
+
+y_test = getClassNamesFromSubClasses(NNInput_test[,1],splitPattern = "_")
+y_test = as.numeric(as.factor(y_test))-1
+x_test = as.matrix(NNInput_test[,-1])
+y_test <- to_categorical(y_test, numClasses)
+
+
+# y_test <- to_categorical(y_test, 10)
+
+#---------------------------------------------------------
+model <- keras_model_sequential()
+model %>% 
+  layer_dense(units = 300, activation = 'relu', input_shape = c(ncol(x_train))) %>% 
+  layer_dropout(rate = 0.1) %>%
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_dropout(rate = 0.1) %>%
+  layer_dense(units = 100, activation = 'relu') %>% 
+  layer_dropout(rate = 0.1) %>%
+  layer_dense(units = 10, activation = 'relu') %>% 
+  layer_dropout(rate = 0.1) %>%
+  layer_dense(units = numClasses, activation = 'softmax')
+
+# ?layer_global_average_pooling_1d
+
+model %>% compile(
+  loss = 'categorical_crossentropy',
+  optimizer = optimizer_rmsprop(),
+  metrics = c('accuracy')
+)
+
+# history <- model %>% fit(
+#   x_train, y_train, 
+#   epochs = 30, batch_size = 10, 
+#   validation_split = 0.01
+# )
+
+history <- model %>% fit(
+  x_train, y_train, 
+  epochs = 50, batch_size = 10, 
+  validation_split = 0.2
+)
+
+model %>% evaluate(x_test, y_test)
+
+#---------------------------------------------------------------------------------------------
+# 3d-convolution 
 
 
 

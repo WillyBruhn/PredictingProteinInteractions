@@ -254,6 +254,57 @@ generateF_approximations_3dModelWithMetric <- function(d, n = 100, m = 10, q = 2
 }
 
 
+library(FNN)
+
+# 
+# m = matrix(seq(1:25), ncol = 5)
+# 
+# m[c(1,4),c(1,4)]
+# for(i in 1:5){
+#   m[i,i] = 0
+# }
+# 
+# for(i in 1:5){
+#   for(j in 1:5){
+#     m[i,j] = m[j,i]
+#   }
+# }
+# 
+# m
+# 
+# NN_indices = get.knn(m,k = 3)$nn.index
+# NN_indices
+
+
+generateF_approximations_3dModelWithMetricAllAroundSurface <- function(d, n = 10, q = 1){
+  #-------------------------------------------------------------------------------
+  # for each point in the model take the closest n neighbors and calculate the DE
+  #-------------------------------------------------------------------------------
+  
+  F_list = list()
+  F_list_approx = list()
+  
+  if( n == nrow(d)){
+    F_list[[1]] = DistributionOfEccentricities(d)
+    F_list_approx[[1]] = approximateCDF(F_list[[1]],q)
+  } else {  
+    NN_indices = get.knn(d,k = n-1)$nn.index
+  
+    for(i in 1:nrow(d)){
+      inds = c(i,NN_indices[i,])
+      d_NN = d[inds,inds]
+      
+      F_list[[i]] = DistributionOfEccentricities(d_NN)
+      F_list_approx[[i]] = approximateCDF(F_list[[i]],q)
+    }
+  }
+  
+
+  
+  return(list("F_list" = F_list, "F_app_list" = F_list_approx))
+}
+
+
 generateF_approximations <- function(OutputPath, protName, n = 100, m = 10, q = 2, pos =TRUE){
   
   pos13 = read_pts_file(OutputPath = OutputPath,protName = protName, pos = pos)
