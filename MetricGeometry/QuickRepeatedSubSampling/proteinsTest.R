@@ -154,6 +154,11 @@ getAllModelsProteinWrapper <- function(path = "/home/willy/Schreibtisch/106Test/
   quantilesOut = data.frame(matrix(0,ncol = q+3, nrow = 0), stringsAsFactors = FALSE)
   colnames(quantilesOut) = c("class", as.vector(paste(c("q"),c(1:(q+2)), sep = "")))
   
+  QuantPath = paste(strsplit(path, "/Output/")[[1]][1],"/QuantileDistances/",sep = "")
+  if(!dir.exists(QuantPath)) dir.create(QuantPath)
+  
+  quantFile = getGeoDistanceQuantileName(path = QuantPath,ind = 0,n_s_euclidean = n_s_euclidean, n_s_dijkstra = n_s_dijkstra,n = n,m = m,q = q,fname = "quant")
+  
   for(i in 1:length(prot_names)){
     print(prot_names[i])
     
@@ -168,6 +173,8 @@ getAllModelsProteinWrapper <- function(path = "/home/willy/Schreibtisch/106Test/
     
     quantilesOut = rbind(quantilesOut,quant)
   }
+  
+  write.csv(quantilesOut,quantFile)
   
   return(quantilesOut)
 }
@@ -187,9 +194,9 @@ name = "000_Trx"
 # quantiles = getAllModelsProtein(path = path, name = "000_Trx",n_s_euclidean = 900,n_s_dijkstra = 500,n = 450,m = 500, q = 1,plot = TRUE)
 # points3d(trx)
 
-proteins = list.dirs(path = path, recursive = FALSE, full.names = FALSE)[1:14]
+proteins = list.dirs(path = path, recursive = FALSE, full.names = FALSE)[1:15]
 
-proteins = c("046", "016","013", "027", proteins)
+# proteins = c("046", "016","013", "027", proteins)
 
 quantiles = getAllModelsProteinWrapper(path = path,
                            prot_names =  proteins,
@@ -199,6 +206,7 @@ quantiles = getAllModelsProteinWrapper(path = path,
                            m = m,
                            q = q,
                            FALSE)
+
 
 
 while (rgl.cur() > 0) { rgl.close() }

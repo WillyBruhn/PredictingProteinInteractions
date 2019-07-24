@@ -593,7 +593,9 @@ preProcessMesh <- function(points, edges, plot = FALSE){
   
   g = set_edge_attr(g, "weight", index=E(g), weights2)
   
-  g = simplify(g, remove.multiple = TRUE, remove.loops = TRUE)
+  print(g)
+  
+  g = igraph::simplify(g, remove.multiple = TRUE, remove.loops = TRUE)
   
   numOfConComps = clusters(g)$no
   bg = getBiggestConnectedComponent(g)
