@@ -120,7 +120,7 @@ getAllModels <- function(dataSet, maxNum = NULL){
 #                                             plot = TRUE)
 
 
-downsampleEuclideanAndGetGeodesicModel10Net <- function(objPath, n_s_euclidean = 4000, n_s_dijkstra = 50, plot = FALSE, doGeo = TRUE){
+downsampleEuclideanAndGetGeodesicModel10Net <- function(objPath, n_s_euclidean = 4000, n_s_dijkstra = 50, plot = FALSE){
   model_rgl = read.obj(objPath, convert.rgl = FALSE)
   model_rgl_plot = read.obj(objPath, convert.rgl = TRUE)
   
@@ -169,18 +169,15 @@ downsampleEuclideanAndGetGeodesicModel10Net <- function(objPath, n_s_euclidean =
   }
   
   sampled_indices2 = c(1:length(sampled_indices))
-  if(doGeo){
-    # furthermore subsample with the distances on the surface
-    print("step 2: surface distance of sampled points ...")
-    d_surface = myShortestDistances(graph,sampled_indices)
-    
-    print("step 3: surface fps ...")
-    # ??farthest_point_sampling
-    fps_surface <- farthest_point_sampling(d_surface)
-    sampled_indices2 = fps_surface[1:n_s_dijkstra]
-  } else {
-    d_surface = as.matrix(dist(points[sampled_indices2,]))
-  }
+  # furthermore subsample with the distances on the surface
+  print("step 2: surface distance of sampled points ...")
+  d_surface = myShortestDistances(graph,sampled_indices)
+  
+  print("step 3: surface fps ...")
+  # ??farthest_point_sampling
+  fps_surface <- farthest_point_sampling(d_surface)
+  sampled_indices2 = fps_surface[1:n_s_dijkstra]
+
   # rgl.open()
   if(FALSE) plotDownsampledPoints(model_rgl,points,sampled_indices[sampled_indices2],FALSE, col = "blue", size = 51)
   
@@ -188,7 +185,9 @@ downsampleEuclideanAndGetGeodesicModel10Net <- function(objPath, n_s_euclidean =
   v_n = v2/sum(v2)
   
   
-  l = list("centers" = points[sampled_indices[sampled_indices2],], "mu" = v_n, "indices_order" = sampled_indices[sampled_indices2], "d_surface" = d_surface[sampled_indices2,sampled_indices2], "sampled_indices_geo" = sampled_indices)
+  d_euclid = as.matrix(dist(x = points[sampled_indices[sampled_indices2],]))
+  
+  l = list("centers" = points[sampled_indices[sampled_indices2],], "mu" = v_n, "indices_order" = sampled_indices[sampled_indices2], "d_surface" = d_surface[sampled_indices2,sampled_indices2], "sampled_indices_geo" = sampled_indices, "d_euclid" = d_euclid)
   return(l)
 }
 
@@ -243,16 +242,19 @@ getSurfaceSampledModels <- function(dataSet, n_s_euclidean = 1000, n_s_dijkstra 
     distancesDir = paste(dir, "/Distances/", sep ="")
     if(!dir.exists(distancesDir)) dir.create(distancesDir)
     
-    distanceFile = getGeoDistanceName(path = distancesDir,ind = 0,n_s_euclidean = n_s_euclidean,n_s_dijkstra = n_s_dijkstra,fname = dataSet[i,1])
+    distanceFile_surf = getGeoDistanceName(path = distancesDir,ind = 0,n_s_euclidean = n_s_euclidean,n_s_dijkstra = n_s_dijkstra,fname = paste(dataSet[i,1],"_surf",sep = ""))
+    distanceFile_euclid = getGeoDistanceName(path = distancesDir,ind = 0,n_s_euclidean = n_s_euclidean,n_s_dijkstra = n_s_dijkstra,fname = paste(dataSet[i,1],"_euclid",sep = ""))
     
     # check if distance-file allready exists
-    if(!file.exists(distanceFile)){
+    if(!file.exists(distanceFile_surf) || !file.exists(distanceFile_euclid) ){
       mod = downsampleEuclideanAndGetGeodesicModel10Net(objPath = dataSet[i,3], n_s_euclidean = n_s_euclidean, n_s_dijkstra = n_s_dijkstra, plot = plot)
       
       if(is.null(mod)){
-        write.csv("",file = distanceFile, row.names = FALSE)
+        write.csv("",file = distanceFile_surf, row.names = FALSE)
+        write.csv("",file = distanceFile_euclid, row.names = FALSE)
       } else {
-        write.csv(mod$d_surface,file = distanceFile, row.names = FALSE)
+        write.csv(mod$d_surface,file = distanceFile_surf, row.names = FALSE)
+        write.csv(mod$d_euclid,file = distanceFile_euclid, row.names = FALSE)
         
         if(plot) {
           points3d(mod$centers, col = "blue", size = 20)
@@ -261,13 +263,14 @@ getSurfaceSampledModels <- function(dataSet, n_s_euclidean = 1000, n_s_dijkstra 
       }
     }
     
-    info = file.info(distanceFile)
-    print(info)
+    info_surf = file.info(distanceFile_surf)
+    info_euclid = file.info(distanceFile_euclid)
     
-    if(info$size > 1){
-      distance_matrix = read.csv(distanceFile,header = TRUE)
+    if(info_surf$size > 1 && info_euclid$size){
+      distance_matrix_surf = read.csv(distanceFile_surf,header = TRUE)
+      distance_matrix_euclid = read.csv(distanceFile_euclid,header = TRUE)
       
-      models[[i]] = list("d_surface" = distance_matrix, "name" = dataSet[i,1], "path" = dataSet[i,3], "n_s_euclidean" = n_s_euclidean, "n_s_dijkstra" = n_s_dijkstra)
+      models[[i]] = list("d_surface" = distance_matrix_surf, "d_euclid" = distance_matrix_euclid, "name" = dataSet[i,1], "path" = dataSet[i,3], "n_s_euclidean" = n_s_euclidean, "n_s_dijkstra" = n_s_dijkstra)
     }
   }
   
@@ -297,14 +300,16 @@ distributionOfDE <- function(models,
     
     quantilesName = getGeoDistanceQuantileName(quantilesDir,0,models[[i]]$n_s_euclidean,models[[i]]$n_s_dijkstra,n = n,m = m,q = q, fname = models[[i]]$name)
     if(!file.exists(quantilesName)){
-      Fapp = generateF_approximations_3dModelWithMetric(d = models[[i]]$d_surface, n = n,m = m,q = q)
+      Fapp = generateF_approximations_3dModelWithMetric(d_surface = models[[i]]$d_surface, d_euclid = models[[i]]$d_euclid, n = n,m = m,q = q)
 
-      quantiles = data.frame(matrix(0,ncol = q+3, nrow = m))
-      colnames(quantiles) = c("class", as.vector(paste(c("q"),c(1:(q+2)), sep = "")))
+      # q+2 quantiles per distance + 1 name
+      quantiles = data.frame(matrix(0,ncol = (q+2)*2+1, nrow = m))
+      colnames(quantiles) = c("class", as.vector(paste(c("q"),c(1:(q+2)), sep = "")), as.vector(paste(c("q_euc"),c(1:(q+2)), sep = "")))
       
       quantiles[,1] = rep(models[[i]]$name, m)
       for(i in 1:length(Fapp$F_app_list)){
-        quantiles[i,2:ncol(quantiles)] = Fapp$F_app_list[[i]]  
+        quantiles[i,2:(q+3)] = Fapp$F_app_list[[i]]
+        quantiles[i,(q+4):ncol(quantiles)] = Fapp$F_app_euclid[[i]]
       }
       
       write.csv(x = quantiles, quantilesName)
@@ -389,7 +394,8 @@ plotQuantiles <- function(quantiles){
   
   for(i in 1:numOfClasses){
     inds = which(classes == classLevels[i])
-    points3d(quantiles[inds,-1], col = colMap[i])  
+    points3d(quantiles[inds,2:4], col = colMap[(i-1)*2+1])
+    points3d(quantiles[inds,5:7], col = colMap[(i-1)*2+2])
   }
 }
 
@@ -407,35 +413,58 @@ datasetPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNe
 dataSet = getDataSet(datasetPath)
 
 # get the first 20 models from each class
-smallDataSet = getSmallDataSet(dataSet,40)
+smallDataSet = getSmallDataSet(dataSet,5)
 
 
 smallDataSet = na.omit(smallDataSet)
 
 nrow(smallDataSet)
 
-# sub = which(getClassNamesFromSubClasses(smallDataSet[,1], splitPattern = "_") %in% c("bathtub", "toilet", "sofa", "table"))
-sub = which(getClassNamesFromSubClasses(smallDataSet[,1], splitPattern = "_") %in% c("toilet", "sofa"))
+sub = which(getClassNamesFromSubClasses(smallDataSet[,1], splitPattern = "_") %in% c("bathtub", "toilet", "sofa", "table"))
+# sub = which(getClassNamesFromSubClasses(smallDataSet[,1], splitPattern = "_") %in% c("bathtub", "toilet"))
 smallDataSet = smallDataSet[sub,]
 
 
+# smallDataSet[1,]
+
 # apply farthest point sampling and store the geodesic distances
-models = getSurfaceSampledModels(smallDataSet,plot = FALSE)
+models = getSurfaceSampledModels(smallDataSet,plot = FALSE,n_s_euclidean = 1000,n_s_dijkstra = 50)
 
 
-# for(i in 1:length(models)){
-#   if(nrow(models[[i]]$d_surface) == 0) print(i)
-# }
-# 
+for(i in 1:length(models)){
+  if(nrow(models[[i]]$d_surface) == 0 || nrow(models[[i]]$d_euclid) == 0) {
+    print(i)
+    models[[i]] <- NULL
+    i = i-1
+  }
+}
+
+# length(models)
 
 
 # # randomly sample and calculate DE
 quantiles = distributionOfDE(models = models,
-                             n = 90,
-                             m =200,
-                             q = 10)
+                             n = 48,
+                             m =2,
+                             q = 1)
 
-# plotQuantiles(quantiles)
+
+
+
+
+plotQuantiles(quantiles)
+
+# i = 10
+# points3d(x = quantiles[i,2], y = quantiles[i,3], z = quantiles[i,4], col = "black", size = 10)
+# points3d(x = quantiles[i,5], y = quantiles[i,6], z = quantiles[i,7], col = "black", size = 10)
+# 
+# i = 11
+# points3d(x = quantiles[i,2], y = quantiles[i,3], z = quantiles[i,4], col = "red", size = 10)
+# points3d(x = quantiles[i,5], y = quantiles[i,6], z = quantiles[i,7], col = "red", size = 10)
+
+plot3Examples(quantiles)
+
+
 quantilesLocal = distributionOfDEAllLocalities(models = models,
                                              n = 10,
                                              q = 1)
@@ -478,15 +507,19 @@ plot3Examples <- function(quantiles){
   plotQuantiles(quantiles)
   inds2 = which(quantiles[,1] == "sofa_0003")
   points3d(quantiles[inds2,2:4], col = "green", size = 20)
+  points3d(quantiles[inds2,5:7], col = "green", size = 20)
   
   inds3 = which(quantiles[,1] == "sofa_0004")
   points3d(quantiles[inds3,2:4], col = "lightgreen", size = 20)
+  points3d(quantiles[inds3,5:7], col = "lightgreen", size = 20)
   
-  inds4 = which(quantiles[,1] == "sofa_0014")
+  inds4 = which(quantiles[,1] == "bathtub_0001")
   points3d(quantiles[inds4,2:4], col = "pink", size = 20)
+  points3d(quantiles[inds4,5:7], col = "pink", size = 20)
   
-  inds5 = which(quantiles[,1] == "toilet_0024")
+  inds5 = which(quantiles[,1] == "toilet_0019")
   points3d(quantiles[inds5,2:4], col = "brown", size = 20)
+  points3d(quantiles[inds5,5:7], col = "brown", size = 20)
 }
 
 

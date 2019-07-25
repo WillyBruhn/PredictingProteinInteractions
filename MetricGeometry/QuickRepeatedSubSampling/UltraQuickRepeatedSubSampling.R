@@ -238,19 +238,35 @@ plot2d_dist_approx <-function(pos13_F_approx_list, name=NULL, col = "red", xli =
   }
 }
 
-generateF_approximations_3dModelWithMetric <- function(d, n = 100, m = 10, q = 2, pos =TRUE){
+generateF_approximations_3dModelWithMetric <- function(d_surface, d_euclid = NULL, n = 100, m = 10, q = 2, pos =TRUE){
   
   # print(nrow(model_points))
   
-  pos13_F_list = list()
-  pos13_F_approx_list = list()
+  F_list = list()
+  F_approx_list = list()
+  
+  F_list_euclid = list()
+  F_approx_list_euclid = list()
   
   for(i in 1:m){
-    pos13_F_list[[i]] = sampleDistancesAndCalculateCDFofEcWith(d, n = n,plot = FALSE)
-    pos13_F_approx_list[[i]] = approximateCDF(pos13_F_list[[i]],q)
+    
+    if(is.null(d_euclid)){
+      F_list[[i]] = sampleDistancesAndCalculateCDFofEcWith(d_surface, n = n,plot = FALSE)
+      F_approx_list[[i]] = approximateCDF(F_list[[i]],q)
+    } else {
+
+      F_with_same_ind = sampleDistancesAndCalculateCDFofEcWith2Distances(d_surface, d_euclid, n = n,plot = FALSE)
+      
+      F_list[[i]] = F_with_same_ind$F1
+      F_approx_list[[i]] = approximateCDF(F_list[[i]],q)
+      
+      F_list_euclid[[i]] = F_with_same_ind$F2
+      F_approx_list_euclid[[i]] = approximateCDF(F_list_euclid[[i]],q)
+    }
+
   }
   
-  return(list("F_list" = pos13_F_list, "F_app_list" = pos13_F_approx_list))
+  return(list("F_list" = F_list, "F_app_list" = F_approx_list, "F_list_euclid" = F_list_euclid, "F_app_euclid" = F_approx_list_euclid))
 }
 
 
