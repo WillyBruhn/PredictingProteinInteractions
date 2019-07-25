@@ -773,7 +773,15 @@ if(mode == "SingleDistance"){
                               distance_method = "geo")
   
   
-  average_pos_neg = (as.matrix(positive)+as.matrix(negative))/2
+  # average_pos_neg = matrix(mapply(as.matrix(positive),as.matrix(negative),FUN = mean),ncol = ncol(positive),nrow = nrow(positive))
+  # rownames(average_pos_neg) = rownames(positive)
+  # colnames(average_pos_neg) = colnames(positive)
+  
+  average_pos_neg = (positive+negative)/2
+  
+  d = average_pos_neg-positive
+  print(d[1:5,1:5])
+  
   max_pos_neg = matrix(mapply(as.matrix(positive),as.matrix(negative),FUN = max),ncol = ncol(positive),nrow = nrow(positive))
   
   rownames(max_pos_neg) = rownames(positive)
@@ -801,7 +809,7 @@ if(mode == "SingleDistance"){
   write.table(file = paste(summariesFolder, "/summary_",distName_pos,".txt",sep=""), summaryFromDistanceMatrix(positive), row.names = FALSE)
   write.table(file = paste(summariesFolder, "/summary_",distName_neg,".txt",sep=""), summaryFromDistanceMatrix(negative), row.names = FALSE)
   
-  write.table(file = paste(summariesFolder, "/summary_",distName_avg,".txt",sep=""), summaryFromDistanceMatrix(distName_avg), row.names = FALSE)
+  write.table(file = paste(summariesFolder, "/summary_",distName_avg,".txt",sep=""), summaryFromDistanceMatrix(average_pos_neg), row.names = FALSE)
   write.table(file = paste(summariesFolder, "/summary_",distName_max,".txt",sep=""), summaryFromDistanceMatrix(max_pos_neg), row.names = FALSE)
 }
 
