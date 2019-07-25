@@ -183,7 +183,7 @@ if ( is.null(opt$distances_train    ) ) { opt$distances_train    =  paste(funr::
 if ( is.null(opt$numberOfPoints   ) ) { opt$numberOfPoints    = 2   }
 if ( is.null(opt$rounds    ) ) { opt$rounds    = 5  }
 
-if ( is.null(opt$labels_train    ) ) { opt$labels_train    =    paste(funr::get_script_path(),"/../QuickStart/ModelTrain/labels.txt",sep = "") }
+# if ( is.null(opt$labels_train    ) ) { opt$labels_train    =    paste(funr::get_script_path(),"/../QuickStart/ModelTrain/labels.txt",sep = "") }
 if ( is.null(opt$bestModelDirectory    ) ) { opt$bestModelDirectory    = paste(funr::get_script_path(),"/../QuickStart/ModelTrain/bestModel/",sep = "")    }
 if ( is.null(opt$bestModelFileName    ) ) { opt$bestModelFileName    = "bestModel.RData"    }
 if ( is.null(opt$popSize_train    ) ) { opt$popSize_train    = 20    }
@@ -344,7 +344,7 @@ MutCompSettings = paste(funr::get_script_path(),"/predictingProteinInteractionsS
 createFolderHierarchy(PPIoutputFolder, pdbFolder)
 
 
-if(opt$mode == "Train") file.copy(labels_train, paste(PPIoutputFolder, "/Output/labels.txt", sep = ""))
+if(opt$mode == "Train" && !is.null(labels_train)) file.copy(labels_train, paste(PPIoutputFolder, "/Output/labels.txt", sep = ""))
 
 # df -h --total
 #-------------------------------------------------------------------------
@@ -654,13 +654,16 @@ mydendrogramplot2 <- function(outPath, dist, labels,fName){
   if(is.null(labels)){
     print("no labels specified ...")
     labels = data.frame(matrix(0, ncol = 2, nrow = nrow(dist)))
-    # print(nrow(labels))
-    # print(nrow(dist))
+    print(nrow(labels))
+    print(nrow(dist))
     
     colnames(labels) = c("name","label")
     labels[,2] = rep("label_unknown",nrow(dist))
+    labels[,1] = rownames(dist)
   }
   # print(labels)
+  # 
+  # print(dist[1:5,1:5])
   
   hc2 = hclust(dist(dist), "ave")
   dendr2    <- dendro_data(hc2, type="rectangle") # convert for ggplot
@@ -733,15 +736,17 @@ if(mode == "SingleDistance"){
   # q = 2
   
   
-  distName = paste(opt$distance_name,"_quickEmd_n_",opt$numberOfPoints,"_m_",opt$rounds,"_q_",opt$q_val,sep ="")
-
+  distName_pos = paste(opt$distance_name,"_pos_quickEmd_n_",opt$numberOfPoints,"_m_",opt$rounds,"_q_",opt$q_val,sep ="")
+  distName_neg = paste(opt$distance_name,"_neg_quickEmd_n_",opt$numberOfPoints,"_m_",opt$rounds,"_q_",opt$q_val,sep ="")
+  
+  distName_avg = paste(opt$distance_name,"_avg_quickEmd_n_",opt$numberOfPoints,"_m_",opt$rounds,"_q_",opt$q_val,sep ="")
+  distName_max = paste(opt$distance_name,"_max_quickEmd_n_",opt$numberOfPoints,"_m_",opt$rounds,"_q_",opt$q_val,sep ="")
+  
   labels = NULL
-  if(opt$labels_train !="NOLABELS") labels = read.table(opt$labels_train, header = TRUE)
+  if(!is.null(opt$labels_train)) labels = read.table(opt$labels_train, header = TRUE)
     
   functionals = labels$name[which(labels$label == "functional")]
   
-  
-  fullName = paste(opt$distances_train,"/",distName, sep ="")
   
   positive = quickRepSampling(OutputPath = pathToProteins, 
                               distance_path = opt$distances_train,
@@ -749,92 +754,41 @@ if(mode == "SingleDistance"){
                               m = opt$rounds,
                               q = opt$q_val,
                               pos = "pos",
-                              fName = distName,
+                              fName = distName_pos,
                               plot = TRUE,
                               functionals = functionals,
                               distance_method = "geo")
 
-  
-  # read.csv
 
   
-  # negative = getRepeatedSampling(RepeatedSamplingPath,RepeatedSamplingExe,
-  #                                path = pathToProteins,
-  #                                outPath = opt$distances_train,
-  #                                proteinsToCompareFile_target = names_file,
-  #                                proteinsToCompareFile = names_file,
-  #                                measure = 1,
-  #                                number_of_selected_points = opt$numberOfPoints,
-  #                                rounds = opt$rounds,
-  #                                c1 = 0, c2 = 1, c3 = 0)
+  negative = quickRepSampling(OutputPath = pathToProteins, 
+                              distance_path = opt$distances_train,
+                              n = opt$numberOfPoints,
+                              m = opt$rounds,
+                              q = opt$q_val,
+                              pos = "neg",
+                              fName = distName_neg,
+                              plot = TRUE,
+                              functionals = functionals,
+                              distance_method = "geo")
   
   
-  # AllvsAll.Cluster <- function(outPath, distance_matrix, fname, plotToFile = TRUE)
-  # {  
-  #   mydendrogramplot <- function(clust,xlim=NULL,ylim=NULL, title=NULL)
-  #   {
-  #     
-  #     dendrogram <- as.dendrogram(clust)
-  #     dendro.data <- dendro_data(dendrogram)
-  #     
-  #     p <- ggplot() +
-  #       geom_segment(data = dendro.data$segments,
-  #                    aes_string(x = "x", y = "y", xend = "xend", yend = "yend"))+
-  #       theme_dendro()+
-  #       scale_x_continuous(breaks = seq_along(dendro.data$labels$label), 
-  #                          labels = dendro.data$labels$label) + 
-  #       theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
-  #       theme(axis.text.y = element_text(angle = 90, hjust = 1)) +
-  #       geom_point(color=rep("darkblue",length(dendro.data$labels))) +
-  #       ggtitle(title)
-  #     
-  #     if(is.null(xlim) &is.null(ylim))
-  #     {
-  #       p <- p +  coord_cartesian(xlim = xlim, ylim = ylim)
-  #       
-  #     }
-  #     p
-  #   }
-  #   # data = distance_matrix
-  #   # 
-  #   # ProtList <- unique(c(as.character(data[,1]),as.character(data[,2])))
-  #   # print(ProtList)
-  #   # 
-  #   # print(data$emd_distance)
-  #   # 
-  #   # matr.Neg <- matrix(0,nrow = NROW(ProtList),ncol = NROW(ProtList), dimnames = list(ProtList,ProtList))
-  #   # 
-  #   # 
-  #   # 
-  #   # k <- 1
-  #   # for(i in 1:(NROW(ProtList)-1))
-  #   # {
-  #   #   for(j in (i+1):NROW(ProtList))
-  #   #   {
-  #   #     if(k <= NROW(data)){
-  #   #       matr.Neg[i,j] <- data[k,3]
-  #   #       matr.Neg[j,i] <- data[k,3]
-  #   #     }
-  #   #     k <- k+1
-  #   #   }
-  #   # }
-  #   
-  #   agnes.average.Neg <- agnes(x = distance_matrix, diss = T,method = "average",keep.diss = F,keep.data = F)
-  #   
-  #   mydendrogramplot(agnes.average.Neg,title = "UPGMA")
-  #   # ggsave(filename = paste(outPath,"/Dendrogram_", fname, ".pdf",sep=""),height=7, width = 14)
-  # }
+  average_pos_neg = (as.matrix(positive)+as.matrix(negative))/2
+  max_pos_neg = matrix(mapply(as.matrix(positive),as.matrix(negative),FUN = max),ncol = ncol(positive),nrow = nrow(positive))
   
-
-  # labels = read.table("/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/106Model/Proteins/Output/labels.txt", header = TRUE)
-
+  rownames(max_pos_neg) = rownames(positive)
+  colnames(max_pos_neg) = colnames(positive)
   
-  positive_name = paste("positive_n_", opt$numberOfPoints, "_m_", opt$rounds, sep = "")
-  # negative_name = paste("negative_n_", opt$numberOfPoints, "_m_", opt$rounds, sep = "")
+  print(max_pos_neg[1:5,1:5])
   
+  dendrogramFolder = paste(opt$distances_train, "/Dendrogramms/", sep ="")
+  if(!dir.exists(dendrogramFolder)) dir.create(dendrogramFolder)
   if(doClustering) {
-    # AllvsAll.Cluster(outPath = pathToProteins, distance_matrix = positive, positive_name)
-    mydendrogramplot2(pathToProteins,positive,labels, distName)
+    mydendrogramplot2(dendrogramFolder,positive,labels, distName_pos)
+    mydendrogramplot2(dendrogramFolder,negative,labels, distName_neg)
+    
+    mydendrogramplot2(dendrogramFolder,average_pos_neg,labels, distName_avg)
+    mydendrogramplot2(dendrogramFolder,max_pos_neg,labels, distName_max)
   }
   # if(doClustering) AllvsAll.Cluster(outPath = pathToProteins, distance_matrix = negative, negative_name)
   
@@ -842,9 +796,13 @@ if(mode == "SingleDistance"){
   #-------------------------------------------------------------------------
   # Compute some Summary-statistics
   #-------------------------------------------------------------------------
-  write.table(file = paste(pathToProteins, "/summary_",positive_name,".txt",sep=""), summaryFromDistanceMatrix(positive), row.names = FALSE)
-  # write.table(file = paste(pathToProteins, "/summary_",negative_name,".txt",sep=""), summaryFromDistanceMatrix(negative), row.names = FALSE)
+  summariesFolder = paste(opt$distances_train, "/Summaries/", sep ="")
+  if(!dir.exists(summariesFolder)) dir.create(summariesFolder)
+  write.table(file = paste(summariesFolder, "/summary_",distName_pos,".txt",sep=""), summaryFromDistanceMatrix(positive), row.names = FALSE)
+  write.table(file = paste(summariesFolder, "/summary_",distName_neg,".txt",sep=""), summaryFromDistanceMatrix(negative), row.names = FALSE)
   
+  write.table(file = paste(summariesFolder, "/summary_",distName_avg,".txt",sep=""), summaryFromDistanceMatrix(distName_avg), row.names = FALSE)
+  write.table(file = paste(summariesFolder, "/summary_",distName_max,".txt",sep=""), summaryFromDistanceMatrix(max_pos_neg), row.names = FALSE)
 }
 
 
