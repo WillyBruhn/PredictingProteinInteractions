@@ -413,14 +413,14 @@ datasetPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNe
 dataSet = getDataSet(datasetPath)
 
 # get the first 20 models from each class
-smallDataSet = getSmallDataSet(dataSet,5)
+smallDataSet = getSmallDataSet(dataSet,80)
 
 
 smallDataSet = na.omit(smallDataSet)
 
 nrow(smallDataSet)
 
-sub = which(getClassNamesFromSubClasses(smallDataSet[,1], splitPattern = "_") %in% c("bathtub", "toilet", "sofa", "table"))
+sub = which(getClassNamesFromSubClasses(smallDataSet[,1], splitPattern = "_") %in% c("bathtub", "toilet", "sofa", "table", "chair"))
 # sub = which(getClassNamesFromSubClasses(smallDataSet[,1], splitPattern = "_") %in% c("bathtub", "toilet"))
 smallDataSet = smallDataSet[sub,]
 
@@ -439,14 +439,14 @@ for(i in 1:length(models)){
   }
 }
 
-# length(models)
+length(models)
 
 
 # # randomly sample and calculate DE
 quantiles = distributionOfDE(models = models,
-                             n = 48,
-                             m =2,
-                             q = 1)
+                             n = 20,
+                             m =100,
+                             q = 10)
 
 
 

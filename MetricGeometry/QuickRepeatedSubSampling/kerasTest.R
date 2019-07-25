@@ -683,6 +683,7 @@ getTrainAndTest <- function(quantiles, sampleSize, sampleTimes, m, fName, reDo =
       # print(paste(start_ind,end_ind, i))
       x_train[[i]] = array_reshape(x_train_prev[start_ind:end_ind,],dim = c(sampleSize,quants,2), order = "F")
       
+      # ?array_reshape
       
       y_train[i,] = y_train_prev[start_ind,]
       
@@ -721,6 +722,87 @@ getTrainAndTest <- function(quantiles, sampleSize, sampleTimes, m, fName, reDo =
   
   return(l)
 }
+
+# m = matrix(seq(1:25), nrow = 5)
+# array_reshape(m, dim = c(1,25), order = "F")
+# 
+# as.matrix(quantiles[1:3,2:4])
+# 
+# array_reshape(as.matrix(quantiles[1:3,2:4]), dim = c(1,9), order = "C")
+
+sampleMultipleTimes  <- function(quantiles,sampleSize, sampleTimes){
+  q = ncol(quantiles)-2-1
+  subClassNames_train = unique(quantiles[,1])
+  
+  
+  quantTrain = data.frame(matrix(0, ncol = sampleSize*(q+2)+1, nrow = sampleTimes*length(subClassNames_train)))
+
+  colnames(quantTrain)[1] = "name"
+  # for each subclassName (that means object) draw sampleSize big sets for sampleTimes times
+  for(i in 1:length(subClassNames_train)){
+    subClassName_tmp = as.character(subClassNames_train[i])
+    
+    # print(subClassName_tmp)
+    
+    # available points (distributions)
+    train_indices = which(quantiles[,1] == subClassName_tmp)
+    for(j in 1:sampleTimes){
+      sampled_indices = sample(train_indices, size = sampleSize, replace = FALSE)
+      quantTrain[j+(i-1)*sampleTimes,1] = subClassName_tmp
+      
+      # print(as.matrix(quantiles[sampled_indices,2:(q+3)]))
+      quantTrain[j+(i-1)*sampleTimes,2:ncol(quantTrain)] = array_reshape(as.matrix(quantiles[sampled_indices,2:(q+3)]), dim = c(1,sampleSize*(q+2)), order = "C")
+    }
+  }
+  
+  
+  
+  return(quantTrain[shuffle(1:nrow(quantTrain)),])
+}
+
+# 
+# sampleMultipleTimes(quantiles = quantiles[,1:4],sampleSize = 2,sampleTimes = 2)
+
+shuffle(seq(1:10))
+
+
+getTrainAndTestOnlySurf <- function(quantiles, sampleSize, sampleTimes, fName = "NOPE", reDo = FALSE){
+  # if(!file.exists(fName) || reDo == TRUE){
+    subClassNames = unique(quantiles[,1])
+    numObjects = length(subClassNames)
+    
+    numClasses = length(unique(getClassNamesFromSubClasses(quantiles[,1],splitPattern = "_")))
+    
+    subClassNames_test_ind = sample(c(1:numObjects), size = numObjects*0.1, replace = FALSE)
+    subClassNames_test =subClassNames[subClassNames_test_ind]
+    subClassNames_train =subClassNames[-subClassNames_test_ind]
+    
+    sampledQuantiles = sampleMultipleTimes(quantiles = quantiles,sampleSize = sampleSize, sampleTimes = sampleTimes)
+
+    library(permute)
+    sampledQuantiles = sampledQuantiles[shuffle(1:nrow(sampledQuantiles)), ]
+    y_all = getClassNamesFromSubClasses(sampledQuantiles[,1],splitPattern = "_")
+    
+    train_indices = which(sampledQuantiles[,1] %in% subClassNames_train)
+    test_indices = which(sampledQuantiles[,1] %in% subClassNames_test)
+    
+    y_train = y_all[train_indices]
+    x_train = as.matrix(sampledQuantiles[train_indices,-1])
+    
+    y_test= y_all[test_indices]
+    x_test = as.matrix(sampledQuantiles[test_indices,-1])
+    
+    classLevels = unique(y_all)
+    y_train = as.numeric(as.factor(y_train))-1
+    y_train <- to_categorical(y_train, numClasses)
+    
+    y_test = as.numeric(as.factor(y_test))-1
+    y_test <- to_categorical(y_test, numClasses)
+  
+  return(list("x_train" = x_train, "y_train" = y_train, "x_test" = x_test, "y_test" = y_test, "numClasses" = numClasses))
+}
+
+# getTrainAndTestOnlySurf(quantiles[,1:4],sampleSize = 2,sampleTimes = 1)
 
 
 convModel1 <- function(TrainTest, sampleSize, sampleTimes, m, q, epochs = 30){
@@ -907,89 +989,190 @@ convModel2 <- function(TrainTest, sampleSize, sampleTimes, m, q, epochs = 30){
 }
 
 
+convModel3 <- function(TrainTest, sampleSize, sampleTimes, m, q, epochs = 30){
+  
+  x_train = TrainTest$x_train
+  y_train = TrainTest$y_train
+  x_test = TrainTest$x_test
+  y_test = TrainTest$y_test
+  
+  numClasses = TrainTest$numClasses
+  
+  
+  #---------------------------------------------------------
+  model <- keras_model_sequential()
+  model %>% 
+    layer_reshape(target_shape = c(sampleSize, q+2,1),input_shape = c(ncol(x_train))) %>%
+    
+    layer_conv_2d(filter = 30, kernel_size = c(2,1), padding = 'same', input_shape = c(sampleSize, q+2,2)) %>% 
+    layer_activation("relu") %>%
+    layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+    
+    layer_conv_2d(filter = 30, kernel_size = c(2,1), padding = 'same') %>% 
+    layer_activation("relu") %>%
+    layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+    
+    layer_conv_2d(filter = 30, kernel_size = c(2,1), padding = 'same') %>% 
+    layer_activation("relu") %>%
+    layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+    
+    layer_flatten() %>%
+    layer_dense(100) %>%
+    layer_dense(50) %>%
+    layer_activation("relu") %>%
+    layer_dropout(0.1) %>%
+    
+    layer_dense(10) %>%
+    layer_activation("relu") %>%
+    layer_dropout(0.1) %>%
+    layer_dense(units = numClasses, activation = 'softmax')
+  
+  # ?layer_global_average_pooling_1d
+  
+  model %>% compile(
+    loss = 'categorical_crossentropy',
+    optimizer = optimizer_rmsprop(),
+    metrics = c('accuracy')
+  )
+  
+  history <- model %>% fit(
+    x_train, y_train, 
+    epochs = epochs, batch_size = 32, 
+    validation_split = 0.2
+  )
+  
+  
+  
+  # $loss
+  # [1] 0.7399024
+  # 
+  # $acc
+  # [1] 0.6863636
+  print(model %>% evaluate(x_test, y_test))
+  return(model)
+}
 
-#-------------------------------------------------------------------------------------------------------------
-# Proteins
-#
 
-sampleSize = 50
-m = 200
-sampleTimes = 100
-q = 10
-
-
-# fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDir/All_ind_0_nE_1000_nD_100_n_90_m_3_q_1.csv"
-#
-fName = "/home/willy/Schreibtisch/106Test/QuantileDistances/quant_ind_0_nE_500_nD_50_n_48_m_100_q_1.csv"
-quantiles = read.csv(file =fName, header = TRUE, row.names = 1)
-
-# sub = which(getClassNamesFromSubClasses(quantiles[,1], splitPattern = "_") %in% c("toilet", "sofa", "chair"))
-# quantiles = quantiles[sub,]
-
-plotQuantiles(quantiles)
-
-# TrainTest2 = TrainTest
-
-TrainTest = getTrainAndTest(quantiles, sampleSize = sampleSize, sampleTimes = sampleTimes, m = m)
-
-
+convModel4 <- function(TrainTest, sampleSize, sampleTimes, m, q, epochs = 30){
+  
+  x_train = TrainTest$x_train
+  y_train = TrainTest$y_train
+  x_test = TrainTest$x_test
+  y_test = TrainTest$y_test
+  
+  numClasses = TrainTest$numClasses
+  
+  
+  #---------------------------------------------------------
+  model <- keras_model_sequential()
+  model %>% 
+    layer_reshape(target_shape = c(sampleSize, q+2,1),input_shape = c(ncol(x_train))) %>%
+    
+    layer_conv_2d(filter = 30, kernel_size = c(2,1), padding = 'same', input_shape = c(sampleSize, q+2,2)) %>% 
+    layer_activation("relu") %>%
+    layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+    
+    layer_conv_2d(filter = 30, kernel_size = c(2,1), padding = 'same') %>% 
+    layer_activation("relu") %>%
+    layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+    
+    layer_conv_2d(filter = 10, kernel_size = c(2,1), padding = 'same') %>% 
+    layer_activation("relu") %>%
+    layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+    
+    layer_conv_2d(filter = 10, kernel_size = c(1,3), padding = 'same') %>% 
+    layer_activation("relu") %>%
+    layer_max_pooling_2d(pool_size = c(1,2),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+    
+    layer_conv_2d(filter = 10, kernel_size = c(2,1), padding = 'same') %>% 
+    layer_activation("relu") %>%
+    layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+    
+    layer_conv_2d(filter = 10, kernel_size = c(2,1), padding = 'same') %>% 
+    layer_activation("relu") %>%
+    layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+    
+    layer_conv_2d(filter = 10, kernel_size = c(2,1), padding = 'same') %>% 
+    layer_activation("relu") %>%
+    layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+    
+    layer_conv_2d(filter = 10, kernel_size = c(2,1), padding = 'same') %>% 
+    layer_activation("relu") %>%
+    layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+    
+    
+    layer_flatten() %>%
+    layer_dense(300) %>%
+    layer_dense(100) %>%
+    layer_activation("relu") %>%
+    layer_dropout(0.1) %>%
+    
+    layer_dense(10) %>%
+    layer_activation("relu") %>%
+    layer_dropout(0.1) %>%
+    
+    layer_dense(10) %>%
+    layer_activation("relu") %>%
+    layer_dropout(0.1) %>%
+    
+    layer_dense(units = numClasses, activation = 'softmax')
+  
+  # ?layer_global_average_pooling_1d
+  
+  model %>% compile(
+    loss = 'categorical_crossentropy',
+    optimizer = optimizer_rmsprop(),
+    metrics = c('accuracy')
+  )
+  
+  history <- model %>% fit(
+    x_train, y_train, 
+    epochs = epochs, batch_size = 16, 
+    validation_split = 0.2
+  )
+  
+  
+  
+  # $loss
+  # [1] 0.7399024
+  # 
+  # $acc
+  # [1] 0.6863636
+  print(model %>% evaluate(x_test, y_test))
+  return(model)
+}
 #---------------------------------------------------------------------------------------------------------
 #
 # euclidean and geodesic
 #
 #---------------------------------------------------------------------------------------------------------
 
-sampleSize = 2
-m = 2
-sampleTimes = 1
-q = 1
+sampleSize = 10
+sampleTimes = 30
+q = 10
 
 
 # fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDir/All_ind_0_nE_1000_nD_100_n_90_m_3_q_1.csv"
 #
-fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_0_nE_1000_nD_50_n_48_m_2_q_1.csv"
+fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_0_nE_1000_nD_50_n_20_m_100_q_1.csv"
 quantiles = read.csv(file =fName, header = TRUE, row.names = 1)
 
-quantiles
-
-Tr = getTrainAndTest(quantiles, sampleSize = sampleSize, sampleTimes = 1, m = m,"/home/willy/Test6.Rdata",reDo = TRUE)
-
-
-Tr$x_train[[10]]
-Tr$y_train[10,]
+# Tr = getTrainAndTestOnlySurf(quantiles[,1:(q+3)],sampleSize = sampleSize,sampleTimes = sampleTimes)
+Tr = getTrainAndTestOnlySurf(quantiles,sampleSize = sampleSize,sampleTimes = sampleTimes)
 
 
-quantiles
-
-Tr$x_train[[1]]
-
-
-# length(Tr$x_train)
-
-
-Tr$x_train[1:2]
-
-ar = array_reshape(x_train[1:2,],dim = c(1,12))
-array_reshape(ar,dim = c(2,6))
-
-q = 1
-quants = q+2
-samplesS = 4
-Tr$x_train[1:samplesS,]
-
-# make two tensors, one for the geodesic distances, one for the euclidean distances
-# ar[,,1] == geodesic
-# ar[,,2] == euclidean
-x_train  = as.matrix(Tr[,-1])
-ar = array_reshape(x_train[1:samplesS,],dim = c(samplesS,quants,2), order = "F")
-
-ar
-ar2 = array_reshape(x_train[5:(4+samplesS),],dim = c(samplesS,quants,2), order = "F")
-
-
-l = list(ar,ar2)
-
-l[[1]][,,1]
-
-
+array_reshape(Tr$x_train[1,], dim = c(sampleSize,q+2))
+# convModel4(TrainTest = Tr,sampleSize = sampleSize,sampleTimes = sampleTimes,m = m,q = q+3,epochs = 100)
+convModel4(TrainTest = Tr,sampleSize = sampleSize,sampleTimes = sampleTimes,m = m,q = q*2+,epochs = 300)
 

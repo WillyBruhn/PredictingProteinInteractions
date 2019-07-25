@@ -403,4 +403,25 @@ model %>% evaluate(x_test, y_test)
 # [1] 0.9935714
 
 
+#----------------------------------------
+fName = "/home/willy/Schreibtisch/106Test/Output/000_Trx/000_TrxModified.obj"
+
+rglMod = read.obj(fName)
+
+rglMod2 = read.obj(fName,convert.rgl = TRUE)
+
+shade3d(rglMod2)
+
+points = t(rglMod$shapes[[1]]$positions)
+
+points3d(points)
+
+rglModOrig = read.obj("/home/willy/Schreibtisch/106Test/Output/000_Trx/000_Trx.obj")
+
+pointsOrig = t(rglModOrig$shapes[[2]]$positions)
+points3d(pointsOrig, col = "red")
+
+pointsOrigNeg = t(rglModOrig$shapes[[3]]$positions)
+points3d(pointsOrigNeg, col = "blue")
+
 
