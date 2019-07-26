@@ -175,8 +175,13 @@ downsampleEuclideanAndGetGeodesicModel10Net <- function(objPath, n_s_euclidean =
   
   print("step 3: surface fps ...")
   # ??farthest_point_sampling
-  fps_surface <- farthest_point_sampling(d_surface)
-  sampled_indices2 = fps_surface[1:n_s_dijkstra]
+  
+  # sampled_indices2 = 
+  # if(n_s_dijkstra != n_s_euclidean){
+    fps_surface <- farthest_point_sampling(d_surface)
+    sampled_indices2 = fps_surface[1:n_s_dijkstra]
+  # } 
+
 
   # rgl.open()
   if(FALSE) plotDownsampledPoints(model_rgl,points,sampled_indices[sampled_indices2],FALSE, col = "blue", size = 51)
@@ -380,7 +385,7 @@ distributionOfDEAllLocalities <- function( models,
 }
 
 
-plotQuantiles <- function(quantiles){
+plotQuantiles <- function(quantiles, euklid = FALSE){
   classes = getClassNamesFromSubClasses(quantiles[,1],splitPattern = "_")
   classLevels = unique(classes)
   numOfClasses = length(classLevels)
@@ -395,7 +400,9 @@ plotQuantiles <- function(quantiles){
   for(i in 1:numOfClasses){
     inds = which(classes == classLevels[i])
     points3d(quantiles[inds,2:4], col = colMap[(i-1)*2+1])
-    points3d(quantiles[inds,5:7], col = colMap[(i-1)*2+2])
+    
+    if(euklid) points3d(quantiles[inds,5:7], col = colMap[(i-1)*2+2])
+    
   }
 }
 
@@ -431,6 +438,20 @@ smallDataSet = smallDataSet[sub,]
 models = getSurfaceSampledModels(smallDataSet,plot = FALSE,n_s_euclidean = 1000,n_s_dijkstra = 50)
 
 
+mod = downsampleEuclideanAndGetGeodesicModel10Net(objPath = dataSet[2,3], n_s_euclidean = 1000, n_s_dijkstra = 1000, plot = TRUE)
+modi = read.obj(f = dataSet[i,3])
+points = t(modi$shapes[[1]]$positions)
+nrow(points)
+points3d(mod$centers, col = "blue", size = 10)
+
+rand = sample(1:nrow(mod$centers), size = 100,replace = FALSE)
+points3d(mod$centers[rand,], col = "green", size = 20)
+
+
+mod2 = downsampleEuclideanAndGetGeodesicModel10Net(objPath = dataSet[2,3], n_s_euclidean = 1700, n_s_dijkstra = 1700, plot = TRUE)
+points3d(mod2$centers, col = "green", size = 20)
+
+
 for(i in 1:length(models)){
   if(nrow(models[[i]]$d_surface) == 0 || nrow(models[[i]]$d_euclid) == 0) {
     print(i)
@@ -444,15 +465,13 @@ length(models)
 
 # # randomly sample and calculate DE
 quantiles = distributionOfDE(models = models,
-                             n = 20,
+                             n = 40,
                              m =100,
                              q = 10)
 
 
+plotQuantiles(quantiles,FALSE)
 
-
-
-plotQuantiles(quantiles)
 
 # i = 10
 # points3d(x = quantiles[i,2], y = quantiles[i,3], z = quantiles[i,4], col = "black", size = 10)
