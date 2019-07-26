@@ -205,7 +205,6 @@ quantiles = getAllModelsProteinWrapper(path = path,
                            FALSE)
 
 
-
 while (rgl.cur() > 0) { rgl.close() }
 labels = readLabels("/home/willy/PredictingProteinInteractions/data/labels.txt")
 functionals = c(getFunctionalProteins(), "000_Trx")
