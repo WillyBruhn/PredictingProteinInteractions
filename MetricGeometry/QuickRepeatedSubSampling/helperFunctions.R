@@ -70,3 +70,9 @@ getGeoDistanceQuantileName <- function(path,ind,n_s_euclidean,n_s_dijkstra, n, m
   return(paste(path,"/",fname,"_ind_",ind, "_nE_", n_s_euclidean, "_nD_", n_s_dijkstra,
                "_n_", n, "_m_", m, "_q_",q,".csv", sep =""))
 }
+
+GLOBAL_VERBOSITY = 1
+my_print <-function(msg, verbosity = 1){
+  if(verbosity <= GLOBAL_VERBOSITY) print(msg)
+}
+

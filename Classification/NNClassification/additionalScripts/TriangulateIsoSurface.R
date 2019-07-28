@@ -3,6 +3,8 @@
 # source("/home/willy/RedoxChallenges/MasterThesis/ExtrinsicDistances/isoFaces.R")
 # source("/home/willy/RedoxChallenges/MasterThesis/ExtrinsicDistances/extrinsicDistances.R")
 
+source("/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/helperFunctions.R")
+
 
 is.installed <- function(mypkg){
   is.element(mypkg, installed.packages()[,1])
@@ -311,7 +313,7 @@ myShortestDistances <- function(g,vertices){
   # print(d)
   
   for(i in 1:length(vertices)){
-    print(paste(100 * i / length(vertices), " %", sep = ""))
+    my_print(paste(100 * i / length(vertices), " %", sep = ""),3)
     
     d_i = distances(graph = g,v = vertices[i], to = vertices, algorithm = "dijkstra")
 
@@ -569,13 +571,13 @@ makeMyEdges <- function(points,edges){
 
 
 preProcessMesh <- function(points, edges, plot = FALSE){
-  print("downsampling to unique points ...")
+  my_print("downsampling to unique points ...", 2)
   l = myMakeUniquePointsAndEdges(points,edges)
   
-  print("creating edges and edge-weights ...")
+  my_print("creating edges and edge-weights ...", 2)
   ob = makeMyEdges(l$points,l$edges)
   
-  print("creating graph ... ")
+  my_print("creating graph ... ", 2)
   g <- make_graph(ob$edges, directed = FALSE)
   
   g = set_edge_attr(g, "weight", index=E(g), ob$weights)
@@ -592,8 +594,6 @@ preProcessMesh <- function(points, edges, plot = FALSE){
   }
   
   g = set_edge_attr(g, "weight", index=E(g), weights2)
-  
-  print(g)
   
   g = igraph::simplify(g, remove.multiple = TRUE, remove.loops = TRUE)
   
@@ -2024,7 +2024,7 @@ myFarthestPointSampling <- function(data, start_ind = 1, k = 10){
     # smaple k points
     for(sampleCount in 3:k){
       
-      print(paste(sampleCount/k*100, " %", sep = ""))
+      my_print(paste(sampleCount/k*100, " %", sep = ""), 3)
       
       # gets the minimal distances in the still available points
       f = myDirectionalHausdorfDistance(data[available_indices,],data[-available_indices,])

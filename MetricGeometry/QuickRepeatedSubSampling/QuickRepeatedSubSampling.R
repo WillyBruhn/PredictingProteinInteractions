@@ -92,11 +92,14 @@ calcEuclideanDistances <- function(all_points, ind_a, ind_b){
 # calcEuclideanDistances(pts_pos, c(1), c(1:nrow(pts_pos)))
 
 eccentricities <- function(d, mu = rep(1/nrow(d),nrow(d))){
-  return(colSums(x = d*mu))
+  # matrix(mu, ncol = 1)
+  
+  return(colSums(x = d*as.vector(mu)))
 }
 
 DistributionOfEccentricities <- function(d, mu = rep(1/nrow(d),nrow(d))){
-  F_ = ecdf(eccentricities(d))
+  
+  F_ = ecdf(eccentricities(d,mu))
   return(F_)
 }
 

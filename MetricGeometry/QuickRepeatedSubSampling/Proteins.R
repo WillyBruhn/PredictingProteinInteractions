@@ -13,6 +13,7 @@ source(s3)
 library(keras)
 library(readobj)
 library(FNN)
+library(rgl)
 
 
 getClassNamesFromSubClassesProteins <- function(subClasses, splitPattern = "_"){
@@ -37,16 +38,24 @@ sampleEccentricitiesAndGetQuantiles <- function(model,
 {
   F_app = getFApproximationsSumMethod(mod = model, n = n, m = m, q = q)
   
-  quantiles = data.frame(matrix(0,ncol = (q+2)*3+1, nrow = m))
-  colnames(quantiles) = c("name",   as.vector(paste(c("q_pos"),c(1:(q+2)), sep = "")), 
+  quantiles = data.frame(matrix(0,ncol = (q+2)*6+1, nrow = m))
+  colnames(quantiles) = c("name",
+                          as.vector(paste(c("q_pos"),c(1:(q+2)), sep = "")), 
                           as.vector(paste(c("q_neg"),c(1:(q+2)), sep = "")),
-                          as.vector(paste(c("q_pos_neg"),c(1:(q+2)), sep = "")))
+                          as.vector(paste(c("q_pos_neg"),c(1:(q+2)), sep = "")),
+                          as.vector(paste(c("q_pos_euclid"),c(1:(q+2)), sep = "")), 
+                          as.vector(paste(c("q_neg_euclid"),c(1:(q+2)), sep = "")),
+                          as.vector(paste(c("q_pos_neg_euclid"),c(1:(q+2)), sep = "")))
   
   quantiles[,1] = rep(model$name, m)
   for(i in 1:m){
     quantiles[i,(1:(q+2))+1] = F_app[[i]]$F_pos_approx
     quantiles[i,(1:(q+2))+1+(q+2)] = F_app[[i]]$F_neg_approx
     quantiles[i,(1:(q+2))+1+(q+2)*2] = F_app[[i]]$F_pos_neg_approx
+    
+    quantiles[i,(1:(q+2))+1+(q+2)*3] = F_app[[i]]$F_pos_approx_euclid
+    quantiles[i,(1:(q+2))+1+(q+2)*4] = F_app[[i]]$F_neg_approx_euclid
+    quantiles[i,(1:(q+2))+1+(q+2)*5] = F_app[[i]]$F_pos_neg_approx_euclid
   }
   
   return(quantiles)
@@ -58,22 +67,43 @@ getFApproximationsSumMethod <- function(mod, n = 10,m = 100,q=1){
   
   F_approximations = list()
   for(i in 1:m){
-    pos_indices_samp = sample(pos_indices, size = n/2, replace = FALSE)
-    neg_indices_samp = sample(neg_indices, size = n/2, replace = FALSE)
+    pos_indices_samp = sample(pos_indices, size = n*length(pos_indices), replace = FALSE)
+    neg_indices_samp = sample(neg_indices, size = n*length(neg_indices), replace = FALSE)
     
+    #----------------------------------------------------------------------------
+    # surface
     d_pos = mod$d_surface[pos_indices_samp,pos_indices_samp]
-    
-    F_pos = DistributionOfEccentricities(d_pos)
+    F_pos = DistributionOfEccentricities(d_pos, mod$measure[pos_indices_samp])
     F_pos_approx = approximateCDF(F_pos, q)
     
     d_neg = mod$d_surface[neg_indices_samp,neg_indices_samp]
-    F_neg = DistributionOfEccentricities(d_neg)
+    F_neg = DistributionOfEccentricities(d_neg, mod$measure[neg_indices_samp])
     F_neg_approx = approximateCDF(F_neg, q)
     
-    F_pos_neg = DistributionOfEccentricities(mod$d_surface[c(pos_indices_samp,neg_indices_samp),c(pos_indices_samp,neg_indices_samp)])
+    merged = c(pos_indices_samp,neg_indices_samp)
+    F_pos_neg = DistributionOfEccentricities(mod$d_surface[merged,merged], mod$measure[merged])
     F_pos_neg_approx = approximateCDF(F_pos_neg, q)
     
-    F_approximations[[i]] = list("F_pos_approx" = F_pos_approx, "F_neg_approx" = F_neg_approx, "F_pos_neg_approx" = F_pos_neg_approx)
+    #----------------------------------------------------------------------------
+    # euclid
+    d_pos_euclid = as.matrix(dist(mod$centers[pos_indices_samp,]))
+    F_pos_euclid  = DistributionOfEccentricities(d_pos_euclid, mod$measure[pos_indices_samp])
+    F_pos_approx_euclid = approximateCDF(F_pos_euclid, q)
+    
+    d_neg_euclid = as.matrix(dist(mod$centers[neg_indices_samp,]))
+    F_neg_euclid = DistributionOfEccentricities(d_neg_euclid, mod$measure[neg_indices_samp])
+    F_neg_approx_euclid = approximateCDF(F_neg_euclid, q)
+    
+    merged = c(pos_indices_samp,neg_indices_samp)
+    F_pos_neg_euclid = DistributionOfEccentricities(as.matrix(dist(mod$centers[merged,])), mod$measure[merged])
+    F_pos_neg_approx_euclid = approximateCDF(F_pos_neg_euclid, q)
+    
+    F_approximations[[i]] = list("F_pos_approx" = F_pos_approx,
+                                 "F_neg_approx" = F_neg_approx,
+                                 "F_pos_neg_approx" = F_pos_neg_approx,
+                                 "F_pos_approx_euclid" = F_pos_approx_euclid,
+                                 "F_neg_approx_euclid" = F_neg_approx_euclid,
+                                 "F_pos_neg_approx_euclid" = F_pos_neg_approx_euclid)
   }
   return(F_approximations)
 }
@@ -154,8 +184,9 @@ distributionOfDE <- function(models,
 }
 
 getAllProteinModels = function(path = "/home/willy/Schreibtisch/106Test/Output/",
-                               n_s_euclidean = 1000,
-                               n_s_dijkstra = 500,
+                               n_s_euclidean = 5000,
+                               n_s_dijkstra = 5000,
+                               stitchNum = 10000,
                                onlyTheseIndices = NULL,
                                recalculate = FALSE){
   
@@ -164,32 +195,55 @@ getAllProteinModels = function(path = "/home/willy/Schreibtisch/106Test/Output/"
   
   proteinModels = list()
   for(i in 1:length(dirs)){
-    proteinModels[[i]] = getProteinModelStichedSurface(path = path, protName = dirs[i], n_s_euclidean = n_s_euclidean,n_s_dijkstra = n_s_dijkstra, plot = FALSE, recalculate = recalculate)
+    proteinModels[[i]] = getProteinModelStichedSurface(path = path, protName = dirs[i], n_s_euclidean = n_s_euclidean,n_s_dijkstra = n_s_dijkstra, plot = FALSE, recalculate = recalculate, stitchNum =stitchNum)
   }
   
   return(proteinModels)
 }
 
+plotProteinModel <- function(fNameOrigingal = NULL,lis, openNew = TRUE, sz = 1){
+  # points3d(points)
+  
+  if(openNew) rgl.open()
+  points3d(lis$centers[which(lis$posNegVector == FALSE),], col = "red", size = sz)
+  points3d(lis$centers[which(lis$posNegVector == TRUE),], col = "blue", size = sz)
+  
+  sc = sz*(1/min(lis$measure) +1)
+  
+  for(i in 1:nrow(lis$centers)){
+    points3d(x = lis$centers[i,1], y = lis$centers[i,2], z = lis$centers[i,3], col = "green", size = lis$measure[i]*sc)
+  }
+  
+  if(!is.null(fNameOrigingal)){
+    rglModOrigPlot = read.obj(fNameOrigingal, convert.rgl = TRUE)
+    shade3d(rglModOrigPlot)
+  }
+
+  # ?rgl.bg
+  rgl.bg( sphere = FALSE, color = "white")
+}
 
 getProteinModelStichedSurface <- function(path = "/home/willy/Schreibtisch/106Test/Output/",
                                           protName = "000_Trx",
-                                          n_s_euclidean = 1000,
-                                          n_s_dijkstra = 500,
+                                          n_s_euclidean = 5000,
+                                          n_s_dijkstra = 5000,
+                                          stitchNum = 5000,
                                           plot = FALSE,
                                           recalculate = FALSE){
   # first stich the model together
   fNameOrigingal = paste(path, "/", protName, "/", protName, ".obj", sep ="")
-  fNameStitched = paste(path, "/", protName, "/", protName, "_stitched.obj", sep = "")
+  fNameStitched = paste(path, "/", protName, "/", protName, "_",stitchNum,"_stitched.obj", sep = "")
   
-  fNameModelDownsampled = paste(path, "/", protName, "/", protName, "_model_downsampled.rData", sep ="")
+  fNameModelDownsampled = paste(path, "/", protName, "/", protName, "_sitch_",stitchNum, "_nE_",n_s_euclidean, "_nD_", n_s_dijkstra,
+                                "_model_downsampled.rData", sep ="")
   
   if(!file.exists(fNameModelDownsampled) || recalculate == TRUE){
-    if(!file.exists(fNameStitched)){
+    if(!file.exists(fNameStitched) || recalculate == TRUE){
       # make watertight
       # obj = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10/bathtub/test/bathtub_0110.obj"
       path2Manifold = "/home/willy/Manifold/build/"
       manifoldCommand = "./manifold"
-      args = paste(" ",fNameOrigingal," ",fNameStitched, " 2000 ", sep="")
+      args = paste(" ",fNameOrigingal," ",fNameStitched, " ",stitchNum," ", sep="")
       system(paste(path2Manifold,manifoldCommand,args, sep =""))
       
     }
@@ -242,18 +296,19 @@ getProteinModelStichedSurface <- function(path = "/home/willy/Schreibtisch/106Te
     
     length(which(posNegVector == TRUE))/length(posNegVector)
     
-    if(plot){
-      # points3d(points)
-      points3d(centers[which(posNegVector == FALSE),], col = "red")
-      points3d(centers[which(posNegVector == TRUE),], col = "blue")
-    }
-    
     lis = list("centers" = centers, "posNegVector" = posNegVector, "d_surface" = d_surface, "name" = protName)
     
+    mu = getProteinMeasure(lis)
+    lis = list("centers" = centers, "posNegVector" = posNegVector, "d_surface" = d_surface, "name" = protName, "measure" = mu)
+
     saveRDS(lis,file = fNameModelDownsampled)
   }
   
   lis = readRDS(fNameModelDownsampled)
+  
+  if(plot){
+    plotProteinModel(fNameOrigingal, lis)
+  }
   
   return(lis)
 }
@@ -274,44 +329,152 @@ get_quantiles_protein <- function(path = "/home/willy/Schreibtisch/106Test/Outpu
     
     write.csv(quantiles,file = quantFileName, row.names = FALSE)
   }
-  quantiles = read.csv(quantFileName, header = TRUE)
+  
+  quantiles = read.csv(quantFileName, header = TRUE, colClasses=c("character",rep("numeric",(q+2)*3)))
   return(quantiles)
 }
 
 
 get_quantiles_all_proteins <- function(model_vec, path, n, m ,q, recalculate = FALSE){
-  quantiles_all = data.frame(matrix(0,ncol = (q+2)*3+1, nrow = m*length(model_vec)))
-  colnames(quantiles_all) = c("name",   as.vector(paste(c("q_pos"),c(1:(q+2)), sep = "")), 
-                              as.vector(paste(c("q_neg"),c(1:(q+2)), sep = "")),
-                              as.vector(paste(c("q_pos_neg"),c(1:(q+2)), sep = "")))
+  # quantiles_all = data.frame(matrix(0,ncol = (q+2)*3+1, nrow = m*length(model_vec)))
+  # colnames(quantiles_all) = c("name",   as.vector(paste(c("q_pos"),c(1:(q+2)), sep = "")), 
+  #                             as.vector(paste(c("q_neg"),c(1:(q+2)), sep = "")),
+  #                             as.vector(paste(c("q_pos_neg"),c(1:(q+2)), sep = "")))
   
-  for(i in 1:length(model_vec)){
-    print(paste(model_vec[[i]]$name, i/length(model_vec)))
+  
+  quantiles_all = data.frame(matrix(0,ncol = (q+2)*6+1, nrow = m))
+  colnames(quantiles_all) = c("name",
+                          as.vector(paste(c("q_pos"),c(1:(q+2)), sep = "")), 
+                          as.vector(paste(c("q_neg"),c(1:(q+2)), sep = "")),
+                          as.vector(paste(c("q_pos_neg"),c(1:(q+2)), sep = "")),
+                          as.vector(paste(c("q_pos_euclid"),c(1:(q+2)), sep = "")), 
+                          as.vector(paste(c("q_neg_euclid"),c(1:(q+2)), sep = "")),
+                          as.vector(paste(c("q_pos_neg_euclid"),c(1:(q+2)), sep = "")))
+  
+  vec = strsplit(path, "/")
+  QuantFolder = paste(paste(vec[[1]][1:(length(vec[[1]])-1)],collapse = "/"),"/Quantiles/", sep ="")
+  
+  QuantName = paste(QuantFolder,get_quantile_name_protein(name = "All",n = n, m = m, q = q), sep ="")
+  
+  if(!file.exists(QuantName) || recalculate == TRUE){
+    if(!dir.exists(QuantFolder)) dir.create(QuantFolder)
     
-    quant = get_quantiles_protein(path = path, model = model_vec[[i]],n = n, m = m, q = q, recalculate = recalculate)
-
-    start_ind = (i-1)*m+1
-    end_ind = start_ind + m-1
-
-    # print(quant)    
-    quantiles_all[start_ind:end_ind,] = quant
-    quantiles_all[start_ind:end_ind,1] = as.character(quant[,1])
+    for(i in 1:length(model_vec)){
+      print(paste(model_vec[[i]]$name, i/length(model_vec)))
+      
+      quant = get_quantiles_protein(path = path, model = model_vec[[i]],n = n, m = m, q = q, recalculate = recalculate)
+  
+      start_ind = (i-1)*m+1
+      end_ind = start_ind + m-1
+  
+      # print(quant)    
+      quantiles_all[start_ind:end_ind,] = quant
+      quantiles_all[start_ind:end_ind,1] = as.character(quant[,1])
+    }
+    
+    write.csv(x = quantiles_all,file = QuantName, row.names = FALSE)
+  } else {
+    quantiles_all = read.csv(file = QuantName, header = TRUE)
   }
   
   return(quantiles_all)
 }
 
-library(rgl)
 
-# plot_prot_quants(quantiles)
 
-plot_prot_quants <- function(quantiles){
+plot_one_prot_quant <- function(quantiles,q, col = "yellow", size = 15){
   
-  points3d(quantiles[,((1:(q+2))+1)], col = "red")
-  points3d(quantiles[,((1:(q+2))+1 +(q+2))], col = "blue")
-  points3d(quantiles[,((1:(q+2))+1 +(q+2)*2)], col = "green")
+  quants = (1:(q+2))
+  pos = quants+1
+  neg = quants+1 + length(quants)
+  pos_neg = quants+1 + length(quants)*2
+  
+  pos_euclid = quants+1 + length(quants)*3
+  neg_euclid = quants+1 + length(quants)*4
+  pos_neg_euclid = quants+1 + length(quants)*5
+  
+  
+  points3d(quantiles[,pos], col = col, size = size)
+  points3d(quantiles[,neg], col = col, size = size)
+  points3d(quantiles[,pos_neg], col = col, size = size)
+  
+  points3d(quantiles[,pos_euclid], col = col, size = size)
+  points3d(quantiles[,neg_euclid], col = col, size = size)
+  points3d(quantiles[,pos_neg_euclid], col = col, size = size)
+  
+  geo = c(sum(quantiles[,2]), sum(quantiles[,3]),sum(quantiles[,4]))/nrow(quantiles)
+  print(geo)
+  
+  print(paste(min(quantiles[,2]), max(quantiles[,2])))
+  
+  text3d(quantiles[1,1], x = geo[1], y = geo[2], z = geo[3], cex = 5, col = "yellow")
 }
 
+plot_prot_quants <- function(quantiles, q, functionals, plotMode = "Booth", withEuclid = FALSE){
+
+  functionalInds = which(quantiles[,1] %in% functionals)
+  
+  nonFunctionalInds = 1:nrow(quantiles)[-functionalInds]
+  
+  quants = (1:(q+2))
+  pos = quants+1
+  neg = quants+1 + length(quants)
+  pos_neg = quants+1 + length(quants)*2
+  
+  pos_euclid = quants+1 + length(quants)*3
+  neg_euclid = quants+1 + length(quants)*4
+  pos_neg_euclid = quants+1 + length(quants)*5
+  
+  print(pos)
+  print(neg)
+  print(pos_neg)
+  
+  if(plotMode == "Booth" || plotMode == "onlyNonFunctional"){
+    points3d(quantiles[nonFunctionalInds,pos], col = "red")
+    points3d(quantiles[nonFunctionalInds,neg], col = "blue")
+    points3d(quantiles[nonFunctionalInds,pos_neg], col = "green")
+
+    if(withEuclid){
+      points3d(quantiles[nonFunctionalInds,pos_euclid], col = "brown")
+      points3d(quantiles[nonFunctionalInds,neg_euclid], col = "pink")
+      points3d(quantiles[nonFunctionalInds,pos_neg_euclid], col = "lightblue")
+    }
+  }
+  
+  if(plotMode == "Booth" || plotMode == "onlyFunctional") {
+
+    points3d(quantiles[functionalInds,pos], col = "red", size = 10)
+    points3d(quantiles[functionalInds,neg], col = "blue", size = 10)
+    points3d(quantiles[functionalInds,pos_neg], col = "green", size = 10)
+    
+    if(withEuclid){
+      points3d(quantiles[functionalInds,pos_euclid], col = "brown",size = 10)
+      points3d(quantiles[functionalInds,neg_euclid], col = "pink", size = 10)
+      points3d(quantiles[functionalInds,pos_neg_euclid], col = "lightblue", size = 10)
+    }
+  }
+}
+
+plot_prot_quants(quantiles, q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
+
+getProteinMeasure <- function(model,neighbors = 20){
+  
+  measure = rep(1,nrow(model$centers))
+  for(i in 1:nrow(model$centers)){
+    nearestPoints = which.minn(model$d_surface[i,], n = neighbors)
+    if(model$posNegVector[i] == FALSE && sum(model$posNegVector[nearestPoints]) > 0){
+      measure[i] = sum(model$posNegVector[nearestPoints])
+    }
+    
+    if(model$posNegVector[i] == TRUE && sum(model$posNegVector[nearestPoints]) < neighbors){
+      measure[i] = (neighbors - sum(model$posNegVector[nearestPoints]))
+    }
+  }
+  
+  measure = normalize(measure)
+  
+  return(measure)
+}
 
 #-------------------------------------------------------------------------------------------------------------
 
@@ -322,13 +485,109 @@ m = 100
 q = 1
 path = "/home/willy/Schreibtisch/106Test/Output/"
 
+
+parentF
+
+
+
 prot2 = getProteinModelStichedSurface(protName = "003", plot = TRUE)
 
-models = getAllProteinModels()
+GLOBAL_VERBOSITY = 1
+models = getAllProteinModels(n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000)
 
-quantiles = get_quantiles_all_proteins(model_vec = models, path = path, n = 100, m = 100, q = 1, recalculate = TRUE)
 
 
-plot_prot_quants(quantiles)
+getProteinMeasure(models[[j]])
 
+prot2 = getProteinModelStichedSurface(protName = "001", plot = TRUE,recalculate = FALSE,n_s_euclidean = 1000,n_s_dijkstra = 1000, stitchNum = 2000)
+
+mod = getProteinModelStichedSurface(protName = "016", plot = TRUE,recalculate = FALSE,n_s_euclidean = 1000,n_s_dijkstra = 1000, stitchNum = 2000)
+
+points3d(mod$centers[which(mod$measure > 0.05),], col = "green", size = 10)
+
+
+plotProteinModel(fNameOrigingal = "/home/willy/Schreibtisch/106Test/Output/000_Trx/000_Trx.obj",
+                 lis = models[[7]], openNew = FALSE, sz = 2)
+
+rgl.snapshot("/home/willy/PredictingProteinInteractions/Results/Images/PotentialBoarders.png")
+
+
+plotProteinModel(lis = models[[7]], openNew = FALSE, sz = 5)
+
+
+models[[j]] = prot2
+rglOb = read.obj("/home/willy/Schreibtisch/106Test/Output/000_Trx/000_Trx.obj",convert.rgl = TRUE)
+
+shade3d(rglOb)
+
+points3d(prot2$centers)
+
+for(i in 1:nrow(models[[1]]$centers)){
+  # if(models[[1]]$posNegVector[i] == TRUE){
+  #   points3d(x = models[[1]]$centers[i,1], y = models[[1]]$centers[i,2], z = models[[1]]$centers[i,3], col = "blue", size = measure[i]*200)
+  # } else {
+  #   points3d(x = models[[1]]$centers[i,1], y = models[[1]]$centers[i,2], z = models[[1]]$centers[i,3], col = "red", size = measure[i]*200)
+  # }
+
+  points3d(x = models[[j]]$centers[i,1], y = models[[j]]$centers[i,2], z = models[[j]]$centers[i,3], col = "green", size = measure[i]*200)
+}
+
+
+
+
+
+points3d(models[[2]]$centers+ c(1,1,1))
+
+
+quantiles = get_quantiles_all_proteins(model_vec = models, path = path, n = 0.1, m = 100, q = 1, recalculate = FALSE)
+
+colnames(quantiles)[11:13]
+df = cbind(as.character(quantiles[,1]), rep(0.1,nrow(quantiles)),quantiles[,c(11:13)])
+
+
+getGeometricCenters(df, 0.1)
+getGeometricCenters
+
+
+m = as.matrix(dist(quantiles[,8:10], method = "manhattan"))
+colnames(m) = quantiles[,1]
+rownames(m) = quantiles[,1]
+
+
+colnames(m)[which.minn(m[7,],n = 106)]
+
+colnames(quantiles)
+
+distances = list()
+for(i in 1:106){
+  distances[[i]] = dist(matrix(quantiles[i,-1], nrow = 3), method = "manhattan")
+  
+  if(colnames(m)[i] %in% functionals) points3d(distances[[i]][1], distances[[i]][2], distances[[i]][3], col ="red", size = 10)
+  else points3d(distances[[i]][1], distances[[i]][2], distances[[i]][3], col ="blue")
+}
+
+
+print(distances[[1]])
+
+
+
+functionals = c(getFunctionalProteins(), "000_Trx")
+functionals
+
+plot_prot_quants(quantiles, q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
+
+prot_indices = which(quantiles[,1] == "000_Trx")
+
+plot_prot_quants(quantiles[prot_indices,],functionals = functionals,q)
+
+q = 1
+plot_one_prot_quant(quantiles[which(quantiles[,1] == "000_Trx"),],q = q,col = "black", size = 20)
+plot_one_prot_quant(quantiles[which(quantiles[,1] == "027"),],q = q,col = "black", size = 20)
+plot_one_prot_quant(quantiles[which(quantiles[,1] == "013"),],q = q,col = "black", size = 20)
+plot_one_prot_quant(quantiles[which(quantiles[,1] == "016"),],q = q,col = "black", size = 20)
+plot_one_prot_quant(quantiles[which(quantiles[,1] == "053"),],q = q,col = "black", size = 20)
+
+plot_one_prot_quant(quantiles[which(quantiles[,1] == "002"),],q = q,col = "black", size = 20)
+
+functionals
 

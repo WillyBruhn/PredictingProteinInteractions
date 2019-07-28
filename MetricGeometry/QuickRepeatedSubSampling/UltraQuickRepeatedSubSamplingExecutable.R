@@ -128,6 +128,3 @@ quickRepSampling(OutputPath = opt$ProteinsPath,
                  plot = opt$plot,
                  functionals = functionals,
                  distance_method = opt$distance_method)
-
-
-

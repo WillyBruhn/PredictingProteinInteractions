@@ -575,7 +575,7 @@ getManhattanProjection <- function(all_protein_F_approximations){
 
 
 quickRepSampling <- function(OutputPath, distance_path, fName, pos = TRUE, n = 100, m = 22, q = 21, plot = FALSE, functionals = NULL, functionalMainTarget = "000_Trx", distance_method = "emd"){
-  # actually q should be possible to be larger than n
+  # actually q should be capable to be larger than n
   #
   #-------------------------------------------------------
   if(distance_method == "emd"){

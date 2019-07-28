@@ -38,14 +38,14 @@ getDataSet <- function(datasetPath){
     trainTest = vecSmall[1]
     modelName = strsplit(vecSmall[2],split = ".off")[[1]]
     
-    print(allFiles_off[i])
+    my_print(allFiles_off[i])
     
     objNameIn = paste(strsplit(allFiles_off[i],split = ".off")[[1]][1],".objPre", sep ="")
     objNameOut = paste(strsplit(allFiles_off[i],split = ".off")[[1]][1],".obj", sep ="")
     # print(objName)
     
     if(!file.exists(objNameIn)){
-      print(paste("Creating obj file ", objNameIn ,"...", sep =""))
+      my_print(paste("Creating obj file ", objNameIn ,"...", sep =""))
       
       # from off 2 obj
       system(paste("off2obj ",allFiles_off[i] ," > ", objNameIn, sep =""))
@@ -85,7 +85,7 @@ getAllModel_F_approximations <- function(model_vec, n = 100, m = 50, q = 2){
   distributions_lists = list()
   
   for(i in 1:length(model_vec)){
-    print(i/length(model_vec))
+    my_print(i/length(model_vec))
     F_app = generateF_approximations_3dModel(model_vec[[i]]$vert,n = n,q = q, m = m)
     distributions_lists[[i]] =  list("name" = model_vec[[i]]$name,"F" = F_app)
   }
@@ -99,7 +99,7 @@ getAllModels <- function(dataSet, maxNum = NULL){
   if(is.null(maxNum)) maxNum = nrow(dataSet)
   
   for(i in 1:maxNum){
-    print(paste(i/maxNum))
+    my_print(paste(i/maxNum))
     m1 = getModel10Net(dataSet$file[i], FALSE)
     n1 = dataSet$model[i]
     all_models[[i]] = list("vert" = m1, "name" = n1)
@@ -120,11 +120,11 @@ getAllModels <- function(dataSet, maxNum = NULL){
 #                                             plot = TRUE)
 
 
-downsampleEuclideanAndGetGeodesicModel10Net <- function(objPath, n_s_euclidean = 4000, n_s_dijkstra = 50, plot = FALSE){
+downsampleEuclideanAndGetGeodesicModel10Net <- function(objPath, n_s_euclidean = 4000, n_s_dijkstra = 50, plot = FALSE, verbose = FALSE){
   model_rgl = read.obj(objPath, convert.rgl = FALSE)
   model_rgl_plot = read.obj(objPath, convert.rgl = TRUE)
   
-  print("plotting")
+  if(verbose) my_print("plotting")
   if(plot) shade3d(model_rgl_plot)
   
   points = t(model_rgl$shapes[[1]]$positions)
@@ -137,10 +137,10 @@ downsampleEuclideanAndGetGeodesicModel10Net <- function(objPath, n_s_euclidean =
   # 
   # if(plot) shade3d(model)
   
-  print(paste("model has ", nrow(points),", points", nrow(edges), " edges", sep ="" ))
+  my_print(paste("model has ", nrow(points),", points", nrow(edges), " edges", sep ="" ))
   
   ob = preProcessMesh(points = points, edges = edges, plot = FALSE)
-  print(paste("processed model has ", nrow(ob$points), "points", sep ="" ))
+  my_print(paste("processed model has ", nrow(ob$points), "points", sep ="" ))
   
   if(ob$numOfConComps != 1){
     print(paste(" ... and ", ob$numOfConComps, " connected components.", sep =""))
@@ -150,14 +150,8 @@ downsampleEuclideanAndGetGeodesicModel10Net <- function(objPath, n_s_euclidean =
   graph = ob$graph
   edges = ob$edges
   
-  # return(ob)
-  
-  # points = points[unique(unlist(graph[[c(1:length(graph[1]))]])),]
-  
-  # return(graph)
-  
   library(rdist)
-  print("step 1: euclidean fps ...")
+  my_print("step 1: euclidean fps ...")
   
   sampled_indices = c(1:nrow(points))
   if(n_s_euclidean < nrow(points)){
@@ -170,10 +164,10 @@ downsampleEuclideanAndGetGeodesicModel10Net <- function(objPath, n_s_euclidean =
   
   sampled_indices2 = c(1:length(sampled_indices))
   # furthermore subsample with the distances on the surface
-  print("step 2: surface distance of sampled points ...")
+  my_print("step 2: surface distance of sampled points ...")
   d_surface = myShortestDistances(graph,sampled_indices)
   
-  print("step 3: surface fps ...")
+  my_print("step 3: surface fps ...")
   # ??farthest_point_sampling
   
   # sampled_indices2 = 
@@ -229,12 +223,29 @@ getSmallDataSet <- function(dataSet,NumOfObjectsFromEachClass = 10){
   return(smallDataSet)
 }
 
+library(lubridate)
 getSurfaceSampledModels <- function(dataSet, n_s_euclidean = 1000, n_s_dijkstra = 100, plot = TRUE){
   
   models = list()
   
+  times = rep(0,nrow(dataSet))
+  
+  start.time <- Sys.time()
   for(i in 1:nrow(dataSet)){
-    print(paste(dataSet[i,3], i/nrow(dataSet)))
+    end.time <- Sys.time()
+    time.taken <- end.time - start.time
+    start.time <- Sys.time()
+    
+    times[i] = time.taken
+    eta = 0
+    if(i > 10){
+      avgLast10 = mean(times[(i-10):i])
+      
+      eta = seconds_to_period((nrow(dataSet)-i)*avgLast10)
+    }
+    
+    my_print(paste(dataSet[i,3], i/nrow(dataSet), ", eta: ",eta ),0)
+    
     
     # close all other rgl-windows
     while (rgl.cur() > 0) { rgl.close() }
@@ -420,7 +431,7 @@ datasetPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNe
 dataSet = getDataSet(datasetPath)
 
 # get the first 20 models from each class
-smallDataSet = getSmallDataSet(dataSet,80)
+smallDataSet = getSmallDataSet(dataSet,400)
 
 
 smallDataSet = na.omit(smallDataSet)
@@ -435,6 +446,8 @@ smallDataSet = smallDataSet[sub,]
 # smallDataSet[1,]
 
 # apply farthest point sampling and store the geodesic distances
+
+GLOBAL_VERBOSITY = 0
 models = getSurfaceSampledModels(smallDataSet,plot = FALSE,n_s_euclidean = 1000,n_s_dijkstra = 50)
 
 
@@ -465,10 +478,9 @@ length(models)
 
 # # randomly sample and calculate DE
 quantiles = distributionOfDE(models = models,
-                             n = 40,
+                             n = 20,
                              m =100,
-                             q = 10)
-
+                             q = 1)
 
 plotQuantiles(quantiles,FALSE)
 
