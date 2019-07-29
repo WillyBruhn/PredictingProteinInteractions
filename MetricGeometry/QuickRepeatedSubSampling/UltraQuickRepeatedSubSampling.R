@@ -238,7 +238,7 @@ plot2d_dist_approx <-function(pos13_F_approx_list, name=NULL, col = "red", xli =
   }
 }
 
-generateF_approximations_3dModelWithMetric <- function(d_surface, d_euclid = NULL, n = 100, m = 10, q = 2, pos =TRUE){
+generateF_approximations_3dModelWithMetric <- function(d_surface, d_euclid = NULL, n = 100, m = 10, q = 2, pos =TRUE, mode = "Eccentricities"){
   
   # print(nrow(model_points))
   
@@ -255,7 +255,7 @@ generateF_approximations_3dModelWithMetric <- function(d_surface, d_euclid = NUL
       F_approx_list[[i]] = approximateCDF(F_list[[i]],q)
     } else {
 
-      F_with_same_ind = sampleDistancesAndCalculateCDFofEcWith2Distances(d_surface, d_euclid, n = n,plot = FALSE)
+      F_with_same_ind = sampleDistancesAndCalculateCDFofEcWith2Distances(d_surface, d_euclid, n = n,plot = FALSE, mode = mode)
       
       F_list[[i]] = F_with_same_ind$F1
       F_approx_list[[i]] = approximateCDF(F_list[[i]],q)

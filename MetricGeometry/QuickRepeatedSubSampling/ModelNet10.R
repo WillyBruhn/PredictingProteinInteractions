@@ -170,11 +170,11 @@ downsampleEuclideanAndGetGeodesicModel10Net <- function(objPath, n_s_euclidean =
   my_print("step 3: surface fps ...")
   # ??farthest_point_sampling
   
-  # sampled_indices2 = 
-  # if(n_s_dijkstra != n_s_euclidean){
+  sampled_indices2 = c(1:n_s_euclidean)
+  if(n_s_dijkstra != n_s_euclidean){
     fps_surface <- farthest_point_sampling(d_surface)
     sampled_indices2 = fps_surface[1:n_s_dijkstra]
-  # } 
+  }
 
 
   # rgl.open()
@@ -301,6 +301,7 @@ distributionOfDE <- function(models,
                              n = 10,
                              m = 3,
                              q = 1,
+                             mode = "Distances",
                              plot = TRUE){
   
   quantilesOut = data.frame(matrix(0,ncol = q+3, nrow = 0))
@@ -314,9 +315,9 @@ distributionOfDE <- function(models,
     
     if(!dir.exists(quantilesDir)) dir.create(quantilesDir)
     
-    quantilesName = getGeoDistanceQuantileName(quantilesDir,0,models[[i]]$n_s_euclidean,models[[i]]$n_s_dijkstra,n = n,m = m,q = q, fname = models[[i]]$name)
+    quantilesName = getGeoDistanceQuantileName(quantilesDir,mode,models[[i]]$n_s_euclidean,models[[i]]$n_s_dijkstra,n = n,m = m,q = q, fname = models[[i]]$name)
     if(!file.exists(quantilesName)){
-      Fapp = generateF_approximations_3dModelWithMetric(d_surface = models[[i]]$d_surface, d_euclid = models[[i]]$d_euclid, n = n,m = m,q = q)
+      Fapp = generateF_approximations_3dModelWithMetric(d_surface = models[[i]]$d_surface, d_euclid = models[[i]]$d_euclid, n = n,m = m,q = q,mode = mode)
 
       # q+2 quantiles per distance + 1 name
       quantiles = data.frame(matrix(0,ncol = (q+2)*2+1, nrow = m))
@@ -337,7 +338,7 @@ distributionOfDE <- function(models,
   
   
   if(!dir.exists(AllQuantilesPath)) dir.create(AllQuantilesPath)
-  allQuantiles = getGeoDistanceQuantileName(AllQuantilesPath,0,models[[1]]$n_s_euclidean,models[[1]]$n_s_dijkstra,n = n,m = m,q = q, fname = "All")
+  allQuantiles = getGeoDistanceQuantileName(AllQuantilesPath,mode,models[[1]]$n_s_euclidean,models[[1]]$n_s_dijkstra,n = n,m = m,q = q, fname = "All")
   
   write.csv(quantilesOut,allQuantiles)
   
@@ -431,14 +432,14 @@ datasetPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNe
 dataSet = getDataSet(datasetPath)
 
 # get the first 20 models from each class
-smallDataSet = getSmallDataSet(dataSet,400)
+smallDataSet = getSmallDataSet(dataSet,40)
 
 
 smallDataSet = na.omit(smallDataSet)
 
 nrow(smallDataSet)
 
-sub = which(getClassNamesFromSubClasses(smallDataSet[,1], splitPattern = "_") %in% c("bathtub", "toilet", "sofa", "table", "chair"))
+sub = which(getClassNamesFromSubClasses(smallDataSet[,1], splitPattern = "_") %in% c("bathtub", "toilet", "chair"))
 # sub = which(getClassNamesFromSubClasses(smallDataSet[,1], splitPattern = "_") %in% c("bathtub", "toilet"))
 smallDataSet = smallDataSet[sub,]
 
@@ -448,7 +449,8 @@ smallDataSet = smallDataSet[sub,]
 # apply farthest point sampling and store the geodesic distances
 
 GLOBAL_VERBOSITY = 0
-models = getSurfaceSampledModels(smallDataSet,plot = FALSE,n_s_euclidean = 1000,n_s_dijkstra = 50)
+models = getSurfaceSampledModels(smallDataSet,plot = FALSE,n_s_euclidean = 1000,n_s_dijkstra = 1000)
+
 
 
 mod = downsampleEuclideanAndGetGeodesicModel10Net(objPath = dataSet[2,3], n_s_euclidean = 1000, n_s_dijkstra = 1000, plot = TRUE)
@@ -462,7 +464,7 @@ points3d(mod$centers[rand,], col = "green", size = 20)
 
 
 mod2 = downsampleEuclideanAndGetGeodesicModel10Net(objPath = dataSet[2,3], n_s_euclidean = 1700, n_s_dijkstra = 1700, plot = TRUE)
-points3d(mod2$centers, col = "green", size = 20)
+points3d(mod2$centers, col = "blue", size = 20)
 
 
 for(i in 1:length(models)){
@@ -476,13 +478,48 @@ for(i in 1:length(models)){
 length(models)
 
 
+
 # # randomly sample and calculate DE
-quantiles = distributionOfDE(models = models,
-                             n = 20,
+quantilesDist = distributionOfDE(models = models,
+                             n = 100,
                              m =100,
+                             mode = "Distances",
                              q = 1)
 
-plotQuantiles(quantiles,FALSE)
+unique(getClassNamesFromSubClasses(quantilesDist[,1], "_"))
+
+quantilesEcc = distributionOfDE(models = models,
+                                 n = 1000,
+                                 m =1,
+                                 mode = "Eccentricities",
+                                 q = 1)
+
+quantilesDist
+
+quantilesDist_trans = transformQuants(quantilesDist, q=1)
+plotQuantiles(quantilesDist_trans,FALSE)
+plotQuantiles(quantilesDist,FALSE)
+
+transformQuants <- function(quantiles, q = 1){
+  tranf = quantiles
+  
+  quant = q+2
+  
+  for(i in 1:nrow(tranf)){
+    for(j in 2:quant){
+      tranf[i,1+j] = (tranf[i,1+j])/tranf[i,2]
+    }
+  }
+  
+  return(tranf)
+}
+
+
+rgl.open()
+plotQuantiles(quantilesDist,FALSE)
+plotQuantiles(quantilesEcc,TRUE)
+
+cor(quantilesDist[,-1],quantilesEcc[,-1])
 
 
 # i = 10

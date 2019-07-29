@@ -1204,60 +1204,56 @@ convModel4 <- function(TrainTest, sampleSize, sampleTimes, q, epochs = 30, batch
   model %>% 
     layer_reshape(target_shape = c(sampleSize, ncol(x_train)/sampleSize,1),input_shape = c(ncol(x_train))) %>%
 
-    layer_conv_2d(filter = 30, kernel_size = c(3,3), padding = 'same', input_shape = c(sampleSize, ncol(x_train)/sampleSize,1)) %>%
-    layer_activation("relu") %>%
-    layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
-    layer_dropout(0.1) %>%
-
-
-    layer_conv_2d(filter = 30, kernel_size = c(3,3), padding = 'same') %>%
-    layer_activation("relu") %>%
-    layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
-    layer_dropout(0.1) %>%
-
-    layer_conv_2d(filter = 30, kernel_size = c(3,3), padding = 'same') %>%
-    layer_activation("relu") %>%
-    layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
-    layer_dropout(0.1) %>%
-
-    layer_conv_2d(filter = 30, kernel_size = c(3,3), padding = 'same') %>%
-    layer_activation("relu") %>%
-    layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
-    layer_dropout(0.1) %>%
-
-    layer_conv_2d(filter = 30, kernel_size = c(3,3), padding = 'same') %>%
-    layer_activation("relu") %>%
-    layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
-    layer_dropout(0.1) %>%
-
-    layer_conv_2d(filter = 10, kernel_size = c(3,3), padding = 'same') %>%
-    layer_activation("relu") %>%
-    layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
-    layer_dropout(0.1) %>%
-
-    layer_conv_2d(filter = 10, kernel_size = c(3,3), padding = 'same') %>%
-    layer_activation("relu") %>%
-    layer_max_pooling_2d(pool_size = c(3,1),padding = 'same') %>%
-    layer_dropout(0.1) %>%
-
-    layer_conv_2d(filter = 10, kernel_size = c(3,3), padding = 'same') %>%
-    layer_activation("relu") %>%
-    layer_max_pooling_2d(pool_size = c(3,1),padding = 'same') %>%
-    layer_dropout(0.1) %>%
-    
-    layer_conv_2d(filter = 10, kernel_size = c(4,4), padding = 'same') %>%
-    layer_activation("relu") %>%
-    layer_max_pooling_2d(pool_size = c(3,3),padding = 'same') %>%
-    layer_dropout(0.1) %>%
+    # layer_conv_2d(filter = 30, kernel_size = c(3,3), padding = 'same', input_shape = c(sampleSize, ncol(x_train)/sampleSize,1)) %>%
+    # layer_activation("relu") %>%
+    # layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+    # layer_dropout(0.1) %>%
+    # 
+    # 
+    # layer_conv_2d(filter = 30, kernel_size = c(3,3), padding = 'same') %>%
+    # layer_activation("relu") %>%
+    # layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+    # layer_dropout(0.1) %>%
+    # 
+    # layer_conv_2d(filter = 30, kernel_size = c(3,3), padding = 'same') %>%
+    # layer_activation("relu") %>%
+    # layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+    # layer_dropout(0.1) %>%
+    # 
+    # layer_conv_2d(filter = 30, kernel_size = c(3,3), padding = 'same') %>%
+    # layer_activation("relu") %>%
+    # layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+    # layer_dropout(0.1) %>%
+    # 
+    # layer_conv_2d(filter = 30, kernel_size = c(3,3), padding = 'same') %>%
+    # layer_activation("relu") %>%
+    # layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+    # layer_dropout(0.1) %>%
+    # 
+    # layer_conv_2d(filter = 10, kernel_size = c(3,3), padding = 'same') %>%
+    # layer_activation("relu") %>%
+    # layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+    # layer_dropout(0.1) %>%
+    # 
+    # layer_conv_2d(filter = 10, kernel_size = c(3,3), padding = 'same') %>%
+    # layer_activation("relu") %>%
+    # layer_max_pooling_2d(pool_size = c(3,1),padding = 'same') %>%
+    # layer_dropout(0.1) %>%
+    # 
+    # layer_conv_2d(filter = 10, kernel_size = c(3,3), padding = 'same') %>%
+    # layer_activation("relu") %>%
+    # layer_max_pooling_2d(pool_size = c(3,1),padding = 'same') %>%
+    # layer_dropout(0.1) %>%
+    # 
+    # layer_conv_2d(filter = 10, kernel_size = c(4,4), padding = 'same') %>%
+    # layer_activation("relu") %>%
+    # layer_max_pooling_2d(pool_size = c(3,3),padding = 'same') %>%
+    # layer_dropout(0.1) %>%
     
     
     layer_flatten() %>%
     layer_dense(400) %>%
     layer_dense(200) %>%
-    layer_activation("relu") %>%
-    layer_dropout(0.1) %>%
-    
-    layer_dense(100) %>%
     layer_activation("relu") %>%
     layer_dropout(0.1) %>%
     
@@ -1322,6 +1318,46 @@ convModel4 <- function(TrainTest, sampleSize, sampleTimes, q, epochs = 30, batch
 }
 
 
+model5 <- function(TrainTest, sampleSize, sampleTimes, q, epochs = 30, batch_size = 64){
+  
+  x_train = TrainTest$x_train
+  y_train = TrainTest$y_train
+  x_test = TrainTest$x_test
+  y_test = TrainTest$y_test
+  
+  numClasses = TrainTest$numClasses
+  
+  
+  #---------------------------------------------------------
+  model <- keras_model_sequential()
+  model %>% 
+    layer_dense(units = 900, activation = 'relu', input_shape = c(ncol(x_train))) %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 300, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 100, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 10, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = numClasses, activation = 'softmax')
+  
+  model %>% compile(
+    loss = 'categorical_crossentropy',
+    optimizer = optimizer_rmsprop(),
+    metrics = c('accuracy')
+  )
+  
+  history <- model %>% fit(
+    x_train, y_train, 
+    epochs = epochs, batch_size = batch_size, 
+    validation_split = 0.2
+  )
+  
+  print(model %>% evaluate(x_test, y_test))
+  
+  return(model)
+}
+
 
 #---------------------------------------------------------------------------------------------------------
 #
@@ -1336,7 +1372,7 @@ q = 1
 
 # fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDir/All_ind_0_nE_1000_nD_100_n_90_m_3_q_1.csv"
 #
-fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_0_nE_1000_nD_50_n_40_m_100_q_1.csv"
+fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Distances_nE_1000_nD_1000_n_100_m_100_q_1.csv"
 quantiles = read.csv(file =fName, header = TRUE, row.names = 1)
 
 unique(getClassNamesFromSubClasses(quantiles[,1],"_"))
@@ -1346,18 +1382,21 @@ unique(getClassNamesFromSubClasses(quantiles[,1],"_"))
 # $acc
 # [1] 0.91
 
-# sub = which(getClassNamesFromSubClasses(quantiles[,1],"_") %in% c("bathtub","chair", "table"))
-# quantiles = quantiles[sub,]
+sub = which(getClassNamesFromSubClasses(quantiles[,1],"_") %in% c("bathtub", "chair"))
+quantiles = quantiles[sub,]
 
 # Tr = getTrainAndTestOnlySurf(quantiles[,1:(q+3)],sampleSize = sampleSize,sampleTimes = sampleTimes)
-Tr = getTrainAndTestOnlySurf(quantiles,sampleSize = sampleSize,sampleTimes = sampleTimes,euklid = FALSE, numPermutations = 100)
+Tr = getTrainAndTestOnlySurf(quantiles,sampleSize = sampleSize,sampleTimes = sampleTimes,euklid = TRUE, numPermutations = 30)
 
+# saveRDS(Tr, file = "/home/willy/PredictingProteinInteractions/data/ModelNet10/tmpTrain_400_s_10_10.rData")
 
 plotQuantiles(quantiles,euklid = FALSE)
 
 array_reshape(Tr$x_train[1,], dim = c(sampleSize,(q+2)*1))
 # convModel4(TrainTest = Tr,sampleSize = sampleSize,sampleTimes = sampleTimes,m = m,q = q+3,epochs = 100)
-model = convModel4(TrainTest = Tr,sampleSize = sampleSize,sampleTimes = sampleTimes,q = (q+2)*1,epochs = 100, batch_size = 128)
+model = convModel4(TrainTest = Tr,sampleSize = sampleSize,sampleTimes = sampleTimes,q = (q+2)*2,epochs = 300, batch_size = 64)
+
+print(model)
 
 Tr$y_test_original_names
 

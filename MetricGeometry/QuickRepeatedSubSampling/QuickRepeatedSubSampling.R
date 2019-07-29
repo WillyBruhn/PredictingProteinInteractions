@@ -103,6 +103,25 @@ DistributionOfEccentricities <- function(d, mu = rep(1/nrow(d),nrow(d))){
   return(F_)
 }
 
+DistancesWithMeasure <- function(d, mu = rep(1/nrow(d),nrow(d))){
+  d_mu = d*as.vector(mu)
+  return(d_mu[upper.tri(d_mu)])
+}
+
+# m = matrix(seq(1:9), ncol = 3)
+# m
+# d = as.matrix(dist(m))
+# dM = DistancesWithMeasure(d, c(1,1,1))
+# dM[upper.tri(dM)]
+# DistancesWithMeasure(d,c(10,1,1))
+# DistributionOfDistances(d, c(1,1,1))
+
+DistributionOfDistances <- function(d, mu = rep(1/nrow(d),nrow(d))){
+  F_ = ecdf(DistancesWithMeasure(d,mu))
+  return(F_)
+}
+
+
 samplePointsAndCalculateCDFofEc <- function(all_pts,n, plot = FALSE){
   sample_ind = sample(1:nrow(all_pts), size = n, replace = FALSE)
 
@@ -117,14 +136,20 @@ samplePointsAndCalculateCDFofEc <- function(all_pts,n, plot = FALSE){
   return(F_)
 }
 
-sampleDistancesAndCalculateCDFofEcWith <- function(d,n, plot = FALSE){
+sampleDistancesAndCalculateCDwithD<- function(d,n, plot = FALSE, mode = "Eccentricities"){
   if(nrow(d) < n ) print(paste("Error: n too large. nrow(d) = ", nrow(d), " < ", n, " = n", sep =""))
   
   sample_ind = sample(1:nrow(d), size = n, replace = FALSE)
   
   d_samp = d[sample_ind,sample_ind]
   
-  F_ = DistributionOfEccentricities(d_samp)
+  F_ = c()
+  if(mode == "Eccentricities"){
+    F_ = DistributionOfEccentricities(d_samp)
+  }else if(mode == "Distances"){
+    F_ = DistributionOfDistances(d_samp)
+  }
+  
   
   if(plot){
     plot(F_)
@@ -133,17 +158,27 @@ sampleDistancesAndCalculateCDFofEcWith <- function(d,n, plot = FALSE){
   return(F_)
 }
 
-sampleDistancesAndCalculateCDFofEcWith2Distances <- function(d1, d2, n, plot = FALSE){
+sampleDistancesAndCalculateCDFofEcWith2Distances <- function(d1, d2, n, plot = FALSE, mode = "Eccentricities"){
   if(nrow(d1) < n ) print(paste("Error: n too large. nrow(d1) = ", nrow(d1), " < ", n, " = n", sep =""))
   if(nrow(d2) < n ) print(paste("Error: n too large. nrow(d2) = ", nrow(d2), " < ", n, " = n", sep =""))
   
   sample_ind = sample(1:nrow(d1), size = n, replace = FALSE)
   
+  F_1 = c()
   d_samp_1 = d1[sample_ind,sample_ind]
-  F_1 = DistributionOfEccentricities(d_samp_1)
+  if(mode == "Eccentricities"){
+    F_1 = DistributionOfEccentricities(d_samp_1)
+  }else if(mode == "Distances"){
+    F_1 = DistributionOfDistances(d_samp_1)
+  }
   
+  F_2 = c()
   d_samp_2 = d2[sample_ind,sample_ind]
-  F_2 = DistributionOfEccentricities(d_samp_2)
+  if(mode == "Eccentricities"){
+    F_2 = DistributionOfEccentricities(d_samp_2)
+  }else if(mode == "Distances"){
+    F_2 = DistributionOfDistances(d_samp_2)
+  }
   
   return(list("F1" = F_1, "F2" = F_2))
 }
