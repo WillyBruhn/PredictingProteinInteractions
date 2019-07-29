@@ -1,9 +1,9 @@
 
 
 mode = "SingleDistance" 
-n = 5
-m = 5
-q = 2
+n = 100
+m = 500
+q = 10
 doMutComp = FALSE
 
 
@@ -18,7 +18,7 @@ dirs = dirs[-which(dirs == notDone)]
 
 print(paste("processing ", dirs))
 
-dirs = dirs[1:3]
+# dirs = dirs[1:3]
 
 for(k in 1:length(dirs)){
   
@@ -72,7 +72,6 @@ for(k in 1:length(dirs)){
 
 
 # combine the summaries from all folders
-dirs
 
 # name + statistics = 9 values
 summariesTable = data.frame(matrix(0,ncol = 8+5, nrow = 0))
@@ -81,15 +80,25 @@ colnames(summariesTable) = c("name", "n", "m", "q", "method", "Min.", "1st Qu.",
 for(k in 1:length(dirs)){
   summaries = list.files(paste(dirs[k], "/QRsampDistances/Summaries/" , sep =""), full.names = TRUE)
 
+  summaries = na.omit(summaries)
+  
+  # print(dirs[k])
+  # print(k)
+  # print(summaries)
+  
   for(i in 1:length(summaries)){
     
     df = data.frame(matrix(0,ncol = 8+5))
     colnames(df) = c("name", "n", "m", "q", "method", "Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max.", "mean", "var")
     
-    
+    # print(summaries[i])
     temp = strsplit(summaries[i],split = ".txt")[[1]]
+    # print(temp)
+    
     vec = strsplit(temp,split = "_")[[1]]
     v2 = vec[(length(vec)-7):length(vec)]
+    
+    # print(v2)
     
     method = v2[1]
     n = as.numeric(v2[4])
@@ -110,7 +119,7 @@ for(k in 1:length(dirs)){
     df[1,5] = method
     df[1,6:ncol(df)] = sum
     
-    print(df)
+    # print(df)
     
     summariesTable = rbind(summariesTable,df)
   }
