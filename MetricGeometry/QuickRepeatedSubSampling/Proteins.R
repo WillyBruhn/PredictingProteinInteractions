@@ -1,14 +1,15 @@
-library(rgl)
 
-s1 = "/home/willy/PredictingProteinInteractions/Classification/NNClassification/additionalScripts/TriangulateIsoSurface.R"
+
+if(WS == FALSE){
+  s1 = "/home/willy/PredictingProteinInteractions/Classification/NNClassification/additionalScripts/TriangulateIsoSurface.R"
+  s2 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/UltraQuickRepeatedSubSampling.R"
+  s3 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/helperFunctions.R"
+}
+
 source(s1)
-
-s2 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/UltraQuickRepeatedSubSampling.R"
 source(s2)
-
-
-s3 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/helperFunctions.R"
 source(s3)
+
 
 library(keras)
 library(readobj)
@@ -108,6 +109,14 @@ getFApproximationsSumMethod <- function(mod, n = 10,m = 100,q=1){
   return(F_approximations)
 }
 
+# 
+# hist(models5[[1]]$measure)
+# hist(models10[[1]]$measure)
+# models5[[1]]$measure - models20[[1]]$measure
+# getFApproximationsSumMethod(models5[[1]], n = 1, m = 1)
+
+
+
 generateF_approximations_Protein <- function(model_points, posNegVector, n = 100, m = 10, q = 2){
   
   pos13_F_list = list()
@@ -187,6 +196,7 @@ getAllProteinModels = function(path = "/home/willy/Schreibtisch/106Test/Output/"
                                n_s_euclidean = 5000,
                                n_s_dijkstra = 5000,
                                stitchNum = 10000,
+                               measureNearestNeighbors = 20,
                                onlyTheseIndices = NULL,
                                recalculate = FALSE){
   
@@ -195,7 +205,11 @@ getAllProteinModels = function(path = "/home/willy/Schreibtisch/106Test/Output/"
   
   proteinModels = list()
   for(i in 1:length(dirs)){
-    proteinModels[[i]] = getProteinModelStichedSurface(path = path, protName = dirs[i], n_s_euclidean = n_s_euclidean,n_s_dijkstra = n_s_dijkstra, plot = FALSE, recalculate = recalculate, stitchNum =stitchNum)
+    proteinModels[[i]] = getProteinModelStichedSurface(path = path, protName = dirs[i], n_s_euclidean = n_s_euclidean,
+                                                       n_s_dijkstra = n_s_dijkstra, plot = FALSE,
+                                                       recalculate = recalculate,
+                                                       stitchNum =stitchNum,
+                                                       measureNearestNeighbors = measureNearestNeighbors)
   }
   
   return(proteinModels)
@@ -228,6 +242,7 @@ getProteinModelStichedSurface <- function(path = "/home/willy/Schreibtisch/106Te
                                           n_s_euclidean = 5000,
                                           n_s_dijkstra = 5000,
                                           stitchNum = 5000,
+                                          measureNearestNeighbors = 20,
                                           plot = FALSE,
                                           recalculate = FALSE){
   # first stich the model together
@@ -298,13 +313,25 @@ getProteinModelStichedSurface <- function(path = "/home/willy/Schreibtisch/106Te
     
     lis = list("centers" = centers, "posNegVector" = posNegVector, "d_surface" = d_surface, "name" = protName)
     
-    mu = getProteinMeasure(lis)
-    lis = list("centers" = centers, "posNegVector" = posNegVector, "d_surface" = d_surface, "name" = protName, "measure" = mu)
+    mu = getProteinMeasure(lis, neighbors = measureNearestNeighbors)
+    lis = list("centers" = centers, "posNegVector" = posNegVector, "d_surface" = d_surface, "name" = protName, "measure" = mu, "measureNearestNeighbors" = measureNearestNeighbors)
 
     saveRDS(lis,file = fNameModelDownsampled)
   }
   
   lis = readRDS(fNameModelDownsampled)
+  
+  my_print(fNameModelDownsampled, 1)
+  
+  if(is.null(lis$measureNearestNeighbors) || lis$measureNearestNeighbors != measureNearestNeighbors) {
+    my_print(paste("recalculating measure for ", fNameModelDownsampled, sep = ""), 1)
+    
+    mu = getProteinMeasure(lis, neighbors = measureNearestNeighbors)
+    lis = list("centers" = lis$centers, "posNegVector" = lis$posNegVector, "d_surface" = lis$d_surface, "name" = lis$name, "measure" = mu, "measureNearestNeighbors" = measureNearestNeighbors)
+    saveRDS(lis,file = fNameModelDownsampled)
+  }
+  
+    
   
   if(plot){
     plotProteinModel(fNameOrigingal, lis)
@@ -314,15 +341,15 @@ getProteinModelStichedSurface <- function(path = "/home/willy/Schreibtisch/106Te
 }
 
 
-get_quantile_name_protein <- function(name, n,m,q){
-  paste(name,"_n_",n,"_m_",m,"_q_",q,".csv",sep ="")
+get_quantile_name_protein <- function(name, n,m,q, measureNN){
+  paste(name,"_n_",n,"_m_",m,"_q_",q,"_muNN_",measureNN, ".csv",sep ="")
 }
 
-get_quantiles_protein <- function(path = "/home/willy/Schreibtisch/106Test/Output/", model, n, m, q, recalculate = FALSE){
+get_quantiles_protein <- function(path = "/home/willy/Schreibtisch/106Test/Output/", model, n, m, q, measureNN, recalculate = FALSE){
   quantFolder = paste(path = path, "/", model$name, "/Quantiles/", sep ="")
   if(!dir.exists(quantFolder)) dir.create(quantFolder)
   
-  quantFileName = paste(quantFolder, get_quantile_name_protein("quantiles", n, m, q), sep = "")
+  quantFileName = paste(quantFolder, get_quantile_name_protein("quantiles", n, m, q, measureNN), sep = "")
   
   if(!file.exists(quantFileName) || recalculate == TRUE){
     quantiles = sampleEccentricitiesAndGetQuantiles(model = model, n = n, m = m, q = q)
@@ -354,7 +381,8 @@ get_quantiles_all_proteins <- function(model_vec, path, n, m ,q, recalculate = F
   vec = strsplit(path, "/")
   QuantFolder = paste(paste(vec[[1]][1:(length(vec[[1]])-1)],collapse = "/"),"/Quantiles/", sep ="")
   
-  QuantName = paste(QuantFolder,get_quantile_name_protein(name = "All",n = n, m = m, q = q), sep ="")
+  measureNN = model_vec[[1]]$measureNearestNeighbors
+  QuantName = paste(QuantFolder,get_quantile_name_protein(name = "All",n = n, m = m, q = q, measureNN = measureNN), sep ="")
   
   if(!file.exists(QuantName) || recalculate == TRUE){
     if(!dir.exists(QuantFolder)) dir.create(QuantFolder)
@@ -362,7 +390,7 @@ get_quantiles_all_proteins <- function(model_vec, path, n, m ,q, recalculate = F
     for(i in 1:length(model_vec)){
       print(paste(model_vec[[i]]$name, i/length(model_vec)))
       
-      quant = get_quantiles_protein(path = path, model = model_vec[[i]],n = n, m = m, q = q, recalculate = recalculate)
+      quant = get_quantiles_protein(path = path, model = model_vec[[i]],n = n, m = m, q = q, recalculate = recalculate, measureNN = measureNN)
   
       start_ind = (i-1)*m+1
       end_ind = start_ind + m-1
@@ -414,7 +442,8 @@ plot_prot_quants <- function(quantiles, q, functionals, plotMode = "Booth", with
 
   functionalInds = which(quantiles[,1] %in% functionals)
   
-  nonFunctionalInds = 1:nrow(quantiles)[-functionalInds]
+  
+  nonFunctionalInds = c(1:nrow(quantiles))[-functionalInds]
   
   quants = (1:(q+2))
   pos = quants+1
@@ -455,7 +484,7 @@ plot_prot_quants <- function(quantiles, q, functionals, plotMode = "Booth", with
   }
 }
 
-plot_prot_quants(quantiles, q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
+# plot_prot_quants(quantiles, q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
 
 getProteinMeasure <- function(model,neighbors = 20){
   
@@ -483,63 +512,51 @@ n_s_dijkstra = 500
 n = 10
 m = 100
 q = 1
-path = "/home/willy/Schreibtisch/106Test/Output/"
+# path = "/home/willy/Schreibtisch/106Test/Output/"
+path = "/home/willy/PredictingProteinInteractions/data/120Experiment/Output/"
+
+GLOBAL_VERBOSITY = 2
+models1 = getAllProteinModels(path = path, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 1, recalculate = FALSE)
+quantiles1 = get_quantiles_all_proteins(model_vec = models1, path = path, n = 1, m = 1, q = 1, recalculate = FALSE)
+
+models5 = getAllProteinModels(path = path, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 5, recalculate = FALSE)
+quantiles5 = get_quantiles_all_proteins(model_vec = models5, path = path, n = 1, m = 1, q = 1, recalculate = FALSE)
 
 
-parentF
+models10 = getAllProteinModels(path = path, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE)
+quantiles10 = get_quantiles_all_proteins(model_vec = models10, path = path, n = 1, m = 1, q = 1, recalculate = FALSE)
+
+models20 = getAllProteinModels(path = path, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 20, recalculate = FALSE)
+quantiles20 = get_quantiles_all_proteins(model_vec = models20, path = path, n = 1, m = 1, q = 1, recalculate = FALSE)
+
+models500 = getAllProteinModels(path = path, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 500, recalculate = FALSE)
+quantiles500 = get_quantiles_all_proteins(model_vec = models500, path = path, n = 1, m = 1, q = 1, recalculate = FALSE)
+
+models10[[1]]$measureNearestNeighbors
+models5[[1]]$measureNearestNeighbors
+models20[[1]]$measureNearestNeighbors
+
+quantiles10[1:1,1:5]
+quantiles5[1:1,1:5]
+quantiles20[1:1,1:5]
+
+quantiles10 + quantiles5
+
+t = read.table("/home/willy/PredictingProteinInteractions/data/labels120.txt", header = TRUE)
+functionals = tolower(as.character(t[which(t[,2] == "glutathionineBinding"),1]))
+
+inds = which(quantiles[,1] %in% functionals)
+notInds = c(1:nrow(quantiles))[-inds]
 
 
-
-prot2 = getProteinModelStichedSurface(protName = "003", plot = TRUE)
-
-GLOBAL_VERBOSITY = 1
-models = getAllProteinModels(n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000)
-
-
-
-getProteinMeasure(models[[j]])
-
-prot2 = getProteinModelStichedSurface(protName = "001", plot = TRUE,recalculate = FALSE,n_s_euclidean = 1000,n_s_dijkstra = 1000, stitchNum = 2000)
-
-mod = getProteinModelStichedSurface(protName = "016", plot = TRUE,recalculate = FALSE,n_s_euclidean = 1000,n_s_dijkstra = 1000, stitchNum = 2000)
-
-points3d(mod$centers[which(mod$measure > 0.05),], col = "green", size = 10)
+plot_prot_quants(quantiles5, q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
+plot_prot_quants(quantiles10, q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
+plot_prot_quants(quantiles20, q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
+plot_prot_quants(quantiles500, q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
+plot_prot_quants(quantiles1, q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
+# plot_prot_quants
 
 
-plotProteinModel(fNameOrigingal = "/home/willy/Schreibtisch/106Test/Output/000_Trx/000_Trx.obj",
-                 lis = models[[7]], openNew = FALSE, sz = 2)
-
-rgl.snapshot("/home/willy/PredictingProteinInteractions/Results/Images/PotentialBoarders.png")
-
-
-plotProteinModel(lis = models[[7]], openNew = FALSE, sz = 5)
-
-
-models[[j]] = prot2
-rglOb = read.obj("/home/willy/Schreibtisch/106Test/Output/000_Trx/000_Trx.obj",convert.rgl = TRUE)
-
-shade3d(rglOb)
-
-points3d(prot2$centers)
-
-for(i in 1:nrow(models[[1]]$centers)){
-  # if(models[[1]]$posNegVector[i] == TRUE){
-  #   points3d(x = models[[1]]$centers[i,1], y = models[[1]]$centers[i,2], z = models[[1]]$centers[i,3], col = "blue", size = measure[i]*200)
-  # } else {
-  #   points3d(x = models[[1]]$centers[i,1], y = models[[1]]$centers[i,2], z = models[[1]]$centers[i,3], col = "red", size = measure[i]*200)
-  # }
-
-  points3d(x = models[[j]]$centers[i,1], y = models[[j]]$centers[i,2], z = models[[j]]$centers[i,3], col = "green", size = measure[i]*200)
-}
-
-
-
-
-
-points3d(models[[2]]$centers+ c(1,1,1))
-
-
-quantiles = get_quantiles_all_proteins(model_vec = models, path = path, n = 0.1, m = 100, q = 1, recalculate = FALSE)
 
 colnames(quantiles)[11:13]
 df = cbind(as.character(quantiles[,1]), rep(0.1,nrow(quantiles)),quantiles[,c(11:13)])
@@ -572,9 +589,10 @@ print(distances[[1]])
 
 
 functionals = c(getFunctionalProteins(), "000_Trx")
-functionals
 
-plot_prot_quants(quantiles, q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
+
+
+
 
 prot_indices = which(quantiles[,1] == "000_Trx")
 

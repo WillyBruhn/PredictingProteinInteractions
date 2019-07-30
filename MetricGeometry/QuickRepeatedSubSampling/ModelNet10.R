@@ -192,9 +192,10 @@ downsampleEuclideanAndGetGeodesicModel10Net <- function(objPath, n_s_euclidean =
 
 
 
-getSmallDataSet <- function(dataSet,NumOfObjectsFromEachClass = 10){
+getSmallDataSet <- function(dataSet,NumOfObjectsFromEachClass = 10, onlyTrain = TRUE){
   
-  dataSetTrain = dataSet[which(dataSet[,2] == "train"),]
+  dataSetTrain = dataSet
+  if(onlyTrain) dataSetTrain = dataSet[which(dataSet[,2] == "train"),]
   
   classNames = rep("", nrow(dataSetTrain))
   
@@ -432,16 +433,17 @@ datasetPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNe
 dataSet = getDataSet(datasetPath)
 
 # get the first 20 models from each class
-smallDataSet = getSmallDataSet(dataSet,40)
+smallDataSet = getSmallDataSet(dataSet,400)
 
+smallDataSet = dataSet
 
 smallDataSet = na.omit(smallDataSet)
 
 nrow(smallDataSet)
 
-sub = which(getClassNamesFromSubClasses(smallDataSet[,1], splitPattern = "_") %in% c("bathtub", "toilet", "chair"))
+# sub = which(getClassNamesFromSubClasses(smallDataSet[,1], splitPattern = "_") %in% c("bathtub", "toilet", "chair"))
 # sub = which(getClassNamesFromSubClasses(smallDataSet[,1], splitPattern = "_") %in% c("bathtub", "toilet"))
-smallDataSet = smallDataSet[sub,]
+# smallDataSet = smallDataSet[sub,]
 
 
 # smallDataSet[1,]
@@ -449,7 +451,7 @@ smallDataSet = smallDataSet[sub,]
 # apply farthest point sampling and store the geodesic distances
 
 GLOBAL_VERBOSITY = 0
-models = getSurfaceSampledModels(smallDataSet,plot = FALSE,n_s_euclidean = 1000,n_s_dijkstra = 1000)
+models = getSurfaceSampledModels(smallDataSet,plot = FALSE,n_s_euclidean = 1000,n_s_dijkstra = 100)
 
 
 
@@ -481,7 +483,7 @@ length(models)
 
 # # randomly sample and calculate DE
 quantilesDist = distributionOfDE(models = models,
-                             n = 100,
+                             n = 40,
                              m =100,
                              mode = "Distances",
                              q = 1)

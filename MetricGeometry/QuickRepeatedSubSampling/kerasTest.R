@@ -1257,6 +1257,7 @@ convModel4 <- function(TrainTest, sampleSize, sampleTimes, q, epochs = 30, batch
     layer_activation("relu") %>%
     layer_dropout(0.1) %>%
     
+    
     layer_dense(10) %>%
     layer_activation("relu") %>%
     layer_dropout(0.1) %>%
@@ -1318,7 +1319,7 @@ convModel4 <- function(TrainTest, sampleSize, sampleTimes, q, epochs = 30, batch
 }
 
 
-model5 <- function(TrainTest, sampleSize, sampleTimes, q, epochs = 30, batch_size = 64){
+model5 <- function(TrainTest, epochs = 30, batch_size = 64){
   
   x_train = TrainTest$x_train
   y_train = TrainTest$y_train
@@ -1331,9 +1332,9 @@ model5 <- function(TrainTest, sampleSize, sampleTimes, q, epochs = 30, batch_siz
   #---------------------------------------------------------
   model <- keras_model_sequential()
   model %>% 
-    layer_dense(units = 900, activation = 'relu', input_shape = c(ncol(x_train))) %>% 
+    layer_dense(units = 500, activation = 'relu', input_shape = c(ncol(x_train))) %>% 
     layer_dropout(rate = 0.1) %>%
-    layer_dense(units = 300, activation = 'relu') %>% 
+    layer_dense(units = 400, activation = 'relu') %>% 
     layer_dropout(rate = 0.1) %>%
     layer_dense(units = 100, activation = 'relu') %>% 
     layer_dropout(rate = 0.1) %>%
@@ -1372,7 +1373,7 @@ q = 1
 
 # fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDir/All_ind_0_nE_1000_nD_100_n_90_m_3_q_1.csv"
 #
-fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Distances_nE_1000_nD_1000_n_100_m_100_q_1.csv"
+fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Distances_nE_1000_nD_100_n_40_m_100_q_1.csv"
 quantiles = read.csv(file =fName, header = TRUE, row.names = 1)
 
 unique(getClassNamesFromSubClasses(quantiles[,1],"_"))
@@ -1386,15 +1387,21 @@ sub = which(getClassNamesFromSubClasses(quantiles[,1],"_") %in% c("bathtub", "ch
 quantiles = quantiles[sub,]
 
 # Tr = getTrainAndTestOnlySurf(quantiles[,1:(q+3)],sampleSize = sampleSize,sampleTimes = sampleTimes)
-Tr = getTrainAndTestOnlySurf(quantiles,sampleSize = sampleSize,sampleTimes = sampleTimes,euklid = TRUE, numPermutations = 30)
+Tr = getTrainAndTestOnlySurf(quantiles,sampleSize = sampleSize,sampleTimes = sampleTimes,euklid = TRUE, numPermutations = 20)
 
-# saveRDS(Tr, file = "/home/willy/PredictingProteinInteractions/data/ModelNet10/tmpTrain_400_s_10_10.rData")
+saveRDS(Tr, file = "/home/willy/PredictingProteinInteractions/data/ModelNet10/tmpTrain_400_s_10_s1_p20.rData")
+
+
 
 plotQuantiles(quantiles,euklid = FALSE)
 
 array_reshape(Tr$x_train[1,], dim = c(sampleSize,(q+2)*1))
 # convModel4(TrainTest = Tr,sampleSize = sampleSize,sampleTimes = sampleTimes,m = m,q = q+3,epochs = 100)
-model = convModel4(TrainTest = Tr,sampleSize = sampleSize,sampleTimes = sampleTimes,q = (q+2)*2,epochs = 300, batch_size = 64)
+model = convModel4(TrainTest = Tr,sampleSize = sampleSize,sampleTimes = sampleTimes,q = (q+2)*2,epochs = 300, batch_size = 256)
+
+
+model
+
 
 print(model)
 
@@ -1541,8 +1548,8 @@ for(i in 1:length(protNames)){
   }else{
     trainAndTest[i,] = c(as.character(protNames[i]),quantiles_all[inds,-1])
   }
-
 }
+
 
 train_inds = which(trainAndTest[,1] %in% protNamesTrain)
 x_train = as.matrix(trainAndTest[train_inds,-1])
@@ -1574,5 +1581,38 @@ Tr = getTrainAndTestOnlySurf(quantiles_all[traininds2,],sampleSize = sampleSize,
 
 model = convModel4(TrainTest = Tr,sampleSize = sampleSize,sampleTimes = sampleTimes,q = (q+2)*3,epochs = 100, batch_size = 32)
 
+#------------------------------------------------------------------------------------------------------------------------------
 
+sampleSize = 20
+sampleTimes = 30
+q = 1
+
+
+fName = "/home/willy/PredictingProteinInteractions/data/120Experiment/Quantiles/All_n_1_m_1_q_1_muNN_500.csv"
+quantiles = read.csv(file =fName, header = TRUE)
+
+labels = read.table("/home/willy/PredictingProteinInteractions/data/labels120.txt", header = TRUE)
+functionals = tolower(labels$name[which(labels$label == "glutathionineBinding")])
+
+functionalInds = which(quantiles[,1] %in% functionals)
+non_functionals_inds = c(1:nrow(quantiles))[-functionalInds]
+nonFuncSample = sample(non_functionals_inds, length(functionalInds), replace = FALSE)
+
+trainInds = c(functionalInds,nonFuncSample)
+
+Train = cbind(c(rep(TRUE, length(functionalInds)), rep(FALSE, length(functionalInds))),quantiles[trainInds,-1])
+Train = Train[shuffle(nrow(Train)),]
+x_train = as.matrix(Train[,-1])
+
+y_train = as.numeric(Train[,1])
+y_train = to_categorical(y_train,2)
+
+Tr$x_train = x_train
+Tr$y_train = y_train
+
+Tr$x_test = x_test
+Tr$y_test = y_test
+Tr$numClasses = 2
+
+model = model5(TrainTest = Tr,epochs = 100, batch_size = 5)
 

@@ -103,6 +103,11 @@ DistributionOfEccentricities <- function(d, mu = rep(1/nrow(d),nrow(d))){
   return(F_)
 }
 
+# m = matrix(seq(1:9), ncol = 3)
+# d = as.matrix(dist(m))
+# f_ = DistributionOfEccentricities(d = d, c(1,1,1))
+# plot(f_)
+
 DistancesWithMeasure <- function(d, mu = rep(1/nrow(d),nrow(d))){
   d_mu = d*as.vector(mu)
   return(d_mu[upper.tri(d_mu)])
