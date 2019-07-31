@@ -1,3 +1,5 @@
+#!/usr/bin/Rscript
+
 #---------------------------------------------------------------------
 # Willy Bruhn, 19.7.19
 #
@@ -18,11 +20,16 @@
 wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
 
 source(wsPath)
-sourceFiles(c("helperFunctions", "UltraQuickRepeatedSubSampling", "TriangulateIsoSurface"))
-printPathsToSources(c("helperFunctions"))
+sourceFiles(c("helperFunctions"))
+
+sourceFiles(c("UltraQuickRepeatedSubSampling"))
+
+sourceFiles(c("TriangulateIsoSurface"))
+
+path2Manifold = "/home/willy/Manifold/build/"
+path2Manifold = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/Manifold/build/"
 
 
-library(rgl)
 
 getModel10Net <- function(fName, plot = FALSE){
   
@@ -62,7 +69,7 @@ getDataSet <- function(datasetPath){
     if(!file.exists(objNameOut)){
       # make watertight
       # obj = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10/bathtub/test/bathtub_0110.obj"
-      path2Manifold = "/home/willy/Manifold/build/"
+      
       manifoldCommand = "./manifold"
       args = paste(" ",objNameIn," ",objNameOut, " 2000 ", sep="")
       system(paste(path2Manifold,manifoldCommand,args, sep =""))
@@ -428,22 +435,19 @@ plotQuantiles <- function(quantiles, euklid = FALSE){
 }
 
 #------------------------------------------------------------------------
-n = 30
-m = 100
-q = 10
-
-pathToProjection = "/home/willy/PredictingProteinInteractions/data/ModelNet10/projections/"
 
 datasetPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10/"
+
+datasetPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/ModelNet10/"
 
 
 # get all the file names and information if it belongs to train or test
 dataSet = getDataSet(datasetPath)
 
 # get the first 20 models from each class
-smallDataSet = getSmallDataSet(dataSet,400)
+smallDataSet = getSmallDataSet(dataSet,2)
 
-smallDataSet = dataSet
+# smallDataSet = dataSet
 
 smallDataSet = na.omit(smallDataSet)
 
@@ -458,9 +462,10 @@ nrow(smallDataSet)
 
 # apply farthest point sampling and store the geodesic distances
 
-GLOBAL_VERBOSITY = 0
+GLOBAL_VERBOSITY = 5
 models = getSurfaceSampledModels(smallDataSet,plot = FALSE,n_s_euclidean = 1000,n_s_dijkstra = 100)
 
+quit()
 
 
 mod = downsampleEuclideanAndGetGeodesicModel10Net(objPath = dataSet[2,3], n_s_euclidean = 1000, n_s_dijkstra = 1000, plot = TRUE)

@@ -7,11 +7,20 @@
 #---------------------------------------------------------------------------------------------------------
 
 # s1 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/QuickRepeatedSubSampling.R"
-s1 = paste(funr::get_script_path(),"/QuickRepeatedSubSampling.R",sep ="")
-print(paste("sourcing ", s1, " ... ", sep =""))
-source(s1)
+# s1 = paste(funr::get_script_path(),"/QuickRepeatedSubSampling.R",sep ="")
+# print(paste("sourcing ", s1, " ... ", sep =""))
+# source(s1)
 
-print(paste("... done sourcing ", s1, sep =""))
+# print(paste("... done sourcing ", s1, sep =""))
+
+wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
+
+source(wsPath)
+sourceFiles(c("QuickRepeatedSubSampling"))
+# printPathsToSources(c("helperFunctions"))
+
+
+
 library(emdist)
 
 #--------------------------------------------------------------------------------
@@ -490,13 +499,15 @@ getAll_protein_F_approximations <- function(OutputPath,  n = 100, m = 50, q = 2,
   
   distributions_lists = list()
   
+  protCount = 1
   for(i in 1:length(protein_names)){
-    
     print(paste("Creating approximations for ", protein_names[i]))
     
     if(isValidProteinFolder(protein_names_full[i])){
       F_app = generateF_approximations(OutputPath = OutputPath, protName = protein_names[i], n = n, m = m, q = q, pos =pos)
-      distributions_lists[[i]] =  list("name" = protein_names[i],"F" = F_app)
+      distributions_lists[[protCount]] =  list("name" = protein_names[i],"F" = F_app)
+      
+      protCount = protCount + 1
     } else {
       print("Warning: Found a corrupted protein-folder! Please make sure that MutComp has been run properly!")
       
@@ -514,6 +525,10 @@ getAll_protein_F_approximations <- function(OutputPath,  n = 100, m = 50, q = 2,
       write.table(t, missingFoldersFile)
     }
   }
+
+#   print(distributions_lists)
+  
+#   distributions_lists = distributions_lists[[!is.na(distributions_lists)]]
   return(distributions_lists)
 }
 

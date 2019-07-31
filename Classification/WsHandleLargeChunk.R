@@ -15,7 +15,7 @@ notDone = "/home/sysgen/server/projects/md-simulations/human_redoxins//Trxndc8_s
 
 dirs = dirs[-which(dirs == notDone)]
 
-dirs = c("/home/sysgen/server/projects/md-simulations/human_redoxins//Txndc3_sep/")
+# dirs = c("/home/sysgen/server/projects/md-simulations/human_redoxins//Txndc3_sep/")
 
 
 # "/Txndc15_sep/" Txndc15_97 Txndc15_98 Txndc15_99 is not processed with MutComp yet!!!
@@ -76,8 +76,8 @@ for(k in 1:length(dirs)){
 }
 
 
-# combine the summaries from all folders
 
+# combine the summaries from all folders
 # name + statistics = 9 values
 summariesTable = data.frame(matrix(0,ncol = 8+5, nrow = 0))
 colnames(summariesTable) = c("name", "n", "m", "q", "method", "Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max.", "mean", "var")
