@@ -3,7 +3,13 @@
 # source("/home/willy/RedoxChallenges/MasterThesis/ExtrinsicDistances/isoFaces.R")
 # source("/home/willy/RedoxChallenges/MasterThesis/ExtrinsicDistances/extrinsicDistances.R")
 
-source("/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/helperFunctions.R")
+# source("/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/helperFunctions.R")
+
+wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
+
+source(wsPath)
+sourceFiles(c("helperFunctions"))
+# printPathsToSources(c("helperFunctions"))
 
 
 is.installed <- function(mypkg){

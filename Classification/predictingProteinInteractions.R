@@ -124,6 +124,8 @@ library("ggdendro")
 library("plot3D")
 library("emdist")
 
+library(readobj)
+
 if(!is.installed("getopt")){install.packages("getopt")}
 library("getopt")
 
@@ -212,58 +214,107 @@ print(sQR)
 source(sQR)
 
 #-------------------------------------------------------------------------
-CreatALLdx <- function(ListOfProtNames,PathToProtData)
+CreatALLdx <- function(ListOfProtNames,PathToProtData, recalculate = FALSE)
 {
   print("Creating .pts-files from dx-files. This might take a while ...")
   
   print(PathToProtData)
   
+  noProtFolder = c("el")
+  
   for(i in 1:NROW(ListOfProtNames)){
     # needs only name without extension
     fileName <- ListOfProtNames[i]
     
-    # needs full path
-    inPath=paste(PathToProtData,"/",ListOfProtNames[i],sep="")
-    
-    # needs full path
-    outPath=inPath
-    
-    if(!file.exists(paste(outPath,"/",fileName,"_pot_positive.pts",sep="")) | 
-       !file.exists(paste(outPath,"/",fileName,"_pot_negative.pts",sep="")))
-    {
-      print(paste("Creating pts-files for ", fileName, " (",i,"/",NROW(ListOfProtNames),")",sep =""))
+    if(!(fileName %in% noProtFolder)){
+        
+      # needs full path
+      inPath=paste(PathToProtData,"/",ListOfProtNames[i],sep="")
       
-      dxData <- read.csv(file=paste(inPath,"/",fileName,"_pot",".dx",sep=""),
-                         sep=' ', skip= 11, header=F ,stringsAsFactors=FALSE,  check.names = FALSE)
-      dxData <- head(dxData,-10)
+      # needs full path
+      outPath=inPath
       
-      v1 = as.numeric(dxData$V1)
-      v2 = as.numeric(dxData$V2)
-      v3 = as.numeric(dxData$V3)
-      
-      size = 129
-      x <- c(1:size)
-      y <- c(1:size)
-      z <- c(1:size)
-      
-      merged <- as.vector(rbind(v1,v2,v3)) 
-      V <- array(merged, c(size,size,size))
-      
-      # print("creating isosurface ...")
-      iso <- createisosurf(x, y, z, V, level = 1.0)
-      iso2 <- createisosurf(x, y, z, V, level = -1.0)
-      
-      iso <- iso[!duplicated(iso), ]
-      iso2 <- iso2[!duplicated(iso2), ]
-      # print(paste("writing to file ", outPath, "/", fileName, ".pts ...", sep = ""))
-      write.table(iso, file = paste(outPath,"/",fileName,"_pot_positive.pts",sep=""),
-                  row.names = F,na = "",sep = ";",dec = ".")
-      write.table(iso2, file = paste(outPath,"/",fileName,"_pot_negative.pts",sep=""),
-                  row.names = F,na = "",sep = ";",dec = ".")
+      if(!file.exists(paste(outPath,"/",fileName,"_pot_positive.pts",sep="")) | 
+         !file.exists(paste(outPath,"/",fileName,"_pot_negative.pts",sep="")) | recalculate == TRUE)
+      {
+        print(paste("Creating pts-files for ", fileName, " (",i,"/",NROW(ListOfProtNames),")",sep =""))
+        
+        dxData <- read.csv(file=paste(inPath,"/",fileName,"_pot",".dx",sep=""),
+                           sep=' ', skip= 11, header=F ,stringsAsFactors=FALSE,  check.names = FALSE)
+        dxData <- head(dxData,-10)
+        
+        v1 = as.numeric(dxData$V1)
+        v2 = as.numeric(dxData$V2)
+        v3 = as.numeric(dxData$V3)
+        
+        size = 129
+        x <- c(1:size)
+        y <- c(1:size)
+        z <- c(1:size)
+        
+        merged <- as.vector(rbind(v1,v2,v3)) 
+        V <- array(merged, c(size,size,size))
+        
+        # print("creating isosurface ...")
+        iso <- createisosurf(x, y, z, V, level = 1.0)
+        iso2 <- createisosurf(x, y, z, V, level = -1.0)
+        
+        iso <- iso[!duplicated(iso), ]
+        iso2 <- iso2[!duplicated(iso2), ]
+        # print(paste("writing to file ", outPath, "/", fileName, ".pts ...", sep = ""))
+        write.table(iso, file = paste(outPath,"/",fileName,"_pot_positive.pts",sep=""),
+                    row.names = F,na = "",sep = ";",dec = ".")
+        write.table(iso2, file = paste(outPath,"/",fileName,"_pot_negative.pts",sep=""),
+                    row.names = F,na = "",sep = ";",dec = ".")
+      }
     }
   }
   
   print("... done creating .pts-files from dx-files.")
+}
+
+
+CreatALLPtsFromObj <- function(ListOfProtNames,PathToProtData)
+{
+  print("Creating .pts-files from obj-files. This might take a while ...")
+  
+  print(PathToProtData)
+  
+  noProtFolder = c("el")
+  
+  for(i in 1:NROW(ListOfProtNames)){
+    # needs only name without extension
+    fileName <- ListOfProtNames[i]
+    if(!(fileName %in% noProtFolder)){
+      # needs full path
+      inPath=paste(PathToProtData,"/",ListOfProtNames[i],sep="")
+      
+      # needs full path
+      outPath=inPath
+      
+      pos_pts = paste(outPath,"/",fileName,"_pot_positive.pts",sep="")
+      neg_pts = paste(outPath,"/",fileName,"_pot_negative.pts",sep="")
+      if(!file.exists(pos_pts) | 
+         !file.exists(neg_pts))
+      {
+        print(paste("Creating pts-files for ", fileName, " (",i,"/",NROW(ListOfProtNames),")",sep =""))
+        
+        objFName <- paste(inPath,"/",fileName,".obj",sep="")
+        
+        model_rgl = read.obj(objFName)
+        
+        points_pos = t(model_rgl$shapes[[2]]$positions)
+        points_neg = t(model_rgl$shapes[[3]]$positions)
+        
+        write.table(points_pos, file = paste(outPath,"/",fileName,"_pot_positive.pts",sep=""),
+                    row.names = F,na = "",sep = ";",dec = ".")
+        write.table(points_neg, file = paste(outPath,"/",fileName,"_pot_negative.pts",sep=""),
+                    row.names = F,na = "",sep = ";",dec = ".")
+      }
+    }
+  }
+  
+  print("... done creating .pts-files from obj-files.")
 }
 
 
@@ -464,7 +515,9 @@ proteinNames = list.dirs(path = paste(PPIoutputFolder, "/Output/",sep=""), recur
 #                                                  "_id_", RepeatedSamplingArguments$emd_list_id, "_NNact_", RepeatedSamplingArguments$NNtoActCent, ".csv", sep ="")
 
 if(opt$mode == "Train" || opt$mode == "Predict" || opt$mode == "SingleDistance") {
-  CreatALLdx(ListOfProtNames = proteinNames, PathToProtData = paste(PPIoutputFolder, "/Output/",sep=""))
+  CreatALLdx(ListOfProtNames = proteinNames, PathToProtData = paste(PPIoutputFolder, "/Output/",sep=""), recalculate = FALSE)
+  
+  # CreatALLPtsFromObj(ListOfProtNames = proteinNames, PathToProtData = paste(PPIoutputFolder, "/Output/",sep=""))
 }
 
 #-------------------------------------------------------------------------
