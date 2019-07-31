@@ -14,6 +14,14 @@ source(s3)
 library(keras)
 library(readobj)
 library(FNN)
+
+install.packages(file.choose(), repos=NULL)
+
+install.packages("/home/sysgen/Documents/LWB/PredictingProteinInteractions/packages/rgl/")
+setwd("/home/sysgen/Documents/LWB/");
+packages<-dir();
+install.packages("rgl", repos=NULL)
+
 library(rgl)
 
 

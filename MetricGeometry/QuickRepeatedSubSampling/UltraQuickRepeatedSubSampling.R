@@ -7,11 +7,20 @@
 #---------------------------------------------------------------------------------------------------------
 
 # s1 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/QuickRepeatedSubSampling.R"
-s1 = paste(funr::get_script_path(),"/QuickRepeatedSubSampling.R",sep ="")
-print(paste("sourcing ", s1, " ... ", sep =""))
-source(s1)
+# s1 = paste(funr::get_script_path(),"/QuickRepeatedSubSampling.R",sep ="")
+# print(paste("sourcing ", s1, " ... ", sep =""))
+# source(s1)
 
-print(paste("... done sourcing ", s1, sep =""))
+# print(paste("... done sourcing ", s1, sep =""))
+
+wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
+
+source(wsPath)
+sourceFiles(c("QuickRepeatedSubSampling"))
+# printPathsToSources(c("helperFunctions"))
+
+
+
 library(emdist)
 
 #--------------------------------------------------------------------------------
@@ -454,21 +463,79 @@ caclErrorCurve <- function(all_pts, times = 100, n = 100, maxQ = 99, plot = FALS
 
 #-------------------------------------------------------------------
 
+isValidProteinFolder <- function(folder){
+  # check if it has an  obj-file with the same name
+  
+  vec = strsplit(folder, "/")
+  protName = vec[[1]][length(vec[[1]])]
+  
+  objName = paste(paste(vec[[1]], collapse = "/"), "/", protName, ".obj", sep ="")
+  # print(objName)
+  if(file.exists(objName)) return(TRUE)
+  
+  return(FALSE)
+  
+}
+
+# folder = "/home/sysgen/server/projects/md-simulations/human_redoxins/Txndc3_sep/Output/Txndc3_0/"
+# 
+# vec = strsplit(folder, "/")
+# 
+# print(vec)
+# 
+# vec[[1]][length(vec[[1]])]
+# protName = vec[[1]][length(vec[[1]])]
+# 
+# print(protName)
+# objName = paste(paste(vec[[1]], collapse = "/"), "/", protName, ".obj", sep ="")
+# objName
+# isValidProteinFolder(example)
 
 
 getAll_protein_F_approximations <- function(OutputPath,  n = 100, m = 50, q = 2, pos = TRUE){
   print(paste("Loading from ", OutputPath, sep =""))
   protein_names = list.dirs(OutputPath, recursive = FALSE, full.names = FALSE)
+  protein_names_full = list.dirs(OutputPath, recursive = FALSE, full.names = TRUE)
   
   distributions_lists = list()
   
+  protCount = 1
   for(i in 1:length(protein_names)){
-    F_app = generateF_approximations(OutputPath = OutputPath, protName = protein_names[i], n = n, m = m, q = q, pos =pos)
-    distributions_lists[[i]] =  list("name" = protein_names[i],"F" = F_app)
+    print(paste("Creating approximations for ", protein_names[i]))
+    
+    if(isValidProteinFolder(protein_names_full[i])){
+      F_app = generateF_approximations(OutputPath = OutputPath, protName = protein_names[i], n = n, m = m, q = q, pos =pos)
+      distributions_lists[[protCount]] =  list("name" = protein_names[i],"F" = F_app)
+      
+      protCount = protCount + 1
+    } else {
+      print("Warning: Found a corrupted protein-folder! Please make sure that MutComp has been run properly!")
+      
+      missingFoldersFile = paste(OutputPath, "MissingFolders.txt", sep ="/")
+      
+      t = data.frame(matrix(0, ncol = 1, nrow = 0))
+      colnames(t) = "CorruptedProteins"
+      
+      if(file.exists(missingFoldersFile)){
+        t = read.table(missingFoldersFile, header = TRUE)
+      }
+      
+      t = rbind(t, protein_names[i])
+      
+      write.table(t, missingFoldersFile)
+    }
   }
+
+#   print(distributions_lists)
   
+#   distributions_lists = distributions_lists[[!is.na(distributions_lists)]]
   return(distributions_lists)
 }
+
+
+# folder = "/home/sysgen/server/projects/md-simulations/human_redoxins/Txndc3_sep/Output/"
+# getAll_protein_F_approximations(OutputPath = folder, n = 100, m = 500, q = 10)
+
 
 get_x_and_y_vals <- function(all_protein_F_approximations,m){
   x_vals = rep(0,length(all_protein_F_approximations)*m)

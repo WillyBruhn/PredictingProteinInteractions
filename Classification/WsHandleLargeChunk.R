@@ -1,4 +1,4 @@
-
+#!/usr/bin/Rscript
 
 mode = "SingleDistance" 
 n = 100
@@ -14,6 +14,11 @@ dirs = list.dirs(path,recursive = FALSE)
 notDone = "/home/sysgen/server/projects/md-simulations/human_redoxins//Trxndc8_sep"
 
 dirs = dirs[-which(dirs == notDone)]
+
+# dirs = c("/home/sysgen/server/projects/md-simulations/human_redoxins//Txndc3_sep/")
+
+
+# "/Txndc15_sep/" Txndc15_97 Txndc15_98 Txndc15_99 is not processed with MutComp yet!!!
 
 
 print(paste("processing ", dirs))
@@ -71,8 +76,8 @@ for(k in 1:length(dirs)){
 }
 
 
-# combine the summaries from all folders
 
+# combine the summaries from all folders
 # name + statistics = 9 values
 summariesTable = data.frame(matrix(0,ncol = 8+5, nrow = 0))
 colnames(summariesTable) = c("name", "n", "m", "q", "method", "Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max.", "mean", "var")
@@ -82,9 +87,9 @@ for(k in 1:length(dirs)){
 
   summaries = na.omit(summaries)
   
-  # print(dirs[k])
-  # print(k)
-  # print(summaries)
+  print(dirs[k])
+  print(k)
+  print(summaries)
   
   for(i in 1:length(summaries)){
     
@@ -123,10 +128,13 @@ for(k in 1:length(dirs)){
     
     summariesTable = rbind(summariesTable,df)
   }
-  
 }
 
+length(dirs)
+
 write.table(summariesTable, paste(path, "/summariesAllTogether.txt", sep = ""), row.names = FALSE)
+
+
 
 
 
@@ -198,26 +206,30 @@ write.table(summariesTable, paste(path, "/summariesAllTogether.txt", sep = ""), 
 # matrix(mapply(m,m2,FUN = max),ncol = 5,nrow = 5)
 # 
 # 
-d = read.csv("/home/sysgen/server/projects/md-simulations/human_redoxins//Grx1_sep//QRsampDistances//_pos_quickEmd_n_5_m_5_q_1_geo.csv", row.names = 1)
-
-nrow(d)
-ncol(d)
-
-d2 = read.csv("/home/sysgen/server/projects/md-simulations/human_redoxins//Grx1_sep//QRsampDistances//_neg_quickEmd_n_5_m_5_q_1_geo.csv", row.names = 1)
-
-mea = matrix(lapply(as.vector(d),as.vector(d2),FUN = mean),ncol = ncol(d),nrow = nrow(d))
-mea[1:5,1:5]
-
-
-mea = (d+d2)/2
 
 
 
-d[1:5,1:5]
 
-
-d2[1:5,1:5]
-
-mea[1:5,1:5]
-
+# d = read.csv("/home/sysgen/server/projects/md-simulations/human_redoxins//Grx1_sep//QRsampDistances//_pos_quickEmd_n_5_m_5_q_1_geo.csv", row.names = 1)
+# 
+# nrow(d)
+# ncol(d)
+# 
+# d2 = read.csv("/home/sysgen/server/projects/md-simulations/human_redoxins//Grx1_sep//QRsampDistances//_neg_quickEmd_n_5_m_5_q_1_geo.csv", row.names = 1)
+# 
+# mea = matrix(lapply(as.vector(d),as.vector(d2),FUN = mean),ncol = ncol(d),nrow = nrow(d))
+# mea[1:5,1:5]
+# 
+# 
+# mea = (d+d2)/2
+# 
+# 
+# 
+# d[1:5,1:5]
+# 
+# 
+# d2[1:5,1:5]
+# 
+# mea[1:5,1:5]
+# 
 

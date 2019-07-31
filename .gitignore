@@ -35,3 +35,9 @@ data/psb_db0-3/
 
 data/__MACOSX/ModelNet10/
 data/120Experiment/
+data/Final_120_pdbs/
+data/120Test/
+
+packages/
+
+data/Final_120_pdbs_20181024/

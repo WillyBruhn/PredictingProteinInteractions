@@ -3,15 +3,21 @@
 # source("/home/willy/RedoxChallenges/MasterThesis/ExtrinsicDistances/isoFaces.R")
 # source("/home/willy/RedoxChallenges/MasterThesis/ExtrinsicDistances/extrinsicDistances.R")
 
-source("/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/helperFunctions.R")
+# source("/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/helperFunctions.R")
+
+wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
+
+source(wsPath)
+sourceFiles(c("helperFunctions"))
+# printPathsToSources(c("helperFunctions"))
 
 
 is.installed <- function(mypkg){
   is.element(mypkg, installed.packages()[,1])
 }
 
-if(!is.installed("misc3d")){install.packages("misc3d")}
-library("misc3d")
+#if(!is.installed("misc3d")){install.packages("misc3d")}
+#library("misc3d")
 
 
 # tell horst to install GL library
@@ -40,10 +46,10 @@ if(!is.installed("xtable")){install.packages("xtable")}
 library("xtable")
 
 # if(!is.installed("spatstat")){install.packages("spatstat")}
-library("spatstat")
+# library("spatstat") <------------------------------------- on WS not available
 
 # if(!is.installed("igraph")){install.packages("igraph")}
-library("igraph")
+# library("igraph")
 
 
 
