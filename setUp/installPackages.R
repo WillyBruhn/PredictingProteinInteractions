@@ -1,11 +1,20 @@
 #!/usr/bin/Rscript
+# options <- commandArgs(trailingOnly = TRUE)
+
 
 #-------------------------------------------------------
 #
 # sourcable files
 #
 #-------------------------------------------------------
-PredictingProteinInteractionsFolder = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/"
+# PredictingProteinInteractionsFolder = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/"
+# PredictingProteinInteractionsFolder = options[1]
+
+path = funr::get_script_path()
+vec = strsplit(path, "/setUp")
+
+PredictingProteinInteractionsFolder =  paste(vec[[1]][1],"/", sep ="")
+print(PredictingProteinInteractionsFolder)
 
 
 addSource <- function(table, name, fName){
@@ -18,6 +27,7 @@ addSource <- function(table, name, fName){
   return(table)
 }
 
+print("creating sources-table ...")
 sources = data.frame(matrix(0,ncol = 2, nrow = 0))
 colnames(sources) = c("name", "path")
 
@@ -28,12 +38,14 @@ sources = addSource(sources, "QuickRepeatedSubSampling", "/MetricGeometry/QuickR
 
 
 write.table(sources, paste(PredictingProteinInteractionsFolder, "setUp/SourcableFiles.txt", sep = ""), row.names = FALSE)
+
 #-------------------------------------------------------
 #
 # install packages
 #
 #-------------------------------------------------------
 
+print("installing packages ...")
 
 is.installed <- function(mypkg){
   is.element(mypkg, installed.packages()[,1])
@@ -67,9 +79,9 @@ if(!is.installed("RSNNS")){install.packages("RSNNS")}
 # lubridate
 
 
-library(rgl)
-
-library(readobj)
+# library(rgl)
+# 
+# library(readobj)
 
 
 

@@ -14,6 +14,7 @@
 # print(paste("... done sourcing ", s1, sep =""))
 
 wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
+wsPath = "../../setUp/SourceLoader.R"
 
 source(wsPath)
 sourceFiles(c("QuickRepeatedSubSampling"))

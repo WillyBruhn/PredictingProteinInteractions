@@ -18,18 +18,18 @@
 
 
 wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
+wsPath = "../../setUp/SourceLoader.R"
 
 source(wsPath)
 sourceFiles(c("helperFunctions"))
-
 sourceFiles(c("UltraQuickRepeatedSubSampling"))
-
 sourceFiles(c("TriangulateIsoSurface"))
 
-path2Manifold = "/home/willy/Manifold/build/"
-path2Manifold = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/Manifold/build/"
+path2Manifold = "../../Manifold/build/"
+datasetPath = "../../data/ModelNet10/ModelNet10/"
 
 
+library(rgl)
 
 getModel10Net <- function(fName, plot = FALSE){
   
@@ -436,9 +436,9 @@ plotQuantiles <- function(quantiles, euklid = FALSE){
 
 #------------------------------------------------------------------------
 
-datasetPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10/"
+# datasetPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10/"
 
-datasetPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/ModelNet10/"
+# datasetPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/ModelNet10/"
 
 
 # get all the file names and information if it belongs to train or test
@@ -446,9 +446,9 @@ dataSet = getDataSet(datasetPath)
 nrow(dataSet)
 
 # get the first 20 models from each class
-smallDataSet = getSmallDataSet(dataSet,2)
+# smallDataSet = getSmallDataSet(dataSet,2)
 
-# smallDataSet = dataSet
+smallDataSet = dataSet
 
 smallDataSet = na.omit(smallDataSet)
 

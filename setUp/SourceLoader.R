@@ -1,7 +1,7 @@
-PredictingProteinInteractionsFolder = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/"
+PPISETUP = "/home/willy/PredictingProteinInteractions/setUp"
 
 sourceFiles <- function(vector){
-  t = read.table(file = paste(PredictingProteinInteractionsFolder,"setUp/SourcableFiles.txt", sep = ""), header = TRUE)
+  t = read.table(file = paste(PPISETUP,"/SourcableFiles.txt", sep = ""), header = TRUE)
   
   # print(t)
   
@@ -13,7 +13,7 @@ sourceFiles <- function(vector){
 }
 
 printPathsToSources <- function(vector){
-  t = read.table(file = paste(PredictingProteinInteractionsFolder,"setUp/SourcableFiles.txt", sep = ""), header = TRUE)
+  t = read.table(file = paste(PPISETUP,"/SourcableFiles.txt", sep = ""), header = TRUE)
   
   for(i in 1:length(vector)){
     s = as.character(t[which(t[,1] == vector[i]),2])
