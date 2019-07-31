@@ -431,6 +431,7 @@ datasetPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNe
 
 # get all the file names and information if it belongs to train or test
 dataSet = getDataSet(datasetPath)
+nrow(dataSet)
 
 # get the first 20 models from each class
 smallDataSet = getSmallDataSet(dataSet,400)
@@ -455,7 +456,8 @@ models = getSurfaceSampledModels(smallDataSet,plot = FALSE,n_s_euclidean = 1000,
 
 
 
-mod = downsampleEuclideanAndGetGeodesicModel10Net(objPath = dataSet[2,3], n_s_euclidean = 1000, n_s_dijkstra = 1000, plot = TRUE)
+mod = downsampleEuclideanAndGetGeodesicModel10Net(objPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10//chair/train/chair_0749.obj",
+                                                  n_s_euclidean = 1000, n_s_dijkstra = 100, plot = TRUE)
 modi = read.obj(f = dataSet[i,3])
 points = t(modi$shapes[[1]]$positions)
 nrow(points)
