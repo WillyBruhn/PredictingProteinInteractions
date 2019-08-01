@@ -7,26 +7,31 @@
 #
 #---------------------------------------------------------------------
 
-# s1 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/helperFunctions.R"
-# source(s1)
-# 
-# s2 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/UltraQuickRepeatedSubSampling.R"
-# source(s2)
-# 
-# s3 = "/home/willy/PredictingProteinInteractions/Classification/NNClassification/additionalScripts/TriangulateIsoSurface.R"
-# source(s3)
+s1 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/helperFunctions.R"
+source(s1)
+
+s2 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/UltraQuickRepeatedSubSampling.R"
+source(s2)
+
+s3 = "/home/willy/PredictingProteinInteractions/Classification/NNClassification/additionalScripts/TriangulateIsoSurface.R"
+source(s3)
 
 
 wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
+
+wsPath = "/home/willy/PredictingProteinInteractions/setUp/SourceLoader.R"
 wsPath = "../../setUp/SourceLoader.R"
 
-source(wsPath)
-sourceFiles(c("helperFunctions"))
-sourceFiles(c("UltraQuickRepeatedSubSampling"))
-sourceFiles(c("TriangulateIsoSurface"))
+# source(wsPath)
+# sourceFiles(c("helperFunctions"))
+# sourceFiles(c("UltraQuickRepeatedSubSampling"))
+# sourceFiles(c("TriangulateIsoSurface"))
 
 path2Manifold = "../../Manifold/build/"
 datasetPath = "../../data/ModelNet10/ModelNet10/"
+
+path2Manifold = "/home/willy/PredictingProteinInteractions/Manifold/build/"
+datasetPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/"
 
 
 library(rgl)
@@ -298,11 +303,11 @@ getSurfaceSampledModels <- function(dataSet, n_s_euclidean = 1000, n_s_dijkstra 
     info_surf = file.info(distanceFile_surf)
     info_euclid = file.info(distanceFile_euclid)
     
-    if(info_surf$size > 1 && info_euclid$size){
+    if(info_surf$size > 1 && info_euclid$size > 1){
       distance_matrix_surf = read.csv(distanceFile_surf,header = TRUE)
       distance_matrix_euclid = read.csv(distanceFile_euclid,header = TRUE)
       
-      models[[i]] = list("d_surface" = distance_matrix_surf, "d_euclid" = distance_matrix_euclid, "name" = dataSet[i,1], "path" = dataSet[i,3], "n_s_euclidean" = n_s_euclidean, "n_s_dijkstra" = n_s_dijkstra)
+      models[[i]] = list("d_surface" = distance_matrix_surf, "d_euclid" = distance_matrix_euclid, "name" = dataSet[i,1], "path" = dataSet[i,3], "n_s_euclidean" = n_s_euclidean, "n_s_dijkstra" = n_s_dijkstra, "testTrain" = dataSet[i,2])
     }
   }
   
@@ -318,11 +323,13 @@ distributionOfDE <- function(models,
                              m = 3,
                              q = 1,
                              mode = "Distances",
-                             plot = TRUE){
+                             plot = TRUE,
+                             recalculate = FALSE){
   
-  quantilesOut = data.frame(matrix(0,ncol = q+3, nrow = 0))
-  colnames(quantilesOut) = c("class", as.vector(paste(c("q"),c(1:(q+2)), sep = "")))
-
+  quantilesOut = data.frame(matrix(0,ncol = (q+2)*2+1+1, nrow = 0))
+  colnames(quantilesOut) = c("class","testTrain", as.vector(paste(c("q"),c(1:(q+2)), sep = "")), as.vector(paste(c("q_euc"),c(1:(q+2)), sep = "")))
+  
+  
   for(i in 1:length(models)){
     print(paste(models[[i]]$name, i/length(models)))
     
@@ -332,17 +339,18 @@ distributionOfDE <- function(models,
     if(!dir.exists(quantilesDir)) dir.create(quantilesDir)
     
     quantilesName = getGeoDistanceQuantileName(quantilesDir,mode,models[[i]]$n_s_euclidean,models[[i]]$n_s_dijkstra,n = n,m = m,q = q, fname = models[[i]]$name)
-    if(!file.exists(quantilesName)){
+    if(!file.exists(quantilesName) || recalculate == TRUE){
       Fapp = generateF_approximations_3dModelWithMetric(d_surface = models[[i]]$d_surface, d_euclid = models[[i]]$d_euclid, n = n,m = m,q = q,mode = mode)
 
       # q+2 quantiles per distance + 1 name
-      quantiles = data.frame(matrix(0,ncol = (q+2)*2+1, nrow = m))
-      colnames(quantiles) = c("class", as.vector(paste(c("q"),c(1:(q+2)), sep = "")), as.vector(paste(c("q_euc"),c(1:(q+2)), sep = "")))
+      quantiles = data.frame(matrix(0,ncol = (q+2)*2+1+1, nrow = m))
+      colnames(quantiles) = c("class","testTrain", as.vector(paste(c("q"),c(1:(q+2)), sep = "")), as.vector(paste(c("q_euc"),c(1:(q+2)), sep = "")))
       
       quantiles[,1] = rep(models[[i]]$name, m)
+      quantiles[,2] = rep(models[[i]]$testTrain, m)
       for(i in 1:length(Fapp$F_app_list)){
-        quantiles[i,2:(q+3)] = Fapp$F_app_list[[i]]
-        quantiles[i,(q+4):ncol(quantiles)] = Fapp$F_app_euclid[[i]]
+        quantiles[i,3:(q+4)] = Fapp$F_app_list[[i]]
+        quantiles[i,(q+5):ncol(quantiles)] = Fapp$F_app_euclid[[i]]
       }
       
       write.csv(x = quantiles, quantilesName)
@@ -356,7 +364,7 @@ distributionOfDE <- function(models,
   if(!dir.exists(AllQuantilesPath)) dir.create(AllQuantilesPath)
   allQuantiles = getGeoDistanceQuantileName(AllQuantilesPath,mode,models[[1]]$n_s_euclidean,models[[1]]$n_s_dijkstra,n = n,m = m,q = q, fname = "All")
   
-  write.csv(quantilesOut,allQuantiles)
+  write.csv(quantilesOut,allQuantiles,row.names = FALSE)
   
   return(quantilesOut)
 }
@@ -437,7 +445,6 @@ plotQuantiles <- function(quantiles, euklid = FALSE){
 #------------------------------------------------------------------------
 
 # datasetPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10/"
-
 # datasetPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/ModelNet10/"
 
 
@@ -454,19 +461,10 @@ smallDataSet = na.omit(smallDataSet)
 
 nrow(smallDataSet)
 
-# sub = which(getClassNamesFromSubClasses(smallDataSet[,1], splitPattern = "_") %in% c("bathtub", "toilet", "chair"))
-# sub = which(getClassNamesFromSubClasses(smallDataSet[,1], splitPattern = "_") %in% c("bathtub", "toilet"))
-# smallDataSet = smallDataSet[sub,]
 
-
-# smallDataSet[1,]
-
-# apply farthest point sampling and store the geodesic distances
-
-GLOBAL_VERBOSITY = 5
+GLOBAL_VERBOSITY = 1
 models = getSurfaceSampledModels(smallDataSet,plot = FALSE,n_s_euclidean = 1000,n_s_dijkstra = 100)
-
-quit()
+# quit()
 
 
 mod = downsampleEuclideanAndGetGeodesicModel10Net(objPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10//chair/train/chair_0749.obj",
@@ -495,13 +493,13 @@ for(i in 1:length(models)){
 length(models)
 
 
-
 # # randomly sample and calculate DE
 quantilesDist = distributionOfDE(models = models,
                              n = 40,
                              m =100,
                              mode = "Distances",
-                             q = 1)
+                             q = 1,
+                             recalculate = TRUE)
 
 unique(getClassNamesFromSubClasses(quantilesDist[,1], "_"))
 

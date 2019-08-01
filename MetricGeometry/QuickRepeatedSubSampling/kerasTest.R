@@ -865,6 +865,9 @@ getTrainAndTestOnlySurf <- function(quantiles, sampleSize, sampleTimes, numPermu
                                     TrainTestSplit = 0.1){
   # if(!file.exists(fName) || reDo == TRUE){
   
+    x_test = NULL
+    y_test = NULL
+  
     if(euklid == FALSE){
       quantiles = quantiles[,1:(1+(ncol(quantiles)-1)/2)]
     }
@@ -910,6 +913,8 @@ getTrainAndTestOnlySurf <- function(quantiles, sampleSize, sampleTimes, numPermu
     y_train = as.numeric(as.factor(y_train))-1
     y_train <- to_categorical(y_train, numClasses)
     
+    y_train_original_names = sampledQuantiles[train_indices,1]
+    
     y_test_original_names = "0"
     if(TrainTestSplit > 0){
       y_test= y_all[test_indices]
@@ -925,12 +930,16 @@ getTrainAndTestOnlySurf <- function(quantiles, sampleSize, sampleTimes, numPermu
       for(i in 1:length(un)){
         v[i] = length(which(y_test_original_names == un[i]))
       }
-      
-      
       if(length(v) > 0 && var(v) != 0) return(NULL)
     }
+  
+  if(is.null(x_test)) {
+    x_test = "onlyTrain"
+    y_test = "onlyTrain"
+  }
     
-  return(list("x_train" = x_train, "y_train" = y_train, "x_test" = x_test, "y_test" = y_test, "numClasses" = numClasses, "y_test_original_names" = y_test_original_names))
+  return(list("x_train" = x_train, "y_train" = y_train, "x_test" = x_test, "y_test" = y_test, "numClasses" = numClasses, "y_test_original_names" = y_test_original_names ,
+              "y_train_original_names" = y_train_original_names))
 }
 
 # getTrainAndTestOnlySurf(quantiles[1:2000,],sampleSize = 3,sampleTimes = 3, numPermutations = 2)
@@ -1204,51 +1213,51 @@ convModel4 <- function(TrainTest, sampleSize, sampleTimes, q, epochs = 30, batch
   model %>% 
     layer_reshape(target_shape = c(sampleSize, ncol(x_train)/sampleSize,1),input_shape = c(ncol(x_train))) %>%
 
-    # layer_conv_2d(filter = 30, kernel_size = c(3,3), padding = 'same', input_shape = c(sampleSize, ncol(x_train)/sampleSize,1)) %>%
-    # layer_activation("relu") %>%
-    # layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
-    # layer_dropout(0.1) %>%
-    # 
-    # 
-    # layer_conv_2d(filter = 30, kernel_size = c(3,3), padding = 'same') %>%
-    # layer_activation("relu") %>%
-    # layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
-    # layer_dropout(0.1) %>%
-    # 
-    # layer_conv_2d(filter = 30, kernel_size = c(3,3), padding = 'same') %>%
-    # layer_activation("relu") %>%
-    # layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
-    # layer_dropout(0.1) %>%
-    # 
-    # layer_conv_2d(filter = 30, kernel_size = c(3,3), padding = 'same') %>%
-    # layer_activation("relu") %>%
-    # layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
-    # layer_dropout(0.1) %>%
-    # 
-    # layer_conv_2d(filter = 30, kernel_size = c(3,3), padding = 'same') %>%
-    # layer_activation("relu") %>%
-    # layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
-    # layer_dropout(0.1) %>%
-    # 
-    # layer_conv_2d(filter = 10, kernel_size = c(3,3), padding = 'same') %>%
-    # layer_activation("relu") %>%
-    # layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
-    # layer_dropout(0.1) %>%
-    # 
-    # layer_conv_2d(filter = 10, kernel_size = c(3,3), padding = 'same') %>%
-    # layer_activation("relu") %>%
-    # layer_max_pooling_2d(pool_size = c(3,1),padding = 'same') %>%
-    # layer_dropout(0.1) %>%
-    # 
-    # layer_conv_2d(filter = 10, kernel_size = c(3,3), padding = 'same') %>%
-    # layer_activation("relu") %>%
-    # layer_max_pooling_2d(pool_size = c(3,1),padding = 'same') %>%
-    # layer_dropout(0.1) %>%
-    # 
-    # layer_conv_2d(filter = 10, kernel_size = c(4,4), padding = 'same') %>%
-    # layer_activation("relu") %>%
-    # layer_max_pooling_2d(pool_size = c(3,3),padding = 'same') %>%
-    # layer_dropout(0.1) %>%
+    layer_conv_2d(filter = 30, kernel_size = c(3,3), padding = 'same', input_shape = c(sampleSize, ncol(x_train)/sampleSize,1)) %>%
+    layer_activation("relu") %>%
+    layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+
+
+    layer_conv_2d(filter = 30, kernel_size = c(3,3), padding = 'same') %>%
+    layer_activation("relu") %>%
+    layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+
+    layer_conv_2d(filter = 30, kernel_size = c(3,3), padding = 'same') %>%
+    layer_activation("relu") %>%
+    layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+
+    layer_conv_2d(filter = 30, kernel_size = c(3,3), padding = 'same') %>%
+    layer_activation("relu") %>%
+    layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+
+    layer_conv_2d(filter = 30, kernel_size = c(3,3), padding = 'same') %>%
+    layer_activation("relu") %>%
+    layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+
+    layer_conv_2d(filter = 10, kernel_size = c(3,3), padding = 'same') %>%
+    layer_activation("relu") %>%
+    layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+
+    layer_conv_2d(filter = 10, kernel_size = c(3,3), padding = 'same') %>%
+    layer_activation("relu") %>%
+    layer_max_pooling_2d(pool_size = c(3,1),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+
+    layer_conv_2d(filter = 10, kernel_size = c(3,3), padding = 'same') %>%
+    layer_activation("relu") %>%
+    layer_max_pooling_2d(pool_size = c(3,1),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+
+    layer_conv_2d(filter = 10, kernel_size = c(4,4), padding = 'same') %>%
+    layer_activation("relu") %>%
+    layer_max_pooling_2d(pool_size = c(3,3),padding = 'same') %>%
+    layer_dropout(0.1) %>%
     
     
     layer_flatten() %>%
@@ -1258,14 +1267,18 @@ convModel4 <- function(TrainTest, sampleSize, sampleTimes, q, epochs = 30, batch
     layer_dropout(0.1) %>%
     
     
+    layer_dense(100) %>%
+    layer_activation("relu") %>%
+    layer_dropout(0.1) %>%
+    
+    layer_dense(100) %>%
+    layer_activation("relu") %>%
+    layer_dropout(0.1) %>%
+
     layer_dense(10) %>%
     layer_activation("relu") %>%
     layer_dropout(0.1) %>%
     
-    layer_dense(10) %>%
-    layer_activation("relu") %>%
-    layer_dropout(0.1) %>%
-
     layer_dense(10) %>%
     layer_activation("relu") %>%
     layer_dropout(0.1) %>%
@@ -1374,7 +1387,7 @@ q = 1
 # fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDir/All_ind_0_nE_1000_nD_100_n_90_m_3_q_1.csv"
 #
 fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Distances_nE_1000_nD_100_n_40_m_100_q_1.csv"
-quantiles = read.csv(file =fName, header = TRUE, row.names = 1)
+quantiles = read.csv(file =fName, header = TRUE)
 
 unique(getClassNamesFromSubClasses(quantiles[,1],"_"))
 # "bathtub" "chair"   "sofa"    "table"   "toilet"
@@ -1383,8 +1396,8 @@ unique(getClassNamesFromSubClasses(quantiles[,1],"_"))
 # $acc
 # [1] 0.91
 
-sub = which(getClassNamesFromSubClasses(quantiles[,1],"_") %in% c("bathtub", "chair"))
-quantiles = quantiles[sub,]
+#sub = which(getClassNamesFromSubClasses(quantiles[,1],"_") %in% c("bathtub", "chair"))
+#quantiles = quantiles[sub,]
 
 # Tr = getTrainAndTestOnlySurf(quantiles[,1:(q+3)],sampleSize = sampleSize,sampleTimes = sampleTimes)
 Tr = getTrainAndTestOnlySurf(quantiles,sampleSize = sampleSize,sampleTimes = sampleTimes,euklid = TRUE, numPermutations = 20)
@@ -1450,8 +1463,6 @@ print(correct/length(testNamesOrig))
 #   optimizer=RMSprop(0.001),
 #   metrics=[sensitivity, specificity]
 # )
-
-
 
 convModelProteins <- function(x_train, y_train, x_test, y_test, m, epochs = 30){
   
@@ -1616,3 +1627,89 @@ Tr$numClasses = 2
 
 model = model5(TrainTest = Tr,epochs = 100, batch_size = 5)
 
+
+#------------------------------------------------------------------------------------------------------------------------
+# ModelNet10
+#------------------------------------------------------------------------------------------------------------------------
+
+sampleSize = 10
+sampleTimes = 1
+q = 1
+m = 100
+
+fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Distances_nE_1000_nD_100_n_40_m_100_q_1.csv"
+quantiles = read.csv(file =fName, header = TRUE)
+
+quantilesTrain = quantiles[which(quantiles[,2] == "train"),-2]
+quantilesTest = quantiles[which(quantiles[,2] == "test"),-2]
+
+nrow(quantilesTest)/nrow(quantilesTrain)
+
+
+Tr = getTrainAndTestOnlySurf(quantilesTrain,sampleSize = sampleSize,sampleTimes = sampleTimes,euklid = TRUE, numPermutations = 1, TrainTestSplit = 0)
+Te = getTrainAndTestOnlySurf(quantilesTest,sampleSize = sampleSize,sampleTimes = sampleTimes,euklid = TRUE, numPermutations = 1, TrainTestSplit = 0)
+
+
+TrFinal = list("x_train" = Tr$x_train, "y_train" = Tr$y_train, "x_test" = Te$x_train, "y_test" = Te$y_train, "numClasses" = Tr$numClasses)
+
+model = convModel4(TrainTest = TrFinal,sampleSize = sampleSize,sampleTimes = sampleTimes,q = (q+2)*2,epochs = 300, batch_size = 128)
+
+
+classLevels = unique(getClassNamesFromSubClasses(quantilesTest[,1],splitPattern = "_"))
+
+# we have to make a consensus over all the input permutations
+predictions <- model %>% predict_classes(Te$x_train)
+
+y_test_original_names = unique(Te$y_train_original_names)
+predictions_final = rep(0, length(y_test_original_names))
+for(i in 1:length(predictions_final)){
+  inds = which(Te$y_train_original_names == y_test_original_names[i])
+  print(predictions[inds])
+  predictions_final[i] = Mode(predictions[inds])
+}
+
+groundTruth = getClassNamesFromSubClasses(y_test_original_names, splitPattern = "_")
+
+
+
+reverseToCategorical <- function(oneHot, names){
+  names_out = rep("", nrow(oneHot))
+  for(i in 1:nrow(oneHot)){
+    names_out[i] = names[which.max(oneHot[i,])]
+  }
+  
+  return(names_out)
+}
+
+nrow(Te$x_train)
+
+length(predictions)
+nrow(Te$y_train)
+
+y_test_gt = reverseToCategorical(Te$y_train, classLevels)
+y_test_pred = classLevels[predictions_final+1]
+
+length(y_test_gt)
+length(y_test_pred)
+
+
+confMat = table(factor(y_test_pred,
+             levels=classLevels),
+      factor(groundTruth,
+             levels=classLevels))
+
+
+sum(confMat)
+
+
+confMatNormalized = confMat/colSums(confMat)[col(confMat)]
+
+print(xtable(x = confMat,caption = "Confusion-matrix ModelNet10 ",label = "ModelNet10Conf", type = "latex"),
+            file = "/home/willy/PredictingProteinInteractions/Results/Tables/ModelNet10Conf.tex")
+
+
+print(xtable(x = confMatNormalized,
+             caption = "Confusion-matrix ModelNet10 (normalized)",
+             label = "ModelNet10ConfNormalized",
+             type = "latex"),
+      file = "/home/willy/PredictingProteinInteractions/Results/Tables/ModelNet10ConfNormalized.tex")
