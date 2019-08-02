@@ -1,7 +1,8 @@
 # s3 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/helperFunctions.R"
 # source(s3)
 
-# wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
+wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
+wsPath = "/home/willy/PredictingProteinInteractions/setUp/SourceLoader.R"
 wsPath = "../../setUp/SourceLoader.R"
 # wsPath = as.character(paste(funr::get_script_path(), "/../../setUp/SourceLoader.R", sep = ""))
 
@@ -1606,7 +1607,7 @@ model5 <- function(TrainTest, epochs = 30, batch_size = 64, sampleSize = NULL, s
 
 
 model6 <- function(TrainTest, epochs = 30, batch_size = 64, sampleSize = NULL, sampleTimes =NULL, q = NULL ){
-  print("Calling model5 ...")
+  print("Calling model6 ...")
   
   x_train = TrainTest$x_train
   y_train = TrainTest$y_train
@@ -1619,11 +1620,9 @@ model6 <- function(TrainTest, epochs = 30, batch_size = 64, sampleSize = NULL, s
   #---------------------------------------------------------
   model <- keras_model_sequential()
   model %>% 
-    layer_dense(units = 500, activation = 'relu', input_shape = c(ncol(x_train))) %>% 
+    layer_dense(units = 400, activation = 'relu', input_shape = c(ncol(x_train))) %>% 
     layer_dropout(rate = 0.1) %>%
-    layer_dense(units = 400, activation = 'relu') %>% 
-    layer_dropout(rate = 0.1) %>%
-    layer_dense(units = 100, activation = 'relu') %>% 
+    layer_dense(units = 300, activation = 'relu') %>% 
     layer_dropout(rate = 0.1) %>%
     layer_dense(units = 100, activation = 'relu') %>% 
     layer_dropout(rate = 0.1) %>%
@@ -2115,14 +2114,60 @@ modelNet10Experiment(sampleSize = 10,
                      useOnlyTest = 1)
 
 
+modelNet10Experiment(sampleSize = 10,
+                     sampleTimes = 20,
+                     sampleTimes_test = 1,
+                     numPermutations = 1,
+                     numPermutations_test = 1,
+                     batch_size = 128,
+                     epochs = 50,
+                     euklid = TRUE,
+                     q = 10,
+                     m = 100, 
+                     numClasses = 10,
+                     fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Distances_nE_1000_nD_100_n_40_m_100_q_10.csv",
+                     ExperimentName = "Test3",
+                     recalculate = FALSE,
+                     modelFUN = model5,
+                     useOnlyTrain = 1,
+                     useOnlyTest = 1)
+# 0.674418604651163
+
+modelNet10Experiment(sampleSize = 10,
+                     sampleTimes = 20,
+                     sampleTimes_test = 1,
+                     numPermutations = 1,
+                     numPermutations_test = 1,
+                     batch_size = 128,
+                     epochs = 50,
+                     euklid = TRUE,
+                     q = 1,
+                     m = 100, 
+                     numClasses = 10,
+                     fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Distances_nE_1000_nD_100_n_40_m_100_q_1.csv",
+                     ExperimentName = "Test5",
+                     recalculate = FALSE,
+                     modelFUN = model5,
+                     useOnlyTrain = 1,
+                     useOnlyTest = 1)
+# 0.6356589
 
 
-
-install_keras()
-library(keras)
-k = backend()
-sess = k$get_session()
-sess$list_devices()
-
-
+modelNet10Experiment(sampleSize = 100,
+                     sampleTimes = 1,
+                     sampleTimes_test = 1,
+                     numPermutations = 1,
+                     numPermutations_test = 1,
+                     batch_size = 64,
+                     epochs = 100,
+                     euklid = TRUE,
+                     q = 10,
+                     m = 100, 
+                     numClasses = 10,
+                     fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Distances_nE_1000_nD_100_n_40_m_100_q_10.csv",
+                     ExperimentName = "Test4",
+                     recalculate = FALSE,
+                     modelFUN = model6,
+                     useOnlyTrain = 1,
+                     useOnlyTest = 1)
 

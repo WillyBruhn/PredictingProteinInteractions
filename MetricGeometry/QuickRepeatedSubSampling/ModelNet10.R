@@ -18,9 +18,9 @@
 
 
 
-
-wsPath = "/home/willy/PredictingProteinInteractions/setUp/SourceLoader.R"
-wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
+# 
+# wsPath = "/home/willy/PredictingProteinInteractions/setUp/SourceLoader.R"
+# wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
 
 wsPath = as.character(paste(funr::get_script_path(), "/../../setUp/SourceLoader.R", sep = ""))
 
@@ -30,27 +30,20 @@ source(wsPath)
 sourceFiles(c("helperFunctions"))
 sourceFiles(c("UltraQuickRepeatedSubSampling"))
 sourceFiles(c("TriangulateIsoSurface"))
+sourceFiles(c("kerasFunctions"))
 
-path2Manifold = "/home/willy/PredictingProteinInteractions/Manifold/build/"
-datasetPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/"
+# path2Manifold = "/home/willy/PredictingProteinInteractions/Manifold/build/"
+# datasetPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/"
+# 
+# path2Manifold = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/Manifold/build/"
+# datasetPath = "/home/sysgen/Documents/LWB//PredictingProteinInteractions/data/ModelNet10/"
+# 
+# 
+# path2Manifold = "../../Manifold/build/"
+# datasetPath = "../../data/ModelNet10/ModelNet10/"
 
-path2Manifold = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/Manifold/build/"
-datasetPath = "/home/sysgen/Documents/LWB//PredictingProteinInteractions/data/ModelNet10/"
-
-
-path2Manifold = "../../Manifold/build/"
-datasetPath = "../../data/ModelNet10/ModelNet10/"
-
-# install.packages("igraph")
-
-# install.packages("spatstat")
-# install.packages("deldir")
-
-# installations needed
-# sudo apt-get install gfortran    # deldir -> spatstat
-# apt-get install mesa-common-dev  # rgl
-
-# library(rgl)
+path2Manifold = getPath("Manifold")
+datasetPath = getPath("ModelNet10")
 
 library(lubridate)
 library(rdist)
@@ -565,6 +558,149 @@ transformQuants <- function(quantiles, q = 1){
 }
 
 #------------------------------------------------------------------------
+# Classification with a Neuronal Net model
+#------------------------------------------------------------------------
+
+modelNet10Experiment <- function(sampleSize = 10,
+                                 sampleTimes = 10,
+                                 sampleTimes_test = 1,
+                                 numPermutations = 1,
+                                 numPermutations_test = 1,
+                                 batch_size = 1024,
+                                 epochs = 300,
+                                 euklid = TRUE,
+                                 q = 1,
+                                 m = 100, 
+                                 numClasses = 10,
+                                 fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Distances_nE_1000_nD_100_n_40_m_100_q_1.csv",
+                                 ExperimentName = "Test1",
+                                 path = "/home/willy/PredictingProteinInteractions/data/ModelNet10/",
+                                 modelFUN = convModel4,
+                                 recalculate = FALSE,
+                                 useOnlyTrain = 1.0,
+                                 useOnlyTest = 1.0){
+  
+  ExperimentFile = paste(path,"/", ExperimentName, "sS_",sampleSize, "_sT_", sampleTimes, "_sTt_", sampleTimes_test, "_nP_", numPermutations,
+                         "_nPt_", numPermutations_test, "_euklid_",euklid, "_uo_", useOnlyTrain, "_uoTest_", useOnlyTest,".Rdata", sep ="")
+  
+  print(ExperimentFile)
+  
+  TrFinal = list()
+  if(!file.exists(ExperimentFile) || recalculate){
+    quantiles = read.csv(file =fName, header = TRUE)
+    
+    quantilesTrain = quantiles[which(quantiles[,2] == "train"),-2]
+    quantilesTest = quantiles[which(quantiles[,2] == "test"),-2]
+    
+    trainNames = unique(as.vector(quantilesTrain[,1]))
+    testNames = unique(as.vector(quantilesTest[,1]))
+    
+    nuTrain = sample(as.vector(trainNames), size = floor(useOnlyTrain*length(trainNames)), replace = FALSE)
+    nuTest = sample(as.vector(testNames), size = floor(useOnlyTest*length(testNames)) ,replace = FALSE)
+    
+    print(paste("Using from Train: ", length(nuTrain)), sep ="")
+    print(paste("Using from Test: ", length(nuTest)),  sep ="")
+    
+    nuTrain_ind = c()
+    for(i in 1:length(nuTrain)){
+      inds = which(quantilesTrain[,1] == nuTrain[i])
+      # print(nuTrain[i])
+      # print(inds)
+      
+      nuTrain_ind = c(nuTrain_ind, inds)
+    }
+    
+    nuTest_ind = c()
+    for(i in 1:length(nuTest)){
+      nuTest_ind = c(nuTest_ind, which(quantilesTest[,1] == nuTest[i]))
+    }
+    
+    quantilesTrain = quantilesTrain[nuTrain_ind,]
+    quantilesTest = quantilesTest[nuTest_ind, ]
+    
+    classLevels = unique(getClassNamesFromSubClasses(quantiles[,1],splitPattern = "_"))
+    
+    nrow(quantilesTest)/nrow(quantilesTrain)
+    
+    print("Creating train-set ...")
+    Train = getSamplesSurf2(quantilesTrain,sampleSize = sampleSize,sampleTimes = sampleTimes,euklid = euklid, numPermutations = numPermutations, numClasses = numClasses, m = m)
+    
+    print("Creating test-set ...")
+    Test = getSamplesSurf2(quantilesTest,sampleSize = sampleSize,sampleTimes = sampleTimes_test,euklid = euklid, numPermutations = numPermutations_test, numClasses = numClasses, m = m)
+    
+    shuf = shuffle(1:nrow(Train$X))
+    TrFinal = list("x_train" = Train$X[shuf,], "y_train" = Train$y[shuf,], "x_test" = Test$X, "y_test" = Test$y, "numClasses" = numClasses, "classLevels" = classLevels)
+    
+    saveRDS(TrFinal, ExperimentFile)
+  } else {
+    print("reading from previous experiment ...")
+    TrFinal = readRDS(ExperimentFile)
+  }
+  
+  
+  fac = 1
+  if(euklid) fac=2
+  model = modelFUN(TrainTest = TrFinal,sampleSize = sampleSize,sampleTimes = sampleTimes,q = (q+2)*fac,epochs = epochs, batch_size = batch_size)
+  
+  print("-----------------------------")
+  print("accuracy ...")
+  print(model %>% evaluate(TrFinal$x_test, TrFinal$y_test))
+  print("-----------------------------")
+  
+  
+  # we have to make a consensus over all the input permutations
+  predictions <- model %>% predict_classes(TrFinal$x_test)
+  
+  # print(TrFinal$y_test)
+  
+  pred = predictions+1
+  gt = reverseToCategorical(TrFinal$y_test,TrFinal$classLevels)
+  y_test_pred = rep("0",length(pred))
+  su = 0
+  for(i in 1:length(gt)){
+    if(gt[i] == TrFinal$classLevels[pred[i]]) su = su + 1
+    
+    y_test_pred[i] = TrFinal$classLevels[pred[i]]
+  }
+  su/length(gt)
+  y_test_pred
+  
+  confMat = table(factor(y_test_pred,
+                         levels=TrFinal$classLevels),
+                  factor(gt,
+                         levels=TrFinal$classLevels))
+  
+  
+  sum(confMat)
+  confMatNormalized = confMat/colSums(confMat)[col(confMat)]
+  
+  accuracy = sum(diag(confMat)) / sum(confMat)
+  
+  
+  
+  print("-----------------------------")
+  print(paste("accuracy:", accuracy))
+  print("-----------------------------")
+  
+  print(confMat)
+  
+  write.table(x = signif(accuracy,2),file = paste("/home/willy/PredictingProteinInteractions/Results/Tables/Accuracy_", ExperimentName, ".tex", sep = ""),
+                            quote = FALSE, col.names = FALSE, row.names = FALSE)
+  
+  print(xtable(x = confMat,caption = "Confusion-matrix ModelNet10 ",label = "ModelNet10Conf", type = "latex"),
+        file = paste("/home/willy/PredictingProteinInteractions/Results/Tables/ModelNet10Conf_", ExperimentName, ".tex", sep = ""))
+  
+  
+  print(xtable(x = confMatNormalized,
+               caption = "Confusion-matrix ModelNet10 (normalized)",
+               label = "ModelNet10ConfNormalized",
+               type = "latex"),
+        file = paste("/home/willy/PredictingProteinInteractions/Results/Tables/ModelNet10ConfNormalized_", ExperimentName, ".tex", sep = ""))
+  
+}
+
+
+#------------------------------------------------------------------------
 
 # datasetPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10/"
 # datasetPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/ModelNet10/"
@@ -598,6 +734,7 @@ for(i in 1:length(models)){
 
 length(models)
 
+
 # saveRDS(models, file = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10/AllModels_ne_1000_nd_100.Rdata")
 
 models = readRDS(file = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10/AllModels_ne_1000_nd_100.Rdata")
@@ -612,38 +749,120 @@ quantilesDist = distributionOfDE(models = models,
                              recalculate = FALSE)
 
 
-# quantilesDist = distributionOfDEParallel(models = models[1:10],
-#                                  n = 10,
-#                                  m =1,
-#                                  mode = "Distances",
-#                                  q = 2,
-#                                  recalculate = FALSE)
-# quantilesDist
+#---------------------------------------------------------------------------------------
+# Classification
+#---------------------------------------------------------------------------------------
+
+modelNet10Experiment(sampleSize = 5,
+                     sampleTimes = 1,
+                     sampleTimes_test = 1,
+                     numPermutations = 1,
+                     numPermutations_test = 1,
+                     batch_size = 64,
+                     epochs = 2,
+                     euklid = TRUE,
+                     q = 1,
+                     m = 100, 
+                     numClasses = 10,
+                     fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Distances_nE_1000_nD_100_n_40_m_100_q_1.csv",
+                     ExperimentName = "Test1",
+                     recalculate = FALSE,
+
+                                          modelFUN = model5)
 
 
-# quantilesEcc = distributionOfDE(models = models,
-#                                  n = 1000,
-#                                  m =1,
-#                                  mode = "Eccentricities",
-#                                  q = 1)
-
-# quantilesDist
-# 
-# quantilesDist_trans = transformQuants(quantilesDist, q=1)
-# plotQuantiles(quantilesDist_trans,FALSE)
-# plotQuantiles(quantilesDist,FALSE)
-# 
-# 
-# 
-# rgl.open()
-# plotQuantiles(quantilesDist,FALSE)
-# plotQuantiles(quantilesEcc,TRUE)
-# 
-# cor(quantilesDist[,-1],quantilesEcc[,-1])
-# 
+modelNet10Experiment(sampleSize = 10,
+                     sampleTimes = 20,
+                     sampleTimes_test = 1,
+                     numPermutations = 1,
+                     numPermutations_test = 1,
+                     batch_size = 64,
+                     epochs = 60,
+                     euklid = TRUE,
+                     q = 1,
+                     m = 100, 
+                     numClasses = 10,
+                     fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Distances_nE_1000_nD_100_n_40_m_100_q_1.csv",
+                     ExperimentName = "Test2",
+                     recalculate = FALSE,
+                     modelFUN = convModel4)
 
 
+modelNet10Experiment(sampleSize = 10,
+                     sampleTimes = 100,
+                     sampleTimes_test = 1,
+                     numPermutations = 1,
+                     numPermutations_test = 1,
+                     batch_size = 128,
+                     epochs = 50,
+                     euklid = TRUE,
+                     q = 1,
+                     m = 100, 
+                     numClasses = 10,
+                     fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Distances_nE_1000_nD_100_n_40_m_100_q_1.csv",
+                     ExperimentName = "Test2",
+                     recalculate = FALSE,
+                     modelFUN = model6,
+                     useOnlyTrain = 1,
+                     useOnlyTest = 1)
 
+
+modelNet10Experiment(sampleSize = 10,
+                     sampleTimes = 20,
+                     sampleTimes_test = 1,
+                     numPermutations = 1,
+                     numPermutations_test = 1,
+                     batch_size = 128,
+                     epochs = 50,
+                     euklid = TRUE,
+                     q = 10,
+                     m = 100, 
+                     numClasses = 10,
+                     fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Distances_nE_1000_nD_100_n_40_m_100_q_10.csv",
+                     ExperimentName = "Test3",
+                     recalculate = FALSE,
+                     modelFUN = model5,
+                     useOnlyTrain = 1,
+                     useOnlyTest = 1)
+# 0.674418604651163
+
+modelNet10Experiment(sampleSize = 10,
+                     sampleTimes = 20,
+                     sampleTimes_test = 1,
+                     numPermutations = 1,
+                     numPermutations_test = 1,
+                     batch_size = 128,
+                     epochs = 50,
+                     euklid = TRUE,
+                     q = 1,
+                     m = 100, 
+                     numClasses = 10,
+                     fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Distances_nE_1000_nD_100_n_40_m_100_q_1.csv",
+                     ExperimentName = "Test5",
+                     recalculate = FALSE,
+                     modelFUN = model5,
+                     useOnlyTrain = 1,
+                     useOnlyTest = 1)
+# 0.6356589
+
+
+modelNet10Experiment(sampleSize = 100,
+                     sampleTimes = 1,
+                     sampleTimes_test = 1,
+                     numPermutations = 1,
+                     numPermutations_test = 1,
+                     batch_size = 64,
+                     epochs = 100,
+                     euklid = TRUE,
+                     q = 10,
+                     m = 100, 
+                     numClasses = 10,
+                     fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Distances_nE_1000_nD_100_n_40_m_100_q_10.csv",
+                     ExperimentName = "Test4",
+                     recalculate = FALSE,
+                     modelFUN = model6,
+                     useOnlyTrain = 1,
+                     useOnlyTest = 1)
 
 
 
