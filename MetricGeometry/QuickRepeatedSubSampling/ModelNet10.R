@@ -34,6 +34,8 @@ sourceFiles(c("TriangulateIsoSurface"))
 path2Manifold = "../../Manifold/build/"
 datasetPath = "../../data/ModelNet10/ModelNet10/"
 
+
+
 # path2Manifold = "/home/willy/PredictingProteinInteractions/Manifold/build/"
 # datasetPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/"
 
@@ -160,12 +162,16 @@ getAllModels <- function(dataSet, maxNum = NULL){
 
 # install.packages("rdist")
 library(rdist)
+
 downsampleEuclideanAndGetGeodesicModel10Net <- function(objPath, n_s_euclidean = 4000, n_s_dijkstra = 50, plot = FALSE, verbose = FALSE){
   model_rgl = read.obj(objPath, convert.rgl = FALSE)
-  model_rgl_plot = read.obj(objPath, convert.rgl = TRUE)
+  
   
   if(verbose) my_print("plotting")
-  if(plot) shade3d(model_rgl_plot)
+  if(plot) {
+    model_rgl_plot = read.obj(objPath, convert.rgl = TRUE)
+    shade3d(model_rgl_plot)
+  }
   
   points = t(model_rgl$shapes[[1]]$positions)
   edges = t(model_rgl$shapes[[1]]$indices)+1
@@ -182,6 +188,14 @@ downsampleEuclideanAndGetGeodesicModel10Net <- function(objPath, n_s_euclidean =
   ob = preProcessMesh(points = points, edges = edges, plot = FALSE)
   my_print(paste("processed model has ", nrow(ob$points), "points", sep ="" ))
   
+  if(n_s_euclidean > nrow(ob$points)) {
+    n_s_euclidean = nrow(ob$points)
+  }
+  
+  if(n_s_dijkstra > n_s_euclidean) {
+    n_s_dijkstra = n_s_euclidean
+  }
+  
   if(ob$numOfConComps != 1){
     print(paste(" ... and ", ob$numOfConComps, " connected components.", sep =""))
     return(NULL)
@@ -190,9 +204,7 @@ downsampleEuclideanAndGetGeodesicModel10Net <- function(objPath, n_s_euclidean =
   graph = ob$graph
   edges = ob$edges
   
-  
   my_print("step 1: euclidean fps ...")
-  
   sampled_indices = c(1:nrow(points))
   if(n_s_euclidean < nrow(points)){
     sampled_indices = myFarthestPointSampling(points, k = n_s_euclidean)
@@ -290,7 +302,7 @@ getSurfaceSampledModels <- function(dataSet, n_s_euclidean = 1000, n_s_dijkstra 
     
     
     # close all other rgl-windows
-    while (rgl.cur() > 0) { rgl.close() }
+    if(plot) while (rgl.cur() > 0) { rgl.close() }
     
     # get folder
     t = strsplit(dataSet[i,3],"/")[[1]]
@@ -574,7 +586,7 @@ smallDataSet = na.omit(smallDataSet)
 nrow(smallDataSet)
 
 GLOBAL_VERBOSITY = 1
-models = getSurfaceSampledModels(smallDataSet,plot = FALSE,n_s_euclidean = 1000,n_s_dijkstra = 100)
+models = getSurfaceSampledModels(smallDataSet,plot = FALSE,n_s_euclidean = 2000,n_s_dijkstra = 1000)
 # quit()
 
 
@@ -588,7 +600,9 @@ for(i in 1:length(models)){
 
 length(models)
 
-saveRDS(models, file = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10/AllModels_ne_1000_nd_100.Rdata")
+# saveRDS(models, file = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10/AllModels_ne_1000_nd_100.Rdata")
+
+# models = readRDS(file = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/ModelNet10/ModelNet10/AllModels_ne_1000_nd_100.Rdata")
 
 
 # # randomly sample and calculate DE

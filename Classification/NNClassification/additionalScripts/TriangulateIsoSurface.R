@@ -10,7 +10,9 @@ wsPath = "../../setUp/SourceLoader.R"
 wsPath = as.character(paste(funr::get_script_path(), "/../../../setUp/SourceLoader.R", sep = ""))
 
 source(wsPath)
-sourceFiles(c("helperFunctions"))
+sourceFiles(c("helperFunctions",
+              "extrinsicDistances",
+              "isoFaces"))
 # printPathsToSources(c("helperFunctions"))
 
 

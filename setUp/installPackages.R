@@ -37,6 +37,9 @@ sources = addSource(sources, "TriangulateIsoSurface", "/Classification/NNClassif
 sources = addSource(sources, "QuickRepeatedSubSampling", "/MetricGeometry/QuickRepeatedSubSampling/QuickRepeatedSubSampling.R")
 sources = addSource(sources, "BoostedKNN", "/Classification/NNClassification/optimizeDifferentModels/BoostedKNN.R")
 
+sources = addSource(sources, "extrinsicDistances", "/Classification/NNClassification/additionalScripts/extrinsicDistances.R")
+sources = addSource(sources, "isoFaces", "/Classification/NNClassification/additionalScripts/isoFaces.R")
+
 
 write.table(sources, paste(PredictingProteinInteractionsFolder, "setUp/SourcableFiles.txt", sep = ""), row.names = FALSE)
 
@@ -78,7 +81,9 @@ write.table(sources, paste(PredictingProteinInteractionsFolder, "setUp/Sourcable
 # igraph
 # gplots
 # lubridate
+# install.packages("clue")
 
+# install.packages("pracma")
 
 # library(rgl)
 # 

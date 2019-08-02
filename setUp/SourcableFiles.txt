@@ -4,3 +4,5 @@
 "TriangulateIsoSurface" "/home/sysgen/Documents/LWB/PredictingProteinInteractions//Classification/NNClassification/additionalScripts/TriangulateIsoSurface.R"
 "QuickRepeatedSubSampling" "/home/sysgen/Documents/LWB/PredictingProteinInteractions//MetricGeometry/QuickRepeatedSubSampling/QuickRepeatedSubSampling.R"
 "BoostedKNN" "/home/sysgen/Documents/LWB/PredictingProteinInteractions//Classification/NNClassification/optimizeDifferentModels/BoostedKNN.R"
+"extrinsicDistances" "/home/sysgen/Documents/LWB/PredictingProteinInteractions//Classification/NNClassification/additionalScripts/extrinsicDistances.R"
+"isoFaces" "/home/sysgen/Documents/LWB/PredictingProteinInteractions//Classification/NNClassification/additionalScripts/isoFaces.R"
