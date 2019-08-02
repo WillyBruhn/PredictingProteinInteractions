@@ -6,3 +6,4 @@
 "BoostedKNN" "/home/willy/PredictingProteinInteractions//Classification/NNClassification/optimizeDifferentModels/BoostedKNN.R"
 "extrinsicDistances" "/home/willy/PredictingProteinInteractions//Classification/NNClassification/additionalScripts/extrinsicDistances.R"
 "isoFaces" "/home/willy/PredictingProteinInteractions//Classification/NNClassification/additionalScripts/isoFaces.R"
+"kerasFunctions" "/home/willy/PredictingProteinInteractions//Classification/NNClassification/kerasFunctions.R"

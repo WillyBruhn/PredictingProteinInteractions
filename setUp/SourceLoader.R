@@ -1,3 +1,5 @@
+# Don't change this line! 
+# Automatically generated!
 PPISETUP = "/home/willy/PredictingProteinInteractions/setUp"
 
 sourceFiles <- function(vector){
@@ -20,3 +22,13 @@ printPathsToSources <- function(vector){
     print(s)
   }
 }
+
+getPath <- function(name){
+  t = read.table(file = paste(PPISETUP,"/Paths.txt", sep = ""), header = TRUE)
+  
+  s = as.character(t[which(t[,1] == name),2])
+  
+  return(s)
+}
+
+

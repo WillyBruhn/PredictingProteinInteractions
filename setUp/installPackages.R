@@ -114,6 +114,22 @@ sources = addSource(sources, "BoostedKNN", "/Classification/NNClassification/opt
 
 sources = addSource(sources, "extrinsicDistances", "/Classification/NNClassification/additionalScripts/extrinsicDistances.R")
 sources = addSource(sources, "isoFaces", "/Classification/NNClassification/additionalScripts/isoFaces.R")
-
+sources = addSource(sources, "kerasFunctions", "/Classification/NNClassification/kerasFunctions.R")
 
 write.table(sources, paste(PredictingProteinInteractionsFolder, "setUp/SourcableFiles.txt", sep = ""), row.names = FALSE)
+
+
+#------------------------------------------------------------------------------------------------------------------------
+# other paths and data-sets
+#------------------------------------------------------------------------------------------------------------------------
+
+print("creating paths-table ...")
+paths = data.frame(matrix(0,ncol = 2, nrow = 0))
+colnames(paths) = c("name", "path")
+
+paths = addSource(paths, "Manifold", "/Manifold/build/")
+paths = addSource(paths, "ModelNet10", "/data/ModelNet10/ModelNet10/")
+
+write.table(paths, paste(PredictingProteinInteractionsFolder, "setUp/Paths.txt", sep = ""), row.names = FALSE)
+
+
