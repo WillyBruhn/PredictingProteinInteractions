@@ -30,6 +30,9 @@
 #   
 #     doClustering        ... compute a clustering
 #
+#     subNamesFile        ... file with a subset of names available in the output-folder. Then
+#                             only with these names the clustering is done.
+#
 #     mode(Train/Predict/SingleDistance) ... either Train a model or make predictions
 #
 #     ------------------------------------------------------------------
@@ -159,7 +162,8 @@ spec = matrix(c(
   'randoms_train'   , 'o', 2, "numeric",
   
   'predictions_folder'   , 'p', 2, "character",
-  'MutCompParametersFile', 'r', 2, "character"
+  'MutCompParametersFile', 'r', 2, "character",
+  'subNamesFile', 'R', 2, "character"
 ), byrow=TRUE, ncol=4)
 opt = getopt(spec)
 
@@ -201,17 +205,29 @@ if ( is.null(opt$predictions_folder    ) ) { opt$predictions_folder    = paste(f
 
 if ( is.null(opt$verbose ) ) { opt$verbose = FALSE }
 
-
 print(opt)
 
 
-s1 = paste(funr::get_script_path(), "/NNClassification/optimizeDifferentModels/BoostedKNN.R", sep = "")
-print(s1)
-source(s1)
+# s1 = paste(funr::get_script_path(), "/NNClassification/optimizeDifferentModels/BoostedKNN.R", sep = "")
+# s1 = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/Classification/NNClassification/optimizeDifferentModels/BoostedKNN.R"
+# print(s1)
+# source(s1)
+# 
+# sQR = paste(funr::get_script_path(), "/../MetricGeometry/QuickRepeatedSubSampling/UltraQuickRepeatedSubSampling.R", sep = "")
+# 
+# sQR = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/UltraQuickRepeatedSubSampling.R"
+# print(sQR)
+# source(sQR)
 
-sQR = paste(funr::get_script_path(), "/../MetricGeometry/QuickRepeatedSubSampling/UltraQuickRepeatedSubSampling.R", sep = "")
-print(sQR)
-source(sQR)
+
+wsPath = "../setUp/SourceLoader.R"
+wsPath = as.character(paste(funr::get_script_path(), "/../setUp/SourceLoader.R", sep = ""))
+
+print(wsPath)
+
+source(wsPath)
+sourceFiles(c("UltraQuickRepeatedSubSampling",
+              "BoostedKNN"))
 
 #-------------------------------------------------------------------------
 CreatALLdx <- function(ListOfProtNames,PathToProtData, recalculate = FALSE)
@@ -829,6 +845,29 @@ if(mode == "SingleDistance"){
   # average_pos_neg = matrix(mapply(as.matrix(positive),as.matrix(negative),FUN = mean),ncol = ncol(positive),nrow = nrow(positive))
   # rownames(average_pos_neg) = rownames(positive)
   # colnames(average_pos_neg) = colnames(positive)
+  
+  
+  # only make the dendrogramm and summary with a subset of the proteins
+  if(!is.null(opt$subNamesFile)){
+    print("Using only the names specified in the subNamesFile ...")
+    
+    subsetN = read.table(file = opt$subNamesFile, header = FALSE)
+    
+    n_inds = which(rownames(negative) %in% subsetN[,1])
+    negative = negative[n_inds,n_inds]
+    
+    p_inds = which(rownames(positive) %in% subsetN[,1])
+    positive = positive[p_inds,p_inds]
+    
+    
+    distName_pos = paste(opt$distance_name,"_SUB_pos_quickEmd_n_",opt$numberOfPoints,"_m_",opt$rounds,"_q_",opt$q_val,sep ="")
+    distName_neg = paste(opt$distance_name,"_SUB_neg_quickEmd_n_",opt$numberOfPoints,"_m_",opt$rounds,"_q_",opt$q_val,sep ="")
+    
+    distName_avg = paste(opt$distance_name,"_SUB_avg_quickEmd_n_",opt$numberOfPoints,"_m_",opt$rounds,"_q_",opt$q_val,sep ="")
+    distName_max = paste(opt$distance_name,"_SUB_max_quickEmd_n_",opt$numberOfPoints,"_m_",opt$rounds,"_q_",opt$q_val,sep ="")
+    
+    labels = labels[which(labels$name %in% subsetN[,1]),]
+  }
   
   average_pos_neg = (positive+negative)/2
   

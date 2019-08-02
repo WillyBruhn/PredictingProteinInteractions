@@ -7,34 +7,53 @@
 #
 #---------------------------------------------------------------------
 
-s1 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/helperFunctions.R"
-source(s1)
+# s1 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/helperFunctions.R"
+# source(s1)
+# 
+# s2 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/UltraQuickRepeatedSubSampling.R"
+# source(s2)
+# 
+# s3 = "/home/willy/PredictingProteinInteractions/Classification/NNClassification/additionalScripts/TriangulateIsoSurface.R"
+# source(s3)
 
-s2 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/UltraQuickRepeatedSubSampling.R"
-source(s2)
-
-s3 = "/home/willy/PredictingProteinInteractions/Classification/NNClassification/additionalScripts/TriangulateIsoSurface.R"
-source(s3)
 
 
-wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
 
 wsPath = "/home/willy/PredictingProteinInteractions/setUp/SourceLoader.R"
 wsPath = "../../setUp/SourceLoader.R"
 
-# source(wsPath)
-# sourceFiles(c("helperFunctions"))
-# sourceFiles(c("UltraQuickRepeatedSubSampling"))
-# sourceFiles(c("TriangulateIsoSurface"))
+wsPath = as.character(paste(funr::get_script_path(), "/../../setUp/SourceLoader.R", sep = ""))
+
+wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
+
+source(wsPath)
+sourceFiles(c("helperFunctions"))
+sourceFiles(c("UltraQuickRepeatedSubSampling"))
+sourceFiles(c("TriangulateIsoSurface"))
 
 path2Manifold = "../../Manifold/build/"
 datasetPath = "../../data/ModelNet10/ModelNet10/"
 
-path2Manifold = "/home/willy/PredictingProteinInteractions/Manifold/build/"
-datasetPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/"
+# path2Manifold = "/home/willy/PredictingProteinInteractions/Manifold/build/"
+# datasetPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/"
+
+path2Manifold = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/Manifold/build/"
+datasetPath = "/home/sysgen/Documents/LWB//PredictingProteinInteractions/data/ModelNet10/"
 
 
-library(rgl)
+# install.packages("igraph")
+
+# install.packages("spatstat")
+# install.packages("deldir")
+
+# installations needed
+# sudo apt-get install gfortran    # deldir -> spatstat
+# apt-get install mesa-common-dev  # rgl
+
+# library(rgl)
+
+library(lubridate)
+library(rdist)
 
 getModel10Net <- function(fName, plot = FALSE){
   
@@ -139,7 +158,8 @@ getAllModels <- function(dataSet, maxNum = NULL){
 #                                             n_s_dijkstra = 50,
 #                                             plot = TRUE)
 
-
+# install.packages("rdist")
+library(rdist)
 downsampleEuclideanAndGetGeodesicModel10Net <- function(objPath, n_s_euclidean = 4000, n_s_dijkstra = 50, plot = FALSE, verbose = FALSE){
   model_rgl = read.obj(objPath, convert.rgl = FALSE)
   model_rgl_plot = read.obj(objPath, convert.rgl = TRUE)
@@ -170,7 +190,7 @@ downsampleEuclideanAndGetGeodesicModel10Net <- function(objPath, n_s_euclidean =
   graph = ob$graph
   edges = ob$edges
   
-  library(rdist)
+  
   my_print("step 1: euclidean fps ...")
   
   sampled_indices = c(1:nrow(points))
@@ -244,7 +264,8 @@ getSmallDataSet <- function(dataSet,NumOfObjectsFromEachClass = 10, onlyTrain = 
   return(smallDataSet)
 }
 
-library(lubridate)
+# install.packages("lubridate")
+
 getSurfaceSampledModels <- function(dataSet, n_s_euclidean = 1000, n_s_dijkstra = 100, plot = TRUE){
   
   models = list()

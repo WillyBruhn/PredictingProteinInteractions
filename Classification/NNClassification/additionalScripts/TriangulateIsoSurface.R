@@ -3,13 +3,14 @@
 # source("/home/willy/RedoxChallenges/MasterThesis/ExtrinsicDistances/isoFaces.R")
 # source("/home/willy/RedoxChallenges/MasterThesis/ExtrinsicDistances/extrinsicDistances.R")
 
-source("/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/helperFunctions.R")
+# source("/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/helperFunctions.R")
 
 wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
 wsPath = "../../setUp/SourceLoader.R"
+wsPath = as.character(paste(funr::get_script_path(), "/../../../setUp/SourceLoader.R", sep = ""))
 
-# source(wsPath)
-# sourceFiles(c("helperFunctions"))
+source(wsPath)
+sourceFiles(c("helperFunctions"))
 # printPathsToSources(c("helperFunctions"))
 
 
@@ -23,7 +24,7 @@ library("misc3d")
 
 # tell horst to install GL library
 # if(!is.installed("rgl")){install.packages("rgl")}
-library("rgl")
+# library("rgl")
 
 
 library(misc3d)

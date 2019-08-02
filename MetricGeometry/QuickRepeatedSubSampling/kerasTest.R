@@ -1,8 +1,19 @@
-s3 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/helperFunctions.R"
-source(s3)
+# s3 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/helperFunctions.R"
+# source(s3)
+
+# wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
+wsPath = "../../setUp/SourceLoader.R"
+# wsPath = as.character(paste(funr::get_script_path(), "/../../setUp/SourceLoader.R", sep = ""))
+
+source(wsPath)
+sourceFiles(c("helperFunctions"))
 
 
+# install.packages("keras")
 library(keras)
+
+# install_keras(tensorflow = "gpu")
+# pip install --upgrade pip
 
 # install.packages("lime")
 library(lime)
@@ -22,7 +33,10 @@ library(yardstick)
 # install.packages("corrr")
 # library(corrr)
 
+# install.packages("permute")
 library(permute)
+
+# install.packages("xtable")
 library(xtable)
 
 
@@ -2103,12 +2117,12 @@ modelNet10Experiment(sampleSize = 10,
 
 
 
-# 
-# install_keras()
-# library(keras)
-# k = backend()
-# sess = k$get_session()
-# sess$list_devices()
+
+install_keras()
+library(keras)
+k = backend()
+sess = k$get_session()
+sess$list_devices()
 
 
 

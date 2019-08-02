@@ -19,7 +19,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 echo $DIR
 
-sed -i "s|PPISETUP =.*|PPISETUP = \"$DIR\"|g" /home/willy/PredictingProteinInteractions/setUp/SourceLoader.R
+sed -i "s|PPISETUP =.*|PPISETUP = \"$DIR\"|g" SourceLoader.R
 
 
 ./installPackages.R 

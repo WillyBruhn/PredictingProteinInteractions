@@ -35,6 +35,7 @@ sources = addSource(sources, "helperFunctions", "/MetricGeometry/QuickRepeatedSu
 sources = addSource(sources, "UltraQuickRepeatedSubSampling", "/MetricGeometry/QuickRepeatedSubSampling/UltraQuickRepeatedSubSampling.R")
 sources = addSource(sources, "TriangulateIsoSurface", "/Classification/NNClassification/additionalScripts/TriangulateIsoSurface.R")
 sources = addSource(sources, "QuickRepeatedSubSampling", "/MetricGeometry/QuickRepeatedSubSampling/QuickRepeatedSubSampling.R")
+sources = addSource(sources, "BoostedKNN", "/Classification/NNClassification/optimizeDifferentModels/BoostedKNN.R")
 
 
 write.table(sources, paste(PredictingProteinInteractionsFolder, "setUp/SourcableFiles.txt", sep = ""), row.names = FALSE)
@@ -45,31 +46,31 @@ write.table(sources, paste(PredictingProteinInteractionsFolder, "setUp/Sourcable
 #
 #-------------------------------------------------------
 
-print("installing packages ...")
+# print("installing packages ...")
+# 
+# is.installed <- function(mypkg){
+#   is.element(mypkg, installed.packages()[,1])
+# }
+# 
+# if(!is.installed("plot3D")){install.packages("plot3D")}
+# if(!is.installed("funr")){install.packages("funr")}
+# if(!is.installed("emdist")){install.packages("emdist")}
+# if(!is.installed("ggplot2")){install.packages("ggplot2")}
+# if(!is.installed("ggdendro")){install.packages("ggdendro")}
+# if(!is.installed("plot3D")){install.packages("plot3D")}
+# if(!is.installed("tcltk")){install.packages("tcltk")}
+# if(!is.installed("getopt")){install.packages("getopt")}
+# if(!is.installed("rfUtilities")){install.packages("rfUtilities")}
+# if(!is.installed("rbenchmark")){install.packages("rbenchmark")}
+# 
+# 
+# if(!is.installed("raster")){install.packages("raster")}
+# if(!is.installed("foreach")){install.packages("foreach")}
+# if(!is.installed("doMC")){install.packages("doMC")}
+# if(!is.installed("FNN")){install.packages("FNN")}
+# if(!is.installed("RSNNS")){install.packages("RSNNS")}
 
-is.installed <- function(mypkg){
-  is.element(mypkg, installed.packages()[,1])
-}
-
-if(!is.installed("plot3D")){install.packages("plot3D")}
-if(!is.installed("funr")){install.packages("funr")}
-if(!is.installed("emdist")){install.packages("emdist")}
-if(!is.installed("ggplot2")){install.packages("ggplot2")}
-if(!is.installed("ggdendro")){install.packages("ggdendro")}
-if(!is.installed("plot3D")){install.packages("plot3D")}
-if(!is.installed("tcltk")){install.packages("tcltk")}
-if(!is.installed("getopt")){install.packages("getopt")}
-if(!is.installed("rfUtilities")){install.packages("rfUtilities")}
-if(!is.installed("rbenchmark")){install.packages("rbenchmark")}
-
-
-if(!is.installed("raster")){install.packages("raster")}
-if(!is.installed("foreach")){install.packages("foreach")}
-if(!is.installed("doMC")){install.packages("doMC")}
-if(!is.installed("FNN")){install.packages("FNN")}
-if(!is.installed("RSNNS")){install.packages("RSNNS")}
-
-
+# install.packages("rdist")
 # misc3d
 # geometry
 # xtable
@@ -83,6 +84,31 @@ if(!is.installed("RSNNS")){install.packages("RSNNS")}
 # 
 # library(readobj)
 
+
+# install.packages("keras")
+# library(keras)
+# 
+# # install.packages("lime")
+# library(lime)
+# 
+# # install.packages("tidyquant")
+# library(tidyquant)
+# 
+# # install.packages("rsample")
+# # library(rsample)
+# 
+# # install.packages("recipes")
+# library(recipes)
+# 
+# # install.packages("yardstick")
+# library(yardstick)
+# 
+# # install.packages("corrr")
+# # library(corrr)
+# 
+# library(permute)
+# library(xtable)
+# install.packages("DescTools")
 
 
 
