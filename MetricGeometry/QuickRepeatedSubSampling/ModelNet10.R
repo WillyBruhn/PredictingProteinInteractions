@@ -19,7 +19,7 @@
 
 
 # 
-# wsPath = "/home/willy/PredictingProteinInteractions/setUp/SourceLoader.R"
+wsPath = "/home/willy/PredictingProteinInteractions/setUp/SourceLoader.R"
 # wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
 
 wsPath = as.character(paste(funr::get_script_path(), "/../../setUp/SourceLoader.R", sep = ""))
@@ -370,13 +370,17 @@ distributionOfDE <- function(models,
       quantiles = data.frame(matrix(0,ncol = (q+2)*2+1+1, nrow = m))
       colnames(quantiles) = c("class","testTrain", as.vector(paste(c("q"),c(1:(q+2)), sep = "")), as.vector(paste(c("q_euc"),c(1:(q+2)), sep = "")))
       
-      quantiles[,1] = rep(models[[i]]$name, m)
-      quantiles[,2] = rep(models[[i]]$testTrain, m)
-      for(i in 1:length(Fapp$F_app_list)){
-        quantiles[i,3:(q+4)] = Fapp$F_app_list[[i]]
-        quantiles[i,(q+5):ncol(quantiles)] = Fapp$F_app_euclid[[i]]
-      }
       
+      quantiles[,1] = rep(models[[i]]$name, m)
+      quantiles[,2] = rep(as.character(models[[i]]$testTrain), m)
+
+      for(i in 1:length(Fapp$F_app_list)){
+        
+        qts = c(1:(q+2))
+        quantiles[i,qts+2] = Fapp$F_app_list[[i]]
+        quantiles[i,qts+2+q+2] = Fapp$F_app_euclid[[i]]
+      }
+
       write.csv(x = quantiles, quantilesName)
     }
     quantiles = read.csv(quantilesName, row.names = 1)
@@ -393,6 +397,15 @@ distributionOfDE <- function(models,
   return(quantilesOut)
 }
 
+
+# distributionOfDE(models = list(models[[1]]),
+#                  n = 40,
+#                  m =2,
+#                  mode = "Eccentricities",
+#                  q = 1,
+#                  recalculate = TRUE)
+# 
+# models[[1]]
 
 
 distributionOfDEParallel <- function(models,
@@ -742,16 +755,19 @@ models = readRDS(file = "/home/willy/PredictingProteinInteractions/data/ModelNet
 
 # # randomly sample and calculate DE
 quantilesDist = distributionOfDE(models = models,
-                             n = 40,
+                             n = 10,
                              m =100,
-                             mode = "Distances",
-                             q = 10,
-                             recalculate = FALSE)
+                             mode = "Eccentricities",
+                             q = 1,
+                             recalculate = TRUE)
+
+
 
 
 #---------------------------------------------------------------------------------------
 # Classification
 #---------------------------------------------------------------------------------------
+warnings()
 
 modelNet10Experiment(sampleSize = 5,
                      sampleTimes = 1,
@@ -767,8 +783,7 @@ modelNet10Experiment(sampleSize = 5,
                      fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Distances_nE_1000_nD_100_n_40_m_100_q_1.csv",
                      ExperimentName = "Test1",
                      recalculate = FALSE,
-
-                                          modelFUN = model5)
+                     modelFUN = model5)
 
 
 modelNet10Experiment(sampleSize = 10,
