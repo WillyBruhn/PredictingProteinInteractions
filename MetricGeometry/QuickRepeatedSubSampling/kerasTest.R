@@ -23,7 +23,7 @@ library(yardstick)
 # library(corrr)
 
 library(permute)
-
+library(xtable)
 
 
 # #-------------------------------------------------------------------
@@ -751,6 +751,11 @@ sampleMultipleTimes  <- function(quantiles,sampleSize, sampleTimes, numPermutati
   lastInd = 0
   
   colnames(quantTrain)[1] = "name"
+  
+  # preallocate mem
+  sampled_indices = rep(1, sampleSize)
+  unordered = quantiles[sampled_indices,c(1:quants)+1]
+  
   # for each subclassName (that means object) draw sampleSize big sets for sampleTimes times
   for(i in 1:length(subClassNames_train)){
     subClassName_tmp = as.character(subClassNames_train[i])
@@ -778,10 +783,6 @@ sampleMultipleTimes  <- function(quantiles,sampleSize, sampleTimes, numPermutati
           ordered = as.matrix(unordered[shuffle(nrow(unordered)),])
           quantTrain[ind,2:ncol(quantTrain)] = array_reshape(ordered, dim = c(1,sampleSize*quants), order = "C")
           quantTrain[ind,1] = subClassName_tmp
-          # print(k+jInd)
-          
-          # print(paste(ind, subClassName_tmp))
-          # print(paste(i,j,k))
           
           if((ind)-lastInd !=1) {
             print("ERROR")
@@ -792,8 +793,7 @@ sampleMultipleTimes  <- function(quantiles,sampleSize, sampleTimes, numPermutati
       }
     }
   }
-  # return(quantTrain)
-  return(quantTrain[shuffle(1:nrow(quantTrain)),])
+  return(quantTrain)
 }
 # 
 # 4*3*10
@@ -806,6 +806,169 @@ sampleMultipleTimes  <- function(quantiles,sampleSize, sampleTimes, numPermutati
 #   v[i] = length(which(quantos == un[i]))
 # }
 # v
+
+
+library(foreach)
+sampleMultipleTimesParallel  <- function(quantiles,sampleSize, sampleTimes, numPermutations = 1, m = 100){
+  
+  # q = ncol(quantiles)-2-1
+  
+  # name in first column
+  quants = ncol(quantiles)-1
+  
+  subClassNames_train = unique(quantiles[,1])
+  
+  quantTrain = data.frame(matrix(0, ncol = sampleSize*quants+1, nrow = numPermutations*sampleTimes*length(subClassNames_train)))
+  
+  lastInd = 0
+  
+  colnames(quantTrain)[1] = "name"
+  
+  relevantQuantiles = as.matrix(quantiles[,(c(1:quants)+1)])
+  
+  # for each subclassName (that means object) draw sampleSize big sets for sampleTimes times
+  for(i in 1:length(subClassNames_train)){
+    subClassName_tmp = as.character(subClassNames_train[i])
+    
+    print(paste(subClassName_tmp, i/length(subClassNames_train)))
+    
+    train_indices = ((i-1)*m+1):(i*m)
+    for(j in 1:sampleTimes){
+      sampled_indices = sample(train_indices, size = sampleSize, replace = FALSE)
+
+      ordered = relevantQuantiles[sampled_indices,]
+      quantTrain[j+(i-1)*sampleTimes,2:ncol(quantTrain)] = as.vector(t(ordered))
+      quantTrain[j+(i-1)*sampleTimes,1] = subClassName_tmp
+
+    }
+  }
+  return(quantTrain)
+}
+
+sampleMultipleTimesParallel2  <- function(quantiles,sampleSize, sampleTimes, numPermutations = 1, m = 100){
+  # name in first column
+  quants = ncol(quantiles)-1
+  
+  subClassNames_train = unique(quantiles[,1])
+  
+  quantTrain = data.frame(matrix(0, ncol = sampleSize*quants+1, nrow = numPermutations*sampleTimes*length(subClassNames_train)))
+  colnames(quantTrain)[1] = "name"
+  
+  relevantQuantiles = as.matrix(quantiles[,(c(1:quants)+1)])
+  
+  # # for each subclassName (that means object) draw sampleSize big sets for sampleTimes times
+  # for(i in 1:length(subClassNames_train)){
+  #   subClassName_tmp = as.character(subClassNames_train[i])
+  #   
+  #   print(paste(subClassName_tmp, i/length(subClassNames_train)))
+  #   
+  #   train_indices = ((i-1)*m+1):(i*m)
+  #   for(j in 1:sampleTimes){
+  #     sampled_indices = sample(train_indices, size = sampleSize, replace = FALSE)
+  #     
+  #     ordered = relevantQuantiles[sampled_indices,]
+  #     quantTrain[j+(i-1)*sampleTimes,2:ncol(quantTrain)] = as.vector(t(ordered))
+  #     quantTrain[j+(i-1)*sampleTimes,1] = subClassName_tmp
+  #     
+  #   }
+  # }
+  
+  for(k in 1:nrow(quantTrain)){
+    class_ind = ceiling(k/sampleTimes)
+    
+    subClassName_tmp = as.character(subClassNames_train[class_ind])
+    print(paste(subClassName_tmp, k/nrow(quantTrain)))
+    
+    train_indices = ((class_ind-1)*m+1):(class_ind*m)
+    
+    sampled_indices = sample(train_indices, size = sampleSize, replace = FALSE)
+    
+    ordered = relevantQuantiles[sampled_indices,]
+    quantTrain[k,2:ncol(quantTrain)] = as.vector(t(ordered))
+    quantTrain[k,1] = subClassName_tmp
+  }
+  
+  return(quantTrain)
+}
+
+
+sampleMultipleTimesParallel3  <- function(quantiles,sampleSize, sampleTimes, numPermutations = 1, m = 100){
+  # name in first column
+  quants = ncol(quantiles)-1
+  
+  subClassNames_train = unique(quantiles[,1])
+  
+  relevantQuantiles = as.matrix(quantiles[,(c(1:quants)+1)])
+  
+  quantTrainMat = t(apply(matrix(c(1:(numPermutations*sampleTimes*length(subClassNames_train))), ncol = 1),1,
+                     FUN = function(k){
+                       class_ind= ceiling(k/sampleTimes)
+                       
+                       subClassName_tmp = as.character(subClassNames_train[class_ind])
+                       
+                       train_indices = ((class_ind-1)*m+1):(class_ind*m)
+                       
+                       sampled_indices = sample(train_indices, size = sampleSize, replace = FALSE)
+                       
+                       ordered = relevantQuantiles[sampled_indices,]
+                       c(subClassName_tmp,as.vector(t(ordered)))
+                    }))
+
+  quantTrain = data.frame(quantTrainMat, stringsAsFactors=FALSE)
+  colnames(quantTrain)[1] = "name"
+
+  return(quantTrain)
+}
+
+# 
+# fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Distances_nE_1000_nD_100_n_40_m_100_q_1.csv"
+# quantiles = read.csv(file =fName, header = TRUE)
+# 
+# sampleMultipleTimesParallel3(quantiles = quantiles[1:200,-2] , sampleSize = 2,sampleTimes = 5,numPermutations = 1, m = 100)
+# 
+# 
+# library(rbenchmark)
+# num = 2000
+# sampleSize = 10
+# sampleTimes = 50
+# numPermutations = 10
+# benchmark("Parallel3" = sampleMultipleTimesParallel3(quantiles = quantiles[1:num,-2], sampleSize = sampleSize,sampleTimes = sampleTimes,numPermutations = 1),
+#           "Parallel2" = sampleMultipleTimesParallel2(quantiles = quantiles[1:num,-2], sampleSize = sampleSize,sampleTimes = sampleTimes,numPermutations = 1),
+#           "NotParallel" = sampleMultipleTimes(quantiles = quantiles[1:num,-2], sampleSize = sampleSize,sampleTimes = sampleTimes,numPermutations = 1),
+#           replications = 1,
+#           columns = c("test", "replications", "elapsed",
+#                       "relative", "user.self", "sys.self"))
+# 
+# library(permute)
+# 
+# perm = diag(10)[shuffle(10),]
+# 
+# m = matrix(seq(1:10), ncol = 10)
+# 
+# m %*% perm
+# 
+# 
+# ?aperm
+# 
+# library(utils)
+# 
+# num = 1000
+# sampleSize = 10
+# sampleTimes = 50
+# numPermutations = 10
+# 
+# Rprof(tmp <- tempfile())
+# m = sampleMultipleTimesParallel3(quantiles = quantiles[1:10000,], sampleSize = 10,sampleTimes = 100,numPermutations = 1, m = 100)
+# Rprof()
+# summaryRprof(tmp)
+# 
+# nrow(quantiles)
+# 
+# 
+# sampleMultipleTimesParallel(quantiles = quantiles[1:2,], sampleSize = 2,sampleTimes = 1,numPermutations = 1, m = 2)
+# sampleMultipleTimes(quantiles = quantiles[1:2,], sampleSize = 2,sampleTimes = 1,numPermutations = 1)
+# 
+# quantiles[1:2,]
 
 
 sampleMultipleTimesMoments  <- function(quantiles,sampleSize, sampleTimes){
@@ -900,7 +1063,7 @@ getTrainAndTestOnlySurf <- function(quantiles, sampleSize, sampleTimes, numPermu
     print("generating train and test ...")
     
     library(permute)
-    sampledQuantiles = sampledQuantiles[shuffle(1:nrow(sampledQuantiles)), ]
+    # sampledQuantiles = sampledQuantiles[shuffle(1:nrow(sampledQuantiles)), ]
     y_all = getClassNamesFromSubClasses(sampledQuantiles[,1],splitPattern = "_")
     
     train_indices = which(sampledQuantiles[,1] %in% subClassNames_train)
@@ -940,6 +1103,54 @@ getTrainAndTestOnlySurf <- function(quantiles, sampleSize, sampleTimes, numPermu
     
   return(list("x_train" = x_train, "y_train" = y_train, "x_test" = x_test, "y_test" = y_test, "numClasses" = numClasses, "y_test_original_names" = y_test_original_names ,
               "y_train_original_names" = y_train_original_names))
+}
+
+
+getSamplesSurf2 <- function( quantiles,
+                             sampleSize, 
+                             sampleTimes,
+                             numPermutations = 1,
+                             fName = "NOPE",
+                             reDo = FALSE,
+                             euklid = FALSE,
+                             numClasses,
+                             m){
+  
+  # the rest of quantiles is euclidean distances
+  if(euklid == FALSE){
+    quantiles = quantiles[,1:(1+(ncol(quantiles)-1)/2)]
+  }
+
+  print("starting sampling ...")
+  sampledQuantiles = sampleMultipleTimesParallel3(quantiles = quantiles,
+                                         sampleSize = sampleSize,
+                                         sampleTimes = sampleTimes, 
+                                         numPermutations = numPermutations,
+                                         m = m)
+  
+  un = unique(sampledQuantiles[,1])
+  v = rep(0,length(un))
+  for(i in 1:length(un)){
+    v[i] = length(which(sampledQuantiles[,1] == un[i]))
+  }
+  
+  print(v)
+  if(var(v) != 0) return(NULL)
+  
+  print("generating x and y ...")
+  
+  y_all_class_names = getClassNamesFromSubClasses(sampledQuantiles[,1],splitPattern = "_")
+  
+  y = y_all_class_names
+  X = as.matrix(sampledQuantiles[,-1])
+  
+  classLevels = unique(y)
+  y = as.numeric(as.factor(y))-1
+  y <- to_categorical(y, numClasses)
+  
+  y_original_names = sampledQuantiles[,1]
+  
+  return(list("X" = X, "y" = y, "y_original_names" = y_original_names))
 }
 
 # getTrainAndTestOnlySurf(quantiles[1:2000,],sampleSize = 3,sampleTimes = 3, numPermutations = 2)
@@ -1200,6 +1411,8 @@ convModel3 <- function(TrainTest, sampleSize, sampleTimes, m, q, epochs = 30){
 
 convModel4 <- function(TrainTest, sampleSize, sampleTimes, q, epochs = 30, batch_size = 64){
   
+
+  
   x_train = TrainTest$x_train
   y_train = TrainTest$y_train
   x_test = TrainTest$x_test
@@ -1331,8 +1544,8 @@ convModel4 <- function(TrainTest, sampleSize, sampleTimes, q, epochs = 30, batch
   return(model)
 }
 
-
-model5 <- function(TrainTest, epochs = 30, batch_size = 64){
+model5 <- function(TrainTest, epochs = 30, batch_size = 64, sampleSize = NULL, sampleTimes =NULL, q = NULL ){
+  print("Calling model5 ...")
   
   x_train = TrainTest$x_train
   y_train = TrainTest$y_train
@@ -1348,6 +1561,10 @@ model5 <- function(TrainTest, epochs = 30, batch_size = 64){
     layer_dense(units = 500, activation = 'relu', input_shape = c(ncol(x_train))) %>% 
     layer_dropout(rate = 0.1) %>%
     layer_dense(units = 400, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 100, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 100, activation = 'relu') %>% 
     layer_dropout(rate = 0.1) %>%
     layer_dense(units = 100, activation = 'relu') %>% 
     layer_dropout(rate = 0.1) %>%
@@ -1372,6 +1589,56 @@ model5 <- function(TrainTest, epochs = 30, batch_size = 64){
   return(model)
 }
 
+
+
+model6 <- function(TrainTest, epochs = 30, batch_size = 64, sampleSize = NULL, sampleTimes =NULL, q = NULL ){
+  print("Calling model5 ...")
+  
+  x_train = TrainTest$x_train
+  y_train = TrainTest$y_train
+  x_test = TrainTest$x_test
+  y_test = TrainTest$y_test
+  
+  numClasses = TrainTest$numClasses
+  
+  
+  #---------------------------------------------------------
+  model <- keras_model_sequential()
+  model %>% 
+    layer_dense(units = 500, activation = 'relu', input_shape = c(ncol(x_train))) %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 400, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 100, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 100, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 100, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 10, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 10, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 10, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = numClasses, activation = 'softmax')
+  
+  model %>% compile(
+    loss = 'categorical_crossentropy',
+    optimizer = optimizer_rmsprop(),
+    metrics = c('accuracy')
+  )
+  
+  history <- model %>% fit(
+    x_train, y_train, 
+    epochs = epochs, batch_size = batch_size, 
+    validation_split = 0.2
+  )
+  
+  print(model %>% evaluate(x_test, y_test))
+  
+  return(model)
+}
 
 #---------------------------------------------------------------------------------------------------------
 #
@@ -1631,46 +1898,8 @@ model = model5(TrainTest = Tr,epochs = 100, batch_size = 5)
 #------------------------------------------------------------------------------------------------------------------------
 # ModelNet10
 #------------------------------------------------------------------------------------------------------------------------
-
-sampleSize = 10
-sampleTimes = 1
-q = 1
-m = 100
-
-fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Distances_nE_1000_nD_100_n_40_m_100_q_1.csv"
-quantiles = read.csv(file =fName, header = TRUE)
-
-quantilesTrain = quantiles[which(quantiles[,2] == "train"),-2]
-quantilesTest = quantiles[which(quantiles[,2] == "test"),-2]
-
-nrow(quantilesTest)/nrow(quantilesTrain)
-
-
-Tr = getTrainAndTestOnlySurf(quantilesTrain,sampleSize = sampleSize,sampleTimes = sampleTimes,euklid = TRUE, numPermutations = 1, TrainTestSplit = 0)
-Te = getTrainAndTestOnlySurf(quantilesTest,sampleSize = sampleSize,sampleTimes = sampleTimes,euklid = TRUE, numPermutations = 1, TrainTestSplit = 0)
-
-
-TrFinal = list("x_train" = Tr$x_train, "y_train" = Tr$y_train, "x_test" = Te$x_train, "y_test" = Te$y_train, "numClasses" = Tr$numClasses)
-
-model = convModel4(TrainTest = TrFinal,sampleSize = sampleSize,sampleTimes = sampleTimes,q = (q+2)*2,epochs = 300, batch_size = 128)
-
-
-classLevels = unique(getClassNamesFromSubClasses(quantilesTest[,1],splitPattern = "_"))
-
-# we have to make a consensus over all the input permutations
-predictions <- model %>% predict_classes(Te$x_train)
-
-y_test_original_names = unique(Te$y_train_original_names)
-predictions_final = rep(0, length(y_test_original_names))
-for(i in 1:length(predictions_final)){
-  inds = which(Te$y_train_original_names == y_test_original_names[i])
-  print(predictions[inds])
-  predictions_final[i] = Mode(predictions[inds])
-}
-
-groundTruth = getClassNamesFromSubClasses(y_test_original_names, splitPattern = "_")
-
-
+# install.packages("DescTools")
+library(DescTools)
 
 reverseToCategorical <- function(oneHot, names){
   names_out = rep("", nrow(oneHot))
@@ -1681,35 +1910,205 @@ reverseToCategorical <- function(oneHot, names){
   return(names_out)
 }
 
-nrow(Te$x_train)
 
-length(predictions)
-nrow(Te$y_train)
+modelNet10Experiment <- function(sampleSize = 10,
+                                 sampleTimes = 10,
+                                 sampleTimes_test = 1,
+                                 numPermutations = 1,
+                                 numPermutations_test = 1,
+                                 batch_size = 1024,
+                                 epochs = 300,
+                                 euklid = TRUE,
+                                 q = 1,
+                                 m = 100, 
+                                 numClasses = 10,
+                                 fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Distances_nE_1000_nD_100_n_40_m_100_q_1.csv",
+                                 ExperimentName = "Test1",
+                                 path = "/home/willy/PredictingProteinInteractions/data/ModelNet10/",
+                                 modelFUN = convModel4,
+                                 recalculate = FALSE,
+                                 useOnlyTrain = 1.0,
+                                 useOnlyTest = 1.0){
+  
+  ExperimentFile = paste(path,"/", ExperimentName, "sS_",sampleSize, "_sT_", sampleTimes, "_sTt_", sampleTimes_test, "_nP_", numPermutations,
+                        "_nPt_", numPermutations_test, "_euklid_",euklid, "_uo_", useOnlyTrain, "_uoTest_", useOnlyTest,".Rdata", sep ="")
+  
+  print(ExperimentFile)
+  
+  TrFinal = list()
+  if(!file.exists(ExperimentFile) || recalculate){
+    quantiles = read.csv(file =fName, header = TRUE)
+    
+    quantilesTrain = quantiles[which(quantiles[,2] == "train"),-2]
+    quantilesTest = quantiles[which(quantiles[,2] == "test"),-2]
+    
+    trainNames = unique(as.vector(quantilesTrain[,1]))
+    testNames = unique(as.vector(quantilesTest[,1]))
+    
+    nuTrain = sample(as.vector(trainNames), size = floor(useOnlyTrain*length(trainNames)), replace = FALSE)
+    nuTest = sample(as.vector(testNames), size = floor(useOnlyTest*length(testNames)) ,replace = FALSE)
+    
+    print(paste("Using from Train: ", length(nuTrain)), sep ="")
+    print(paste("Using from Test: ", length(nuTest)),  sep ="")
+    
+    nuTrain_ind = c()
+    for(i in 1:length(nuTrain)){
+      inds = which(quantilesTrain[,1] == nuTrain[i])
+      # print(nuTrain[i])
+      # print(inds)
+      
+      nuTrain_ind = c(nuTrain_ind, inds)
+    }
+    
+    nuTest_ind = c()
+    for(i in 1:length(nuTest)){
+      nuTest_ind = c(nuTest_ind, which(quantilesTest[,1] == nuTest[i]))
+    }
+    
+    quantilesTrain = quantilesTrain[nuTrain_ind,]
+    quantilesTest = quantilesTest[nuTest_ind, ]
+    
+    classLevels = unique(getClassNamesFromSubClasses(quantiles[,1],splitPattern = "_"))
+    
+    nrow(quantilesTest)/nrow(quantilesTrain)
+    
+    print("Creating train-set ...")
+    Train = getSamplesSurf2(quantilesTrain,sampleSize = sampleSize,sampleTimes = sampleTimes,euklid = euklid, numPermutations = numPermutations, numClasses = numClasses, m = m)
+    
+    print("Creating test-set ...")
+    Test = getSamplesSurf2(quantilesTest,sampleSize = sampleSize,sampleTimes = sampleTimes_test,euklid = euklid, numPermutations = numPermutations_test, numClasses = numClasses, m = m)
+    
+    shuf = shuffle(1:nrow(Train$X))
+    TrFinal = list("x_train" = Train$X[shuf,], "y_train" = Train$y[shuf,], "x_test" = Test$X, "y_test" = Test$y, "numClasses" = numClasses, "classLevels" = classLevels)
 
-y_test_gt = reverseToCategorical(Te$y_train, classLevels)
-y_test_pred = classLevels[predictions_final+1]
+    saveRDS(TrFinal, ExperimentFile)
+    } else {
+      print("reading from previous experiment ...")
+      TrFinal = readRDS(ExperimentFile)
+  }
+  
+  
+  fac = 1
+  if(euklid) fac=2
+  model = modelFUN(TrainTest = TrFinal,sampleSize = sampleSize,sampleTimes = sampleTimes,q = (q+2)*fac,epochs = epochs, batch_size = batch_size)
+  
+  print("-----------------------------")
+  print("accuracy ...")
+  print(model %>% evaluate(TrFinal$x_test, TrFinal$y_test))
+  print("-----------------------------")
+  
+  
+  # we have to make a consensus over all the input permutations
+  predictions <- model %>% predict_classes(TrFinal$x_test)
+  
+  # print(TrFinal$y_test)
+  
+  pred = predictions+1
+  gt = reverseToCategorical(TrFinal$y_test,TrFinal$classLevels)
+  y_test_pred = rep("0",length(pred))
+  su = 0
+  for(i in 1:length(gt)){
+    if(gt[i] == TrFinal$classLevels[pred[i]]) su = su + 1
+    
+    y_test_pred[i] = TrFinal$classLevels[pred[i]]
+  }
+  su/length(gt)
+  y_test_pred
+  
+  confMat = table(factor(y_test_pred,
+                         levels=TrFinal$classLevels),
+                  factor(gt,
+                         levels=TrFinal$classLevels))
+  
+  
+  sum(confMat)
+  confMatNormalized = confMat/colSums(confMat)[col(confMat)]
+  
+  accuracy = sum(diag(confMat)) / sum(confMat)
+  
+  
+  
+  print("-----------------------------")
+  print(paste("accuracy:", accuracy))
+  print("-----------------------------")
+  
+  print(confMat)
+  
+  write.table(x = accuracy,file = paste("/home/willy/PredictingProteinInteractions/Results/Tables/Accuracy_", ExperimentName, "txt", sep = ""))
+  
+  print(xtable(x = confMat,caption = "Confusion-matrix ModelNet10 ",label = "ModelNet10Conf", type = "latex"),
+        file = paste("/home/willy/PredictingProteinInteractions/Results/Tables/ModelNet10Conf_", ExperimentName, ".tex", sep = ""))
+  
+  
+  print(xtable(x = confMatNormalized,
+               caption = "Confusion-matrix ModelNet10 (normalized)",
+               label = "ModelNet10ConfNormalized",
+               type = "latex"),
+        file = paste("/home/willy/PredictingProteinInteractions/Results/Tables/ModelNet10ConfNormalized_", ExperimentName, ".tex", sep = ""))
+  
+}
 
-length(y_test_gt)
-length(y_test_pred)
+
+modelNet10Experiment(sampleSize = 5,
+                     sampleTimes = 1,
+                     sampleTimes_test = 1,
+                     numPermutations = 1,
+                     numPermutations_test = 1,
+                     batch_size = 64,
+                     epochs = 100,
+                     euklid = TRUE,
+                     q = 1,
+                     m = 100, 
+                     numClasses = 10,
+                     fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Distances_nE_1000_nD_100_n_40_m_100_q_1.csv",
+                     ExperimentName = "Test1",
+                     recalculate = FALSE,
+                     modelFUN = model5)
+
+modelNet10Experiment(sampleSize = 10,
+                     sampleTimes = 20,
+                     sampleTimes_test = 1,
+                     numPermutations = 1,
+                     numPermutations_test = 1,
+                     batch_size = 64,
+                     epochs = 60,
+                     euklid = TRUE,
+                     q = 1,
+                     m = 100, 
+                     numClasses = 10,
+                     fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Distances_nE_1000_nD_100_n_40_m_100_q_1.csv",
+                     ExperimentName = "Test2",
+                     recalculate = FALSE,
+                     modelFUN = convModel4)
+  
+
+modelNet10Experiment(sampleSize = 10,
+                     sampleTimes = 100,
+                     sampleTimes_test = 1,
+                     numPermutations = 1,
+                     numPermutations_test = 1,
+                     batch_size = 128,
+                     epochs = 50,
+                     euklid = TRUE,
+                     q = 1,
+                     m = 100, 
+                     numClasses = 10,
+                     fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Distances_nE_1000_nD_100_n_40_m_100_q_1.csv",
+                     ExperimentName = "Test2",
+                     recalculate = FALSE,
+                     modelFUN = model6,
+                     useOnlyTrain = 1,
+                     useOnlyTest = 1)
 
 
-confMat = table(factor(y_test_pred,
-             levels=classLevels),
-      factor(groundTruth,
-             levels=classLevels))
 
 
-sum(confMat)
+# 
+# install_keras()
+# library(keras)
+# k = backend()
+# sess = k$get_session()
+# sess$list_devices()
 
 
-confMatNormalized = confMat/colSums(confMat)[col(confMat)]
 
-print(xtable(x = confMat,caption = "Confusion-matrix ModelNet10 ",label = "ModelNet10Conf", type = "latex"),
-            file = "/home/willy/PredictingProteinInteractions/Results/Tables/ModelNet10Conf.tex")
-
-
-print(xtable(x = confMatNormalized,
-             caption = "Confusion-matrix ModelNet10 (normalized)",
-             label = "ModelNet10ConfNormalized",
-             type = "latex"),
-      file = "/home/willy/PredictingProteinInteractions/Results/Tables/ModelNet10ConfNormalized.tex")

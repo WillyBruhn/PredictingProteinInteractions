@@ -369,6 +369,62 @@ distributionOfDE <- function(models,
   return(quantilesOut)
 }
 
+
+
+distributionOfDEParallel <- function(models,
+                             AllQuantilesPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/",
+                             n = 10,
+                             m = 3,
+                             q = 1,
+                             mode = "Distances",
+                             plot = TRUE,
+                             recalculate = FALSE){
+
+
+
+
+  quantilesOutMat = t(apply(matrix(c(1:length(models),nrow = 1)), 1,  FUN = function(i){
+                        print(paste(models[[i]]$name, i/length(models)))
+
+                        path = strsplit(models[[i]]$path,split = models[[i]]$name)[[1]][1]
+                        quantilesDir = paste(path, "/Quantiles/", sep = "")
+
+                        if(!dir.exists(quantilesDir)) dir.create(quantilesDir)
+
+                        quantilesName = getGeoDistanceQuantileName(quantilesDir,mode,models[[i]]$n_s_euclidean,models[[i]]$n_s_dijkstra,n = n,m = m,q = q, fname = models[[i]]$name)
+                        if(!file.exists(quantilesName) || recalculate == TRUE){
+                          Fapp = generateF_approximations_3dModelWithMetric(d_surface = models[[i]]$d_surface, d_euclid = models[[i]]$d_euclid, n = n,m = m,q = q,mode = mode)
+
+                          # q+2 quantiles per distance + 1 name
+                          quantiles = data.frame(matrix(0,ncol = (q+2)*2+1+1, nrow = m))
+                          colnames(quantiles) = c("class","testTrain", as.vector(paste(c("q"),c(1:(q+2)), sep = "")), as.vector(paste(c("q_euc"),c(1:(q+2)), sep = "")))
+
+                          quantiles[,1] = rep(models[[i]]$name, m)
+                          quantiles[,2] = rep(models[[i]]$testTrain, m)
+                          for(i in 1:length(Fapp$F_app_list)){
+                            quantiles[i,3:(q+4)] = Fapp$F_app_list[[i]]
+                            quantiles[i,(q+5):ncol(quantiles)] = Fapp$F_app_euclid[[i]]
+                          }
+
+                          write.csv(x = quantiles, quantilesName)
+                        }
+                        quantiles = read.csv(quantilesName, row.names = 1)
+
+                        quantiles
+                      }))
+  
+  quantilesOut = data.frame(matrix(0,ncol = (q+2)*2+1+1, nrow = m*length(models)))
+  colnames(quantilesOut) = c("class","testTrain", as.vector(paste(c("q"),c(1:(q+2)), sep = "")), as.vector(paste(c("q_euc"),c(1:(q+2)), sep = "")))
+
+
+  if(!dir.exists(AllQuantilesPath)) dir.create(AllQuantilesPath)
+  allQuantiles = getGeoDistanceQuantileName(AllQuantilesPath,mode,models[[1]]$n_s_euclidean,models[[1]]$n_s_dijkstra,n = n,m = m,q = q, fname = "All")
+
+  # write.csv(quantilesOut,allQuantiles,row.names = FALSE)
+
+  return(quantilesOut)
+}
+
 distributionOfDEAllLocalities <- function( models,
                                            AllQuantilesPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDir/",
                                            n = 10,
@@ -442,149 +498,6 @@ plotQuantiles <- function(quantiles, euklid = FALSE){
   }
 }
 
-#------------------------------------------------------------------------
-
-# datasetPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10/"
-# datasetPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/ModelNet10/"
-
-
-# get all the file names and information if it belongs to train or test
-dataSet = getDataSet(datasetPath)
-nrow(dataSet)
-
-# get the first 20 models from each class
-# smallDataSet = getSmallDataSet(dataSet,2)
-
-smallDataSet = dataSet
-
-smallDataSet = na.omit(smallDataSet)
-
-nrow(smallDataSet)
-
-
-GLOBAL_VERBOSITY = 1
-models = getSurfaceSampledModels(smallDataSet,plot = FALSE,n_s_euclidean = 1000,n_s_dijkstra = 100)
-# quit()
-
-
-mod = downsampleEuclideanAndGetGeodesicModel10Net(objPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10//chair/train/chair_0749.obj",
-                                                  n_s_euclidean = 1000, n_s_dijkstra = 100, plot = TRUE)
-modi = read.obj(f = dataSet[i,3])
-points = t(modi$shapes[[1]]$positions)
-nrow(points)
-points3d(mod$centers, col = "blue", size = 10)
-
-rand = sample(1:nrow(mod$centers), size = 100,replace = FALSE)
-points3d(mod$centers[rand,], col = "green", size = 20)
-
-
-mod2 = downsampleEuclideanAndGetGeodesicModel10Net(objPath = dataSet[2,3], n_s_euclidean = 1700, n_s_dijkstra = 1700, plot = TRUE)
-points3d(mod2$centers, col = "blue", size = 20)
-
-
-for(i in 1:length(models)){
-  if(nrow(models[[i]]$d_surface) == 0 || nrow(models[[i]]$d_euclid) == 0) {
-    print(i)
-    models[[i]] <- NULL
-    i = i-1
-  }
-}
-
-length(models)
-
-
-# # randomly sample and calculate DE
-quantilesDist = distributionOfDE(models = models,
-                             n = 40,
-                             m =100,
-                             mode = "Distances",
-                             q = 1,
-                             recalculate = TRUE)
-
-unique(getClassNamesFromSubClasses(quantilesDist[,1], "_"))
-
-quantilesEcc = distributionOfDE(models = models,
-                                 n = 1000,
-                                 m =1,
-                                 mode = "Eccentricities",
-                                 q = 1)
-
-quantilesDist
-
-quantilesDist_trans = transformQuants(quantilesDist, q=1)
-plotQuantiles(quantilesDist_trans,FALSE)
-plotQuantiles(quantilesDist,FALSE)
-
-transformQuants <- function(quantiles, q = 1){
-  tranf = quantiles
-  
-  quant = q+2
-  
-  for(i in 1:nrow(tranf)){
-    for(j in 2:quant){
-      tranf[i,1+j] = (tranf[i,1+j])/tranf[i,2]
-    }
-  }
-  
-  return(tranf)
-}
-
-
-rgl.open()
-plotQuantiles(quantilesDist,FALSE)
-plotQuantiles(quantilesEcc,TRUE)
-
-cor(quantilesDist[,-1],quantilesEcc[,-1])
-
-
-# i = 10
-# points3d(x = quantiles[i,2], y = quantiles[i,3], z = quantiles[i,4], col = "black", size = 10)
-# points3d(x = quantiles[i,5], y = quantiles[i,6], z = quantiles[i,7], col = "black", size = 10)
-# 
-# i = 11
-# points3d(x = quantiles[i,2], y = quantiles[i,3], z = quantiles[i,4], col = "red", size = 10)
-# points3d(x = quantiles[i,5], y = quantiles[i,6], z = quantiles[i,7], col = "red", size = 10)
-
-plot3Examples(quantiles)
-
-
-quantilesLocal = distributionOfDEAllLocalities(models = models,
-                                             n = 10,
-                                             q = 1)
-
-plotQuantiles(quantilesLocal)
-
-quantilesLocal2 = distributionOfDEAllLocalities(models = models,
-                                               n = 20,
-                                               q = 1)
-plotQuantiles(quantilesLocal2)
-
-
-quantilesLocal3 = distributionOfDEAllLocalities(models = models,
-                                                n = 10,
-                                                q = 1)
-
-plotQuantiles(quantilesLocal3)
-plot3Examples(quantilesLocal3)
-
-plot3Examples(quantilesLocal2)
-plot3Examples(quantiles)
-
-plot3Examples(quantilesLocal)
-
-
-quantiles[which.max(quantiles[,2]),1]
-
-models[12487]
-12487/200
-
-# points3d(models[[63]]$d_surface)
-models[[63]]$path
-
-mod = downsampleEuclideanAndGetGeodesicModel10Net(objPath = models[[63]]$path, n_s_euclidean = 1000, n_s_dijkstra = 100, plot = TRUE)
-
-points3d(mod$centers, col ="blue", size = 20)
-
 
 plot3Examples <- function(quantiles){
   plotQuantiles(quantiles)
@@ -606,149 +519,97 @@ plot3Examples <- function(quantiles){
 }
 
 
-
-
-sub = which(getClassNamesFromSubClasses(quantilesLocal[,1], splitPattern = "_") %in% c("bathtub", "toilet", "sofa"))
-subQuantiles = quantilesLocal[sub,]
-
-plotQuantiles(subQuantiles)
-rgl.open()
-plotQuantiles(quantilesLocal)
-
-
-quantOut = quantiles
-
-for(i in 1:nrow(quantiles)){
-  print(i/nrow(quantiles))
-  quantOut[i,2] = quantiles[i,2]
-  quantOut[i,3] = quantiles[i,3]-quantiles[i,2]
-  quantOut[i,4] = quantiles[i,4]-quantiles[i,3]
-}
-
-quantiles = quantOut
-
-
-# sub = which(getClassNamesFromSubClasses(quantiles[,1], splitPattern = "_") %in% c("sofa"))
-# plotQuantiles(quantiles[sub,])
-plotQuantiles(quantiles)
-
-pca <- prcomp(quantiles[,2:4], center = FALSE,scale. = FALSE)
-
-pca$sdev
-pca$rotation
-
-pca_coords = pca$x
-
-pca_coords[,1] = pca_coords[,1] - min(pca_coords[,1])+1
-pca_coords[,2] = pca_coords[,2] - min(pca_coords[,2])+1
-pca_coords[,3] = pca_coords[,3] - min(pca_coords[,3])+1
-
-logSubQuantiles = quantiles
-logSubQuantiles[,2] = log(pca_coords[,1])
-logSubQuantiles[,3] = log(pca_coords[,2])
-logSubQuantiles[,4] = log(pca_coords[,3])
-
-plotQuantiles(logSubQuantiles)
-# plotQuantiles(quantiles)
-
-# which(quantiles[,1] %in% c("sofa_0001"))
-# 
-# points3d(logSubQuantiles[which(logSubQuantiles[,1] %in% c("sofa_0001")),2:4], col = "blue", size = 20)
-# points3d(logSubQuantiles[which(logSubQuantiles[,1] %in% c("table_0001")),2:4], col = "red", size = 20)
-# 
-
-# points3d(x = logSubQuantiles[,2], y = logSubQuantiles[,3], z = logSubQuantiles[,4], col = "red", alpha = 0.7, aspect = c(1, 1, 0.5))
-
-x_dim = c(min(logSubQuantiles[,2]),max(logSubQuantiles[,2]))
-y_dim = c(min(logSubQuantiles[,3]),max(logSubQuantiles[,3]))
-z_dim = c(min(logSubQuantiles[,4]),max(logSubQuantiles[,4]))
-
-x_width = x_dim[2]-x_dim[1]
-y_width = y_dim[2]-y_dim[1]
-z_width = z_dim[2]-z_dim[1]
-
-# nZ = 100
-# nY = nZ*d_y/d_z
-# nX = nZ*d_x/d_z
-
-
-
-gridSections = 5
-dims = ceil(pca$sdev*gridSections)
-# dims = ceil(c(100,100,100)*gridSections)
-ceil(dims[1])*ceil(dims[2])*ceil(dims[3])
-
-d_x = x_width/dims[1]
-d_y = y_width/dims[2]
-d_z = z_width/dims[3]
-
-x_grid_vals = x_dim[1]+(seq(1:(dims[1]+1))-1)*d_x
-y_grid_vals = y_dim[1]+(seq(1:(dims[2]+1))-1)*d_y
-z_grid_vals = z_dim[1]+(seq(1:(dims[3]+1))-1)*d_z
-
-x_grid_vals
-y_grid_vals
-z_grid_vals
-
-# g = grid3d(c("x", "y+", "z"), n = dims)
-
-
-# given one set of points that come from one object we want 
-# to get the voxels in which these points are
-
-numberOfDistributionsPerObject = 100
-outGrid = data.frame(matrix(0, ncol = 3, nrow = numberOfDistributionsPerObject))
-colnames(outGrid) = c("x","y","z")
-
-whereInGrid <- function(x_grid_vals,val){
-  if(val > x_grid_vals[length(x_grid_vals)]){
-    return(length(x_grid_vals))
-  }
-  if(val < x_grid_vals[1]){
-    return(1)
+transformQuants <- function(quantiles, q = 1){
+  tranf = quantiles
+  
+  quant = q+2
+  
+  for(i in 1:nrow(tranf)){
+    for(j in 2:quant){
+      tranf[i,1+j] = (tranf[i,1+j])/tranf[i,2]
+    }
   }
   
-  smaller = which(x_grid_vals <= val)
-  greater = which(x_grid_vals >= val)-1
-  inter = intersect(smaller,greater)
-  return(inter)
+  return(tranf)
 }
 
-# x_grid_vals
-# length(x_grid_vals)
-# whereInGrid(x_grid_vals,-700)
+#------------------------------------------------------------------------
 
-# currentObj[1,2]
-# whereInGrid(x_grid_vals,currentObj[2,2])
+# datasetPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10/"
+# datasetPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/ModelNet10/"
 
 
+# get all the file names and information if it belongs to train or test
+dataSet = getDataSet(datasetPath)
+nrow(dataSet)
 
-getGridRepResentation <- function(quantiles,name){
-  
-  inds = which(quantiles[,1] == name)
-  currentObj = quantiles[inds,]
-  # dims specifies the number of borders in each dimension
-  # for each distribution find the location in the outGrid
-  for(i in 1:nrow(currentObj)){
-    outGrid[i,1] = whereInGrid(x_grid_vals = x_grid_vals, val = currentObj[i,2])
-    outGrid[i,2] = whereInGrid(x_grid_vals = y_grid_vals, val = currentObj[i,3])
-    outGrid[i,3] = whereInGrid(x_grid_vals = z_grid_vals, val = currentObj[i,4])
+# get the first 20 models from each class
+# smallDataSet = getSmallDataSet(dataSet,2)
+
+smallDataSet = dataSet
+
+smallDataSet = na.omit(smallDataSet)
+
+nrow(smallDataSet)
+
+GLOBAL_VERBOSITY = 1
+models = getSurfaceSampledModels(smallDataSet,plot = FALSE,n_s_euclidean = 1000,n_s_dijkstra = 100)
+# quit()
+
+
+for(i in 1:length(models)){
+  if(nrow(models[[i]]$d_surface) == 0 || nrow(models[[i]]$d_euclid) == 0) {
+    print(i)
+    models[[i]] <- NULL
+    i = i-1
   }
-  return(outGrid)
 }
 
-p1 = getGridRepResentation(logSubQuantiles,"bathtub_0013")
-p2 = getGridRepResentation(logSubQuantiles,"chair_0013")
-# p3 = getGridRepResentation(logSubQuantiles,"chair_0014")
-p4 = getGridRepResentation(logSubQuantiles,"chair_0015")
+length(models)
 
-p5 = getGridRepResentation(logSubQuantiles,"chair_0018")
+saveRDS(models, file = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10/AllModels_ne_1000_nd_100.Rdata")
 
-points3d(p1)
-points3d(p2, col = "red")
-# points3d(p3, col = "blue")
-points3d(p4, col = "blue")
-points3d(p5, col = "green")
+
+# # randomly sample and calculate DE
+quantilesDist = distributionOfDE(models = models,
+                             n = 40,
+                             m =100,
+                             mode = "Distances",
+                             q = 10,
+                             recalculate = FALSE)
+
+
+# quantilesDist = distributionOfDEParallel(models = models[1:10],
+#                                  n = 10,
+#                                  m =1,
+#                                  mode = "Distances",
+#                                  q = 2,
+#                                  recalculate = FALSE)
+# quantilesDist
+
+
+# quantilesEcc = distributionOfDE(models = models,
+#                                  n = 1000,
+#                                  m =1,
+#                                  mode = "Eccentricities",
+#                                  q = 1)
+
+# quantilesDist
+# 
+# quantilesDist_trans = transformQuants(quantilesDist, q=1)
+# plotQuantiles(quantilesDist_trans,FALSE)
+# plotQuantiles(quantilesDist,FALSE)
+# 
+# 
+# 
+# rgl.open()
+# plotQuantiles(quantilesDist,FALSE)
+# plotQuantiles(quantilesEcc,TRUE)
+# 
+# cor(quantilesDist[,-1],quantilesEcc[,-1])
+# 
+
+
 
 
 
