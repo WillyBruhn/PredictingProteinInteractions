@@ -20,28 +20,26 @@
 
 
 wsPath = "/home/willy/PredictingProteinInteractions/setUp/SourceLoader.R"
-wsPath = "../../setUp/SourceLoader.R"
+wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
 
 wsPath = as.character(paste(funr::get_script_path(), "/../../setUp/SourceLoader.R", sep = ""))
 
-wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
+
 
 source(wsPath)
 sourceFiles(c("helperFunctions"))
 sourceFiles(c("UltraQuickRepeatedSubSampling"))
 sourceFiles(c("TriangulateIsoSurface"))
 
-path2Manifold = "../../Manifold/build/"
-datasetPath = "../../data/ModelNet10/ModelNet10/"
-
-
-
-# path2Manifold = "/home/willy/PredictingProteinInteractions/Manifold/build/"
-# datasetPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/"
+path2Manifold = "/home/willy/PredictingProteinInteractions/Manifold/build/"
+datasetPath = "/home/willy/PredictingProteinInteractions/data/ModelNet10/"
 
 path2Manifold = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/Manifold/build/"
 datasetPath = "/home/sysgen/Documents/LWB//PredictingProteinInteractions/data/ModelNet10/"
 
+
+path2Manifold = "../../Manifold/build/"
+datasetPath = "../../data/ModelNet10/ModelNet10/"
 
 # install.packages("igraph")
 
@@ -586,7 +584,7 @@ smallDataSet = na.omit(smallDataSet)
 nrow(smallDataSet)
 
 GLOBAL_VERBOSITY = 1
-models = getSurfaceSampledModels(smallDataSet,plot = FALSE,n_s_euclidean = 2000,n_s_dijkstra = 1000)
+models = getSurfaceSampledModels(smallDataSet,plot = FALSE,n_s_euclidean = 1000,n_s_dijkstra = 100)
 # quit()
 
 
@@ -602,7 +600,7 @@ length(models)
 
 # saveRDS(models, file = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10/AllModels_ne_1000_nd_100.Rdata")
 
-# models = readRDS(file = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/ModelNet10/ModelNet10/AllModels_ne_1000_nd_100.Rdata")
+models = readRDS(file = "/home/willy/PredictingProteinInteractions/data/ModelNet10/ModelNet10/AllModels_ne_1000_nd_100.Rdata")
 
 
 # # randomly sample and calculate DE
