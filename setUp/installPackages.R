@@ -47,6 +47,8 @@ loadPck("keras")
 loadPck("readobj")
 loadPck("permute")
 loadPck("DescTools")
+loadPck("doBy")
+
 
 # install.packages("keras")
 # library(keras)

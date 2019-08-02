@@ -12,7 +12,8 @@
 #cmake ..
 #
 #make main
-#--------------------------------------------------------------------------------------
+
+
 
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -39,7 +40,23 @@ sed -i "s|PPISETUP =.*|PPISETUP = \"$DIR\"|g" SourceLoader.R
 
 
 
+#--------------------------------------------------------------------------------------
 
+echo "installing antiprism (off2obj)... (don't forget to uncomment me)"
+#sudo add-apt-repository ppa:antiprism/ppa
+#sudo apt-get update
+#sudo apt-get install antiprism
+
+echo "installing Manifold (stitching 3d-objects together)..."
+cd ..
+git clone --recursive -j8 git://github.com/hjwdzh/Manifold
+cd Manifold
+mkdir build
+cd build
+cmake ..
+make
+
+cd ..
 
 
 
