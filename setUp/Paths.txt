@@ -1,3 +1,5 @@
 "name" "path"
 "Manifold" "/home/willy/PredictingProteinInteractions//Manifold/build/"
 "ModelNet10" "/home/willy/PredictingProteinInteractions//data/ModelNet10/ModelNet10/"
+"120Experiment" "/home/willy/PredictingProteinInteractions//data/120Experiment/Output/"
+"106Experiment" "/home/willy/PredictingProteinInteractions//data/106Test/Output/"

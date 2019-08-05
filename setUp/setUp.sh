@@ -42,21 +42,29 @@ sed -i "s|PPISETUP =.*|PPISETUP = \"$DIR\"|g" SourceLoader.R
 
 #--------------------------------------------------------------------------------------
 
-echo "installing antiprism (off2obj)... (don't forget to uncomment me)"
-#sudo add-apt-repository ppa:antiprism/ppa
-#sudo apt-get update
-#sudo apt-get install antiprism
+antiPrism=$(command -v off2obj)
 
-echo "installing Manifold (stitching 3d-objects together)..."
-cd ..
-git clone --recursive -j8 git://github.com/hjwdzh/Manifold
-cd Manifold
-mkdir build
-cd build
-cmake ..
-make
+if [ -z "$antiPrism" ]; then
+    echo "installing antiprism (off2obj)... (don't forget to uncomment me)"
+    sudo add-apt-repository ppa:antiprism/ppa
+    sudo apt-get update
+    sudo apt-get install antiprism
+fi
 
 cd ..
+if [ ! -d "Manifold" ]; then
+    git clone --recursive -j8 git://github.com/hjwdzh/Manifold
+    echo "installing Manifold (stitching 3d-objects together)..."
+    
+
+    cd Manifold
+    mkdir build
+    cd build
+    cmake ..
+    make
+    cd ..
+fi
+
 
 
 

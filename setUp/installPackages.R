@@ -131,6 +131,8 @@ colnames(paths) = c("name", "path")
 
 paths = addSource(paths, "Manifold", "/Manifold/build/")
 paths = addSource(paths, "ModelNet10", "/data/ModelNet10/ModelNet10/")
+paths = addSource(paths, "120Experiment", "/data/120Experiment/Output/")
+paths = addSource(paths, "106Experiment", "/data/106Test/Output/")
 
 write.table(paths, paste(PredictingProteinInteractionsFolder, "setUp/Paths.txt", sep = ""), row.names = FALSE)
 

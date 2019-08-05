@@ -1095,6 +1095,47 @@ model6 <- function(TrainTest, epochs = 30, batch_size = 64, sampleSize = NULL, s
     validation_split = 0.2
   )
   
+  if(!is.null(x_test)) print(model %>% evaluate(x_test, y_test))
+  
+  return(model)
+}
+
+
+model7 <- function(TrainTest, epochs = 30, batch_size = 64, sampleSize = NULL, sampleTimes =NULL, q = NULL ){
+  print("Calling model7 ...")
+  
+  x_train = TrainTest$x_train
+  y_train = TrainTest$y_train
+  x_test = TrainTest$x_test
+  y_test = TrainTest$y_test
+  
+  numClasses = TrainTest$numClasses
+  #---------------------------------------------------------
+  model <- keras_model_sequential()
+  model %>% 
+    layer_dense(units = 200, activation = 'relu', input_shape = c(ncol(x_train))) %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 100, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 50, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 10, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = numClasses, activation = 'softmax')
+  
+  model %>% compile(
+    loss = 'categorical_crossentropy',
+    optimizer = optimizer_rmsprop(),
+    metrics = c('accuracy')
+  )
+  
+  history <- model %>% fit(
+    x_train, y_train, 
+    epochs = epochs, batch_size = batch_size, 
+    validation_split = 0.2
+  )
+  
   print(model %>% evaluate(x_test, y_test))
   
   return(model)

@@ -755,19 +755,23 @@ models = readRDS(file = "/home/willy/PredictingProteinInteractions/data/ModelNet
 
 # # randomly sample and calculate DE
 quantilesDist = distributionOfDE(models = models,
-                             n = 10,
-                             m =100,
-                             mode = "Eccentricities",
+                             n = 60,
+                             m =40,
+                             mode = "Distances",
                              q = 1,
                              recalculate = TRUE)
 
 
-
+quantilesDist = distributionOfDE(models = models,
+                                 n = 98,
+                                 m =100,
+                                 mode = "Eccentricities",
+                                 q = 1,
+                                 recalculate = FALSE)
 
 #---------------------------------------------------------------------------------------
 # Classification
 #---------------------------------------------------------------------------------------
-warnings()
 
 modelNet10Experiment(sampleSize = 5,
                      sampleTimes = 1,
@@ -878,6 +882,93 @@ modelNet10Experiment(sampleSize = 100,
                      modelFUN = model6,
                      useOnlyTrain = 1,
                      useOnlyTest = 1)
+
+
+
+modelNet10Experiment(sampleSize = 10,
+                     sampleTimes = 20,
+                     sampleTimes_test = 1,
+                     numPermutations = 1,
+                     numPermutations_test = 1,
+                     batch_size = 128,
+                     epochs = 50,
+                     euklid = TRUE,
+                     q = 1,
+                     m = 100, 
+                     numClasses = 10,
+                     fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Eccentricities_nE_1000_nD_100_n_10_m_100_q_1.csv",
+                     ExperimentName = "Test6",
+                     recalculate = FALSE,
+                     modelFUN = model5)
+
+
+modelNet10Experiment(sampleSize = 1,
+                     sampleTimes = 1,
+                     sampleTimes_test = 1,
+                     numPermutations = 1,
+                     numPermutations_test = 1,
+                     batch_size = 4,
+                     epochs = 50,
+                     euklid = TRUE,
+                     q = 1,
+                     m = 1, 
+                     numClasses = 10,
+                     fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Eccentricities_nE_1000_nD_100_n_100_m_1_q_1.csv",
+                     ExperimentName = "Test6",
+                     recalculate = FALSE,
+                     modelFUN = model5)
+
+
+modelNet10Experiment(sampleSize = 1,
+                     sampleTimes = 1,
+                     sampleTimes_test = 1,
+                     numPermutations = 1,
+                     numPermutations_test = 1,
+                     batch_size = 4,
+                     epochs = 50,
+                     euklid = TRUE,
+                     q = 1,
+                     m = 1, 
+                     numClasses = 10,
+                     fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Distances_nE_1000_nD_100_n_100_m_1_q_1.csv",
+                     ExperimentName = "Test7",
+                     recalculate = FALSE,
+                     modelFUN = model7)
+
+
+
+modelNet10Experiment(sampleSize = 10,
+                     sampleTimes = 20,
+                     sampleTimes_test = 1,
+                     numPermutations = 1,
+                     numPermutations_test = 1,
+                     batch_size = 128,
+                     epochs = 50,
+                     euklid = TRUE,
+                     q = 1,
+                     m = 40, 
+                     numClasses = 10,
+                     fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Distances_nE_1000_nD_100_n_60_m_40_q_1.csv",
+                     ExperimentName = "Test8",
+                     recalculate = FALSE,
+                     modelFUN = model6)
+
+
+modelNet10Experiment(sampleSize = 10,
+                     sampleTimes = 20,
+                     sampleTimes_test = 1,
+                     numPermutations = 1,
+                     numPermutations_test = 1,
+                     batch_size = 128,
+                     epochs = 50,
+                     euklid = TRUE,
+                     q = 1,
+                     m = 100, 
+                     numClasses = 10,
+                     fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Distances_nE_1000_nD_100_n_90_m_100_q_1.csv",
+                     ExperimentName = "Test9",
+                     recalculate = FALSE,
+                     modelFUN = model6)
 
 
 
