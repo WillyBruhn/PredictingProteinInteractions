@@ -749,8 +749,25 @@ getModelFromLargerModel <- function(orderFile, points, n_s_dijkstra){
   l = list("centers" = points[indices,], "mu" = v_n, "indices_order" = indices)
 }
 
-getMemoliModel <- function(model_rgl,points, path = "", name="", edges, graph, memoliPtsPath, memoliMuPath, memoliOrderPath, n_s_euclidean = 4000, n_s_dijkstra = 50, reCalculate = FALSE){
-  if(!file.exists(memoliPtsPath) || !file.exists(memoliMuPath) || reCalculate == TRUE){
+getMemoliModel <- function(model_rgl,points, path = "", name="", edges, graph, memoliPtsPath, memoliMuPath, memoliOrderPath, n_s_euclidean = 4000, n_s_dijkstra = 50, reCalculate = FALSE,plot = FALSE){
+  
+  dir_name = paste(path, "/ModelsRdata/", sep = "")
+  
+  # print(dir.exists(dir_name))
+  
+  if(!dir.exists(dir_name)) {
+    dir.create(dir_name)
+  }
+  
+  memoliModelName = paste(dir_name, "/", name, ".rData", sep = "")
+  
+  # print(dir_name)
+  # print(path)
+  # print(name)
+  print(memoliModelName)
+  # return()
+  
+  if(!file.exists(memoliModelName) || reCalculate == TRUE){
     
     # first try to reuse the points sampled with larger parameters, that means n_s_euclidean has to be same
     # but n_s_dijkstra has to be larger in another model. In that case we can use only the first few points
@@ -765,35 +782,39 @@ getMemoliModel <- function(model_rgl,points, path = "", name="", edges, graph, m
 
     mem = c()
     # if(largerModelFile == FALSE){
-      mem = downsampleMemoliMethod(model_rgl, points = points, edges = edges, graph = graph,  n_s_euclidean = n_s_euclidean, n_s_dijkstra = n_s_dijkstra)
+      mem = downsampleMemoliMethod(model_rgl, points = points, edges = edges, graph = graph,  n_s_euclidean = n_s_euclidean, n_s_dijkstra = n_s_dijkstra,plot = plot)
     # } else {
     #   mem = getModelFromLargerModel(largerModelFile,points,n_s_dijkstra)
     # }
     
     
     print("writing model to file ...")
-    write.table(mem$centers,file=memoliPtsPath, row.names = FALSE, col.names = c("x","y","z"))
-    write.table(mem$mu,file=memoliMuPath, row.names = FALSE, col.names = c("mu"))
+    # write.table(mem$centers,file=memoliPtsPath, row.names = FALSE, col.names = c("x","y","z"))
+    # write.table(mem$mu,file=memoliMuPath, row.names = FALSE, col.names = c("mu"))
+    # 
+    # write.table(mem$indices_order, file = memoliOrderPath, row.names = FALSE, col.names = c("pointInd"))
     
-    write.table(mem$indices_order, file = memoliOrderPath, row.names = FALSE, col.names = c("pointInd"))
+    saveRDS(mem, file = memoliModelName)
     
     # write.table(mem$d_surface, file = memoliDSurfacePath)
   }
   
-  pts = read.table(file = memoliPtsPath, header = TRUE, colClasses = c("numeric", "numeric", "numeric"), stringsAsFactors=FALSE)
-  mu2 = unlist(read.table(file = memoliMuPath, header = TRUE, colClasses = c("numeric"), stringsAsFactors=FALSE))
-
-
-  mu = as.numeric(mu2)
+  # pts = read.table(file = memoliPtsPath, header = TRUE, colClasses = c("numeric", "numeric", "numeric"), stringsAsFactors=FALSE)
+  # mu2 = unlist(read.table(file = memoliMuPath, header = TRUE, colClasses = c("numeric"), stringsAsFactors=FALSE))
+  # 
+  # 
+  # mu = as.numeric(mu2)
+  
+  mem = readRDS(file = memoliModelName)
     
-  l = list("centers" = pts, "mu" = mu, "geoDistances" = mem$d_surface)
+  l = list("centers" = mem$centers, "mu" = mem$mu, "geoDistances" = mem$d_surface)
   return(l)
 }
 
-getMemoliModel2 <- function(memoliObjPath, memoliPtsPath, memoliMuPath, memoliOrderPath, n_s_euclidean = 4000, n_s_dijkstra = 50, plot = FALSE){
+getMemoliModel2 <- function(memoliObjPath, memoliPtsPath, memoliMuPath, memoliOrderPath, n_s_euclidean = 4000, n_s_dijkstra = 50, plot = FALSE, path, name){
   horse1 = read.obj(memoliObjPath, convert.rgl = FALSE)
   horse1_rgl = read.obj(memoliObjPath, convert.rgl = TRUE)
-  shade3d(horse1_rgl)
+  if(plot) shade3d(horse1_rgl)
   horse1_points = t(horse1$shapes[[1]]$positions)
   horse1_edges = t(horse1$shapes[[1]]$indices)+1
   
@@ -801,7 +822,12 @@ getMemoliModel2 <- function(memoliObjPath, memoliPtsPath, memoliMuPath, memoliOr
   ob = preProcessMesh(points = horse1_points, edges = horse1_edges, plot = FALSE)
   print(paste("original model has: ", nrow(horse1_points), ",processed model has ", nrow(ob$points)))
 
-  horse_sampled = getMemoliModel(model_rgl = prot_rgl, points = ob$points, edges = ob$edges, graph = ob$graph, memoliPtsPath = memoliPtsPath, memoliMuPath = memoliMuPath, memoliOrderPath = memoliOrderPath,n_s_euclidean = n_s_euclidean, n_s_dijkstra = n_s_dijkstra)
+  horse_sampled = getMemoliModel(model_rgl = prot_rgl, points = ob$points, edges = ob$edges,
+                                 graph = ob$graph, memoliPtsPath = memoliPtsPath, memoliMuPath = memoliMuPath,
+                                 memoliOrderPath = memoliOrderPath,n_s_euclidean = n_s_euclidean, n_s_dijkstra = n_s_dijkstra,
+                                 path = path,
+                                 name = name,
+                                 plot = plot)
   
   # getMemoliModel()
   
@@ -813,7 +839,7 @@ getMemoliModel2 <- function(memoliObjPath, memoliPtsPath, memoliMuPath, memoliOr
   return(l)
 }
 
-getMemoliModel3 <- function(path = "/home/willy/RedoxChallenges/MasterThesis/memoliModels/horse-poses/", name, n_s_euclidean = 4000, n_s_dijkstra = 50){
+getMemoliModel3 <- function(path = "/home/willy/RedoxChallenges/MasterThesis/memoliModels/horse-poses/", name, n_s_euclidean = 4000, n_s_dijkstra = 50, plot = FALSE){
   memoliModelPath = path
   model_name = name
   
@@ -828,7 +854,10 @@ getMemoliModel3 <- function(path = "/home/willy/RedoxChallenges/MasterThesis/mem
   memoliObjPath = paste(path, model_name, ".obj", sep ="")
   
   
-  horse_sampled = getMemoliModel2(memoliObjPath = memoliObjPath, memoliPtsPath = memoliPtsPath, memoliMuPath = memoliMuPath, memoliOrderPath = memoliOrderPath, n_s_euclidean = n_s_euclidean, n_s_dijkstra = n_s_dijkstra)
+  horse_sampled = getMemoliModel2(memoliObjPath = memoliObjPath, memoliPtsPath = memoliPtsPath,
+                                  memoliMuPath = memoliMuPath, memoliOrderPath = memoliOrderPath,
+                                  n_s_euclidean = n_s_euclidean, n_s_dijkstra = n_s_dijkstra,
+                                  path = path, name = name, plot = plot)
   
   return(horse_sampled)
 }
@@ -1569,7 +1598,7 @@ flb_distances <- function(m1,m2,m3,m4,m5,m6,m7,m8, names){
 # heatmap.2(as.matrix(d), trace="none", main = "posAndNeg",Rowv = FALSE,dendrogram ="column", key = FALSE)
 
 
-getMemoliModelsInPath <- function(path = "/home/willy/RedoxChallenges/MasterThesis/memoliModels/Models/", n_s_euclidean = 4000, n_s_dijkstra = 50){
+getMemoliModelsInPath <- function(path = "/home/willy/RedoxChallenges/MasterThesis/memoliModels/Models/", n_s_euclidean = 4000, n_s_dijkstra = 50, plot = FALSE){
   obj_files = list.files(path = path, pattern = ".obj",recursive = TRUE, full.names = TRUE)
   
   print(obj_files)
@@ -1587,7 +1616,9 @@ getMemoliModelsInPath <- function(path = "/home/willy/RedoxChallenges/MasterThes
     print(obj_name)
     
     while (rgl.cur() > 0) { rgl.close() }
-    model = getMemoliModel3(f_path,obj_name, n_s_euclidean, n_s_dijkstra)
+    model = getMemoliModel3(f_path,obj_name, n_s_euclidean, n_s_dijkstra,plot = plot)
+    
+    
 
     model_vec = c(model_vec, obj_name, model)
   }

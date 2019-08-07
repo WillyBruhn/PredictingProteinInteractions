@@ -220,8 +220,6 @@ quantiles = read.csv(file ="/home/willy/PredictingProteinInteractions/data/anima
 # rgl.snapshot("/home/willy/PredictingProteinInteractions/Results/Images/animals3dProjectionExample.png")
 
 
-
-
 subClassNames = unique(quantiles[,1])
 numObjects = length(subClassNames)
 

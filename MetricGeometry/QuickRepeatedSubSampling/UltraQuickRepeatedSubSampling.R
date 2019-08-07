@@ -262,7 +262,7 @@ generateF_approximations_3dModelWithMetric <- function(d_surface, d_euclid = NUL
   for(i in 1:m){
     
     if(is.null(d_euclid)){
-      F_list[[i]] = sampleDistancesAndCalculateCDFofEcWith(d_surface, n = n,plot = FALSE)
+      F_list[[i]] = sampleDistancesAndCalculateCDwithD(d_surface, n = n,plot = FALSE)
       F_approx_list[[i]] = approximateCDF(F_list[[i]],q)
     } else {
 

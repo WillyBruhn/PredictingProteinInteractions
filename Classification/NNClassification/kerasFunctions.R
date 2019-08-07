@@ -576,7 +576,8 @@ getSamplesSurf2 <- function( quantiles,
                              reDo = FALSE,
                              euklid = FALSE,
                              numClasses,
-                             m){
+                             m,
+                             splitPattern = "_"){
   
   # the rest of quantiles is euclidean distances
   if(euklid == FALSE){
@@ -601,7 +602,7 @@ getSamplesSurf2 <- function( quantiles,
   
   print("generating x and y ...")
   
-  y_all_class_names = getClassNamesFromSubClasses(sampledQuantiles[,1],splitPattern = "_")
+  y_all_class_names = getClassNamesFromSubClasses(sampledQuantiles[,1],splitPattern = splitPattern)
   
   y = y_all_class_names
   X = as.matrix(sampledQuantiles[,-1])
