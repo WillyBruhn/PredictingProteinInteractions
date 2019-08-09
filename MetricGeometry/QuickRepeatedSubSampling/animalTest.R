@@ -242,11 +242,9 @@ animalModel <- function(TrainTest, batch_size = 10, epochs = 30, validation_spli
   print("building model ...")
   model <- keras_model_sequential()
   model %>%
-    layer_dense(units = 600, activation = 'relu', input_shape = c(ncol(x_train))) %>%
+    layer_dense(units = 300, activation = 'relu', input_shape = c(ncol(x_train))) %>%
     layer_dropout(rate = 0.1) %>%
     layer_dense(units = 100, activation = 'relu') %>%
-    layer_dropout(rate = 0.1) %>%
-    layer_dense(units = 10, activation = 'relu') %>%
     layer_dropout(rate = 0.1) %>%
     layer_dense(units = 10, activation = 'relu') %>%
     layer_dropout(rate = 0.1) %>%
@@ -269,13 +267,48 @@ animalModel <- function(TrainTest, batch_size = 10, epochs = 30, validation_spli
   return(list("model" = model, "history" = history))
 }
 
+
+animalModelSimple <- function(TrainTest, batch_size = 10, epochs = 30, validation_split = 0.1){
+  x_train = TrainTest$x_train
+  y_train = TrainTest$y_train
+  x_test = TrainTest$x_test
+  y_test = TrainTest$y_test
+  
+  numClasses = TrainTest$numClasses
+  
+  print("building model ...")
+  model <- keras_model_sequential()
+  model %>%
+    layer_dense(units = 9, activation = 'relu', input_shape = c(ncol(x_train))) %>%
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 3, activation = 'relu') %>%
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = numClasses, activation = 'softmax')
+  
+  model %>% compile(
+    loss = 'categorical_crossentropy',
+    optimizer = optimizer_rmsprop(),
+    metrics = c('accuracy')
+  )
+  
+  history <- model %>% fit(
+    x_train, y_train,
+    epochs = epochs, batch_size = batch_size,
+    validation_split = validation_split
+  )
+  
+  model %>% evaluate(x_test, y_test)
+  
+  return(list("model" = model, "history" = history))
+}
+
 #----------------------------------------------------------------------------------------------------------------------------
 # stratified k-fold cv
 #----------------------------------------------------------------------------------------------------------------------------
 
 n_s_euclidean = 1000
 n_s_dijkstra = 100
-n = 99
+n = 96
 m = 100
 q = 1
 plot = FALSE
@@ -301,21 +334,24 @@ all_models = rbind(camel,cat,lion,elephant,flam,horse,head)
 # write.csv(all_models,file ="/home/willy/PredictingProteinInteractions/data/animals/models/all_models_nE_200_nS_50_n_48_m_100_q_1.csv",
 #           row.names = FALSE)
 
-write.csv(all_models,file ="/home/willy/PredictingProteinInteractions/data/animals/models/all_models_nE_1000_nS_100_n_99_m_100_q_1.csv",
+# write.csv(all_models,file ="/home/willy/PredictingProteinInteractions/data/animals/models/all_models_nE_1000_nS_100_n_99_m_100_q_1.csv",
+          # row.names = FALSE)
+
+write.csv(all_models,file ="/home/willy/PredictingProteinInteractions/data/animals/models/all_models_nE_1000_nS_100_n_96_m_100_q_1.csv",
           row.names = FALSE)
 
-
-
 # quantiles = read.csv(file ="/home/willy/PredictingProteinInteractions/data/animals/models/all_models_nE_200_nS_50_n_48_m_100_q_1.csv")
-quantiles = read.csv(file ="/home/willy/PredictingProteinInteractions/data/animals/models/all_models_nE_1000_nS_100_n_99_m_100_q_1.csv")
+# quantiles = read.csv(file ="/home/willy/PredictingProteinInteractions/data/animals/models/all_models_nE_1000_nS_100_n_99_m_100_q_1.csv")
+
+quantiles = read.csv(file ="/home/willy/PredictingProteinInteractions/data/animals/models/all_models_nE_1000_nS_100_n_96_m_100_q_1.csv")
 
 # createImageWithArrows(quantiles, FALSE)
 # points3d(quantiles[1:100, 2:4], col = "green", size = 20)
 # points3d(quantiles[101:200, 2:4], col = "blue", size = 20)
 
-sampleSize = 20
-sampleTimes = 400
-sampleTimes_test = 10
+sampleSize = 10
+sampleTimes = 100
+sampleTimes_test = 100
 epochs = 30
 batch_size = 10
 k = 10
@@ -346,9 +382,9 @@ for(foldInd in 1:length(folds)){
     train_inds = c(1:nrow(quantiles))[-test_inds]
     
     # specify euklid here, because otherwise only half of the quantiles is used (not nicely programmed)
-    AllQuantiles_train = getSamplesSurf2(quantiles = quantiles[train_inds,],sampleSize = sampleSize,sampleTimes = sampleTimes,numPermutations = 1,reDo = TRUE,numClasses = numClasses,m = m,euklid = TRUE,splitPattern = "-")
+    AllQuantiles_train = getSamplesSurf2(quantiles = quantiles[train_inds,],sampleSize = sampleSize,sampleTimes = sampleTimes,numPermutations = 1,reDo = TRUE,numClasses = numClasses,m = m,euklid = TRUE,splitPattern = "-", sort = TRUE)
     
-    AllQuantiles_test = getSamplesSurf2(quantiles = quantiles[test_inds,],sampleSize = sampleSize,sampleTimes = sampleTimes_test,numPermutations = 1,reDo = TRUE,numClasses = numClasses,m = m,euklid = TRUE,splitPattern = "-")
+    AllQuantiles_test = getSamplesSurf2(quantiles = quantiles[test_inds,],sampleSize = sampleSize,sampleTimes = sampleTimes_test,numPermutations = 1,reDo = TRUE,numClasses = numClasses,m = m,euklid = TRUE,splitPattern = "-", sort = TRUE)
     
     shuf = shuffle(1:nrow(AllQuantiles_train$X))
     shuf2 = shuffle(1:nrow(AllQuantiles_test$X))
@@ -357,7 +393,7 @@ for(foldInd in 1:length(folds)){
     
     doAgain = TRUE
     doAgainCount = 0
-    while(doAgain || doAgainCount < 5){
+    while(doAgain && doAgainCount < 2){
       
       modelList = animalModel(TrainTest = TrainTest,epochs = epochs, batch_size = batch_size)
     

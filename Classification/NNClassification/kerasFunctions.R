@@ -354,7 +354,7 @@ sampleMultipleTimesParallel2  <- function(quantiles,sampleSize, sampleTimes, num
 }
 
 
-sampleMultipleTimesParallel3  <- function(quantiles,sampleSize, sampleTimes, numPermutations = 1, m = 100){
+sampleMultipleTimesParallel3  <- function(quantiles,sampleSize, sampleTimes, numPermutations = 1, m = 100, sort = FALSE){
   # name in first column
   quants = ncol(quantiles)-1
   
@@ -373,6 +373,15 @@ sampleMultipleTimesParallel3  <- function(quantiles,sampleSize, sampleTimes, num
                             sampled_indices = sample(train_indices, size = sampleSize, replace = FALSE)
                             
                             ordered = relevantQuantiles[sampled_indices,]
+                            
+                            # if(sort == TRUE){
+                            #   print(ordered)
+                            #   ordered = ordered[ do.call(order, as.list(ordered)), ]
+                            # 
+                            #   print("ordered")
+                            #   print(ordered)
+                            # }
+                            
                             c(subClassName_tmp,as.vector(t(ordered)))
                           }))
   
@@ -577,7 +586,8 @@ getSamplesSurf2 <- function( quantiles,
                              euklid = FALSE,
                              numClasses,
                              m,
-                             splitPattern = "_"){
+                             splitPattern = "_",
+                             sort = FALSE){
   
   # the rest of quantiles is euclidean distances
   if(euklid == FALSE){
@@ -589,7 +599,8 @@ getSamplesSurf2 <- function( quantiles,
                                                   sampleSize = sampleSize,
                                                   sampleTimes = sampleTimes, 
                                                   numPermutations = numPermutations,
-                                                  m = m)
+                                                  m = m,
+                                                  sort = sort)
   
   un = unique(sampledQuantiles[,1])
   v = rep(0,length(un))
