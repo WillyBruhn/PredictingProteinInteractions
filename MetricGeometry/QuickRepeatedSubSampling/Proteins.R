@@ -915,8 +915,11 @@ getProteinMeasure <- function(distancesToActiveCenter, boarderCounts, alpha = 0,
   # alpha ... sepcifies the importance of the distance to the active site
   # betha ... specifies the importance of a boarder area
   #------------------------------------------------------------------------------
-  
-  return(normalize((1/(distancesToActiveCenter)^alpha)* boarderCounts^betha))
+
+  distNorm = normalize(1/(distancesToActiveCenter))
+  boarderNorm = normalize(boarderCounts)
+    
+  return(normalize(distNorm^alpha* boarderNorm^betha))
 }
 
 getQuantilesAlphaBetha <- function(path = path, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, 
@@ -1037,9 +1040,7 @@ modelProt2 <- function(TrainTest, epochs = 30, batch_size = 64, sampleSize = NUL
   return(model)
 }
 
-convModelProtein <- function(TrainTest, sampleSize, sampleTimes, q, epochs = 30, batch_size = 64){
-  
-  
+convModelProtein <- function(TrainTest, sampleSize, sampleTimes, q, epochs = 30, batch_size = 64, weights){
   
   x_train = TrainTest$x_train
   y_train = TrainTest$y_train
@@ -1137,8 +1138,8 @@ convModelProtein <- function(TrainTest, sampleSize, sampleTimes, q, epochs = 30,
   history <- model %>% fit(
     x_train, y_train, 
     epochs = epochs, batch_size = batch_size,
-    class_weight = list("1"=106/89,"0"=106/16),
-    validation_split = 0.2
+    class_weight = weights,
+    validation_split = 0.1
   )
   
   
@@ -1208,22 +1209,41 @@ if(mode == "onlyGenerateModels" || mode == "Booth"){
   alpha_betha_grid = expand.grid(alphas,bethas)
   
   foreach(i= 1:length(alphas), j= 1:length(bethas)) %do% {
-    tmp = getQuantilesAlphaBetha(alpha = alphas[i],betha = bethas[j], n = 0.2, m = 1,q = 1, locale = TRUE, path = path106Experiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = FALSE)
-    tmp = getQuantilesAlphaBetha(alpha = alphas[i],betha = bethas[j], n = 0.1, m = 1,q = 1, locale = TRUE, path = path106Experiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = FALSE)
+    # tmp = getQuantilesAlphaBetha(alpha = alphas[i],betha = bethas[j], n = 0.2, m = 1,q = 1, locale = TRUE, path = path106Experiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 20, recalculate = FALSE,recalculateQuants = TRUE)
+    tmp = getQuantilesAlphaBetha(alpha = alphas[i],betha = bethas[j], n = 1, m = 1,q = 1, locale = FALSE, path = path106Experiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 20, recalculate = FALSE,recalculateQuants = TRUE)
     
   }
 }
 
-# tmp = getQuantilesAlphaBetha(alpha = 3,betha = 3, n = 0.2, m = 1,q = 1, locale = TRUE, path = path106Experiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = FALSE)
+# tmp = getQuantilesAlphaBetha(alpha = 0,betha = 0, n = 1, m = 1,q = 1, locale = FALSE, path = path106Experiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 20, recalculate = FALSE,recalculateQuants = TRUE)
 # 
-# which(is.na(tmp) == TRUE)
-
+# 
+# tmp[1,]
+# 
+# apply(c(2:ncol(tmp)), 2, FUN = function(i){
+#           normalize(tmp)
+# })
+# 
+# # install.packages("BBmisc")
+# library(BBmisc)
+# normalized = BBmisc::normalize(tmp[,-1],method = "range")
+# 
+# tNorm = tmp
+# tNorm[,-1] = normalized
+# 
+# 
+# functionals = c(getFunctionalProteins(),"000_Trx")
+# plot_prot_quants(tNorm,q = 1,functionals = functionals)
+# 
+# plot_prot_quants(tmp,q = 1,functionals = functionals)
+# # 
+# # which(is.na(tmp) == TRUE)
+# 
 
 
 #------------------------------------------------------------------------
 # Classification with a Neuronal Net model
 #------------------------------------------------------------------------
-
 getVarName <- function(v1) {
   deparse(substitute(v1))
 }
@@ -1302,306 +1322,306 @@ writeExperimentParametersToFile <- function(pathToStats = "/home/willy/Predictin
   return(df)
 }
 
-
-ProteinsExperiment <- function(sampleSize = 20,
-                                 sampleTimes = 10,
-                                 sampleTimes_test = 10,
-                                 batch_size = 1024,
-                                 epochs = 300,
-                                 euklid = TRUE,
-                                 q = 1,
-                                 m = 1000, 
-                                 numClasses = 2,
-                                 potentials = c("pos","neg","pos_neg"),
-                                 fNameTrain = "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_2_betha_1_loc_TRUE.csv",
-                                 fNameTest = "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_2_betha_1_loc_TRUE.csv",
-                                 ExperimentName = "Test1",
-                                 fNameTrain_global = NULL,
-                                 fNameTest_global = NULL,
-                                 path = "/home/willy/PredictingProteinInteractions/data/106Test/NNexperiments/",
-                                 modelFUN = convModel4,
-                                 modelName,
-                                 recalculate = FALSE,
-                                 reCalculateTrainTest = FALSE,
-                                 labels = "/home/willy/PredictingProteinInteractions/data/labels.txt"){
-  
-  print("------------------------------------------------------")
-  print(paste("Experiment ", ExperimentName))
-  print("------------------------------------------------------")
-  
-  numPermutations = 1
-  
-  pos_flag = "pos" %in% potentials
-  neg_flag = "neg" %in% potentials
-  pos_neg_flag = "pos_neg" %in% potentials
-  
-  global_flag = FALSE
-  if(!is.null(fNameTrain_global) && !is.null(fNameTest_global)) global_flag = TRUE
-  
-  ExperimentFile = paste(path,"/", ExperimentName, "sS_",sampleSize, "_sT_", sampleTimes, "_sTt_", sampleTimes_test, "_euklid_",
-                         euklid,
-                         "_pos_", pos_flag,
-                         "_neg_", neg_flag,
-                         "_pos_neg_", pos_neg_flag,
-                         "_globalToo_", global_flag,
-                         ".Rdata", sep ="")
-  
-  print(ExperimentFile)
-  
-  TrFinal = list()
-  if(!file.exists(ExperimentFile) || recalculate){
-    quantilesTrain = read.csv(file =fNameTrain, header = TRUE)
-    
-    # quantilesTrain[,-1] = apply(quantilesTrain[,-1],2, FUN = function(i) as.numeric(as.character(i)))
-    
-    #-------------------------------------------------------------------------------------------
-    # which features to use
-    #-------------------------------------------------------------------------------------------
-    quants = c(1:(q+2))
-    # keep the name in any case
-    colIndsTokeep = c(1)
-    if(pos_flag) colIndsTokeep = c(colIndsTokeep, quants+1, length(quants)*3+1+quants)
-    if(neg_flag) colIndsTokeep = c(colIndsTokeep, length(quants)*1+1+quants, length(quants)*4+1+quants)
-    if(pos_neg_flag) colIndsTokeep = c(colIndsTokeep, length(quants)*2+1+quants, length(quants)*5+1+quants)
-    colIndsTokeep = sort(colIndsTokeep)
-
-    #-------------------------------------------------------------------------------------------
-    # classlabels
-    #-------------------------------------------------------------------------------------------
-    protNames = as.character(unique(quantilesTrain[,1]))
-    lab = read.table("/home/willy/PredictingProteinInteractions/data/labels.txt", header = TRUE)
-    
-    # to circumnavigate problems in naming, ("_", is a problem) 
-    mapping = data.frame(matrix(0,ncol = 2, nrow = length(unique(lab$label))))
-    colnames(mapping) = c("originalName", "name")
-    mapping[,1] = sort(unique(lab$label))
-    mapping[,2] = as.numeric(as.factor(sort(unique(lab$label))))
-    
-    protClasses = unlist(lapply(c(1:length(protNames)), FUN = function(i){
-      mapping[which(mapping[,1] == lab$label[which(lab$name == protNames[i])]),2]
-    }))
-    
-    classLabels = unlist(lapply(c(1:nrow(quantilesTrain)), FUN = function(i){
-                                  protClasses[which(protNames == quantilesTrain[i,1])]
-                                }))
-    
-    quantilesTrain[,1] = unlist(lapply(c(1:length(classLabels)), FUN = function(i){
-      paste(classLabels[i],"_",quantilesTrain[i,1], sep = "")
-    }))
-    
-    # functionals = c(getFunctionalProteins(), "000_Trx")
-    # protNames = unique(quantilesTrain[,1])
-    # functionalInds = which((as.character(as.factor(quantilesTrain[,1])) %in% functionals) == TRUE)
-    # 
-    # 
-    # classLabels = rep("notFunctional", nrow(quantilesTrain))
-    # classLabels[functionalInds] = rep("Functional", length(functionalInds))
-    # 
-    # quantilesTrain[,1] = unlist(lapply(c(1:length(classLabels)), FUN = function(i){
-    #   paste(classLabels[i],"_",quantilesTrain[i,1], sep = "")
-    # }))
-    
-    
-    # quantilesTrain = quantilesTrain[,c(1,8,9,10)]
-    classLevels = mapping$name
-    
-    
-    print("Creating train-set ...")
-    Train = getSamplesSurf2(quantilesTrain,sampleSize = sampleSize,sampleTimes = sampleTimes,euklid = euklid, numPermutations = numPermutations, numClasses = numClasses, m = m,reDo = reCalculateTrainTest)
-
-    
-    quantilesTest = c()
-    if(fNameTrain != fNameTest){
-      # have to change test-names here too
-      quantilesTest = read.csv(file =fNameTest, header = TRUE)
-      
-      ### TODO! ^^^
-    } else {
-      quantilesTest = quantilesTrain
-    }
-    
-    print("Creating test-set ...")
-    Test = getSamplesSurf2(quantilesTest,sampleSize = sampleSize,sampleTimes = sampleTimes_test,euklid = euklid, numPermutations = numPermutations, numClasses = numClasses, m = m,reDo = reCalculateTrainTest)
-    
-    
-    if(global_flag){
-      #-------------------------------------------------------------------------------------------
-      # classlabels for the global part
-      #-------------------------------------------------------------------------------------------
-      print("adding global information to the model ...")
-
-      quantilesTrain_global = read.csv(file =fNameTrain_global, header = TRUE)
-      
-      # quantilesTrain_global[,-1] = apply(quantilesTrain_global[,-1],2, FUN = function(i) as.numeric(as.character(i)))
-
-      protClasses_global = unlist(lapply(c(1:length(protNames)), FUN = function(i){
-        mapping[which(mapping[,1] == lab$label[which(lab$name == protNames[i])]),2]
-      }))
-
-      classLabels_global = unlist(lapply(c(1:nrow(quantilesTrain_global)),FUN = function(i){
-                                    protClasses_global[which(protNames == quantilesTrain_global[i,1])]
-                                  }))
-
-      quantilesTrain_global[,1] = unlist(lapply(c(1:length(classLabels_global)), FUN = function(i){
-        paste(classLabels_global[i],"_",quantilesTrain_global[i,1], sep = "")
-      }))
-
-      print("global Train ...")
-      TrainGlobal = getSamplesSurf2(quantilesTrain_global,sampleSize = 1,sampleTimes = 1,euklid = euklid, numPermutations = 1, numClasses = numClasses, m = 1,reDo = TRUE)
-      # merge the global and the local
-      # the global comes in front of each local-featureset
-      out = lapply(c(1:nrow(Train$X)), FUN = function(i){
-        ind = ceil(i/sampleTimes)
-        c(TrainGlobal$X[ind,],Train$X[i,])
-      })
-
-      Train$X = matrix(unlist(out), byrow = TRUE, nrow = nrow(Train$X))
-
-      # #------------------------------------------------------------------------------------
-      # # Test
-      # #------------------------------------------------------------------------------------
-      
-      TestGlobal = c()
-      if(fNameTrain_global != fNameTest_global){
-        # have to change test-names here too
-        quantilesTest_global = read.csv(file =fNameTest_global, header = TRUE)
-        ### TODO! ^^^
-      } else {
-        TestGlobal = TrainGlobal
-      }
-      
-      print("global Test ...")
-       # merge the global and the local
-      # the global comes in front of each local-featureset
-      out = lapply(c(1:nrow(Test$X)), FUN = function(i){
-        ind = ceil(i/sampleTimes_test)
-        c(TestGlobal$X[ind,],Test$X[i,])
-      })
-
-    Test$X = matrix(unlist(out), byrow = TRUE, nrow = nrow(Test$X))
-    }
-    
-    shuf = shuffle(1:nrow(Train$X))
-    TrFinal = list("x_train" = Train$X[shuf,], "y_train" = Train$y[shuf,], "x_test" = Test$X, "y_test" = Test$y, "numClasses" = numClasses, "classLevels" = classLevels, "mapping" = mapping)
-    
-    saveRDS(TrFinal, ExperimentFile)
-  } else {
-    print("reading from previous experiment ...")
-    TrFinal = readRDS(ExperimentFile)
-  }
-  
-  TrFinal$x_train = apply(TrFinal$x_train,2, FUN = function(i) as.numeric(as.character(i)))
-  TrFinal$x_test = apply(TrFinal$x_test,2, FUN = function(i) as.numeric(as.character(i)))
-  
-  # TrFinal$y_train = apply(TrFinal$y_train,2, FUN = function(i) as.character(i))
-  # TrFinal$y_test = apply(TrFinal$y_test,2, FUN = function(i) as.character(i))
-  # return(TrFinal)
-  
-  fac = 1
-  if(euklid) fac=2
-  model = modelFUN(TrainTest = TrFinal,sampleSize = sampleSize,sampleTimes = sampleTimes,q = (q+2)*3*fac,epochs = epochs, batch_size = batch_size)
-  
-  
-  predictions <- model %>% predict_classes(TrFinal$x_test)
-  
-  # y_origNames = unlist(lapply(c(1:length(Train$y_original_names)), FUN = function(i){
-  #                                                   paste(strsplit(Train$y_original_names[i], "_")[[1]][-1], collapse = "_")
-  # }))
-
-  
-  pred = predictions+1
-  print(pred)
-  gt = reverseToCategorical(TrFinal$y_test,TrFinal$classLevels)
-  y_test_pred = rep("0",length(pred))
-  su = 0
-  for(i in 1:length(gt)){
-    if(gt[i] == TrFinal$classLevels[pred[i]]) su = su + 1
-    
-    y_test_pred[i] = TrFinal$classLevels[pred[i]]
-  }
-  su/length(gt)
-  y_test_pred
-
-
-  confMat = table(factor(as.character(TrFinal$mapping[as.numeric(y_test_pred),1]),
-                         levels=TrFinal$mapping[TrFinal$classLevels,1]),
-                  factor(as.character(TrFinal$mapping[as.numeric(gt),1]),
-                         levels=TrFinal$mapping[TrFinal$classLevels,1]))
-  
-  
-  sum(confMat)
-  confMatNormalized = confMat/colSums(confMat)[col(confMat)]
-  
-  print(confMat)
-  print(confMatNormalized)
-  
-  accuracy = sum(diag(confMat)) / sum(confMat)
-  
-  print("-----------------------------")
-  print(paste("accuracy:", accuracy))
-  print("-----------------------------")
-  
-  # return(list("pred" = as.numeric(y_test_pred), "actual" = as.numeric(gt)))
-  # f1_score = ModelMetrics::f1Score(predicted = as.numeric(y_test_pred), actual = as.numeric(gt))
-  auc = ModelMetrics::auc(predicted = as.numeric(y_test_pred), actual = as.numeric(gt))
-  
-  
-  # f1 from the caret-package
-  pred = as.factor(as.numeric(y_test_pred))
-  act = as.factor(as.numeric(gt))
-  
-  newLevels  = unique(c(as.numeric(y_test_pred),as.numeric(gt)))
-  
-  # return(list("pred" = pred, "act" = act, "newLevels" = newLevels, "gt" = gt, "y_pred" =y_test_pred ))
-  
-  levels(pred) = newLevels
-  levels(act) = newLevels 
-  
-  
-  ?confusionMatrix
-  resu <- confusionMatrix(data = pred, reference = act, mode="prec_recall")
-  f1_score = resu$byClass["F1"]
-  
-  print(paste("f1_score: ", f1_score))
-  
-  write.table(x = signif(accuracy,2),file = paste("/home/willy/PredictingProteinInteractions/Results/TablesProt/Accuracy_", ExperimentName, ".tex", sep = ""),
-              quote = FALSE, col.names = FALSE, row.names = FALSE)
-  
-  print(xtable(x = confMat,caption = "Confusion-matrix 106 Redoxins ",label = "ModelNet10Conf", type = "latex"),
-        file = paste("/home/willy/PredictingProteinInteractions/Results/TablesProt/106TestConf_", ExperimentName, ".tex", sep = ""))
-  
-  
-  print(xtable(x = confMatNormalized,
-               caption = "Confusion-matrix 106 Redoxins (normalized)",
-               label = "106TestConfNormalized",
-               type = "latex"),
-        file = paste("/home/willy/PredictingProteinInteractions/Results/TablesProt/106TestConfNormalized_", ExperimentName, ".tex", sep = ""))
-  
-  
-  writeExperimentParametersToFile(pathToStats = "/home/willy/PredictingProteinInteractions/Results/TablesProt/",
-                                  sampleSize = sampleSize,
-                                  sampleTimes = sampleTimes,
-                                  sampleTimes_test = sampleTimes_test,
-                                  batch_size = batch_size,
-                                  epochs = epochs,
-                                  euklid = euklid,
-                                  q = q,
-                                  m = m, 
-                                  numClasses = numClasses,
-                                  potentials = potentials,
-                                  fNameTrain = fNameTrain,
-                                  fNameTest = fNameTest,
-                                  ExperimentName = ExperimentName,
-                                  fNameTrain_global = fNameTrain_global,
-                                  fNameTest_global = fNameTest_global,
-                                  modelName = modelName,
-                                  accuracy = accuracy,
-                                  f1_score = f1_score,
-                                  auc = auc)
-  
-  stats = joinStats()
-  write.csv(stats, "/home/willy/PredictingProteinInteractions/Results/ProtSummary.csv",row.names = FALSE)
-}
+# 
+# ProteinsExperiment <- function(sampleSize = 20,
+#                                  sampleTimes = 10,
+#                                  sampleTimes_test = 10,
+#                                  batch_size = 1024,
+#                                  epochs = 300,
+#                                  euklid = TRUE,
+#                                  q = 1,
+#                                  m = 1000, 
+#                                  numClasses = 2,
+#                                  potentials = c("pos","neg","pos_neg"),
+#                                  fNameTrain = "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_2_betha_1_loc_TRUE.csv",
+#                                  fNameTest = "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_2_betha_1_loc_TRUE.csv",
+#                                  ExperimentName = "Test1",
+#                                  fNameTrain_global = NULL,
+#                                  fNameTest_global = NULL,
+#                                  path = "/home/willy/PredictingProteinInteractions/data/106Test/NNexperiments/",
+#                                  modelFUN = convModel4,
+#                                  modelName,
+#                                  recalculate = FALSE,
+#                                  reCalculateTrainTest = FALSE,
+#                                  labels = "/home/willy/PredictingProteinInteractions/data/labels.txt"){
+#   
+#   print("------------------------------------------------------")
+#   print(paste("Experiment ", ExperimentName))
+#   print("------------------------------------------------------")
+#   
+#   numPermutations = 1
+#   
+#   pos_flag = "pos" %in% potentials
+#   neg_flag = "neg" %in% potentials
+#   pos_neg_flag = "pos_neg" %in% potentials
+#   
+#   global_flag = FALSE
+#   if(!is.null(fNameTrain_global) && !is.null(fNameTest_global)) global_flag = TRUE
+#   
+#   ExperimentFile = paste(path,"/", ExperimentName, "sS_",sampleSize, "_sT_", sampleTimes, "_sTt_", sampleTimes_test, "_euklid_",
+#                          euklid,
+#                          "_pos_", pos_flag,
+#                          "_neg_", neg_flag,
+#                          "_pos_neg_", pos_neg_flag,
+#                          "_globalToo_", global_flag,
+#                          ".Rdata", sep ="")
+#   
+#   print(ExperimentFile)
+#   
+#   TrFinal = list()
+#   if(!file.exists(ExperimentFile) || recalculate){
+#     quantilesTrain = read.csv(file =fNameTrain, header = TRUE)
+#     
+#     # quantilesTrain[,-1] = apply(quantilesTrain[,-1],2, FUN = function(i) as.numeric(as.character(i)))
+#     
+#     #-------------------------------------------------------------------------------------------
+#     # which features to use
+#     #-------------------------------------------------------------------------------------------
+#     quants = c(1:(q+2))
+#     # keep the name in any case
+#     colIndsTokeep = c(1)
+#     if(pos_flag) colIndsTokeep = c(colIndsTokeep, quants+1, length(quants)*3+1+quants)
+#     if(neg_flag) colIndsTokeep = c(colIndsTokeep, length(quants)*1+1+quants, length(quants)*4+1+quants)
+#     if(pos_neg_flag) colIndsTokeep = c(colIndsTokeep, length(quants)*2+1+quants, length(quants)*5+1+quants)
+#     colIndsTokeep = sort(colIndsTokeep)
+# 
+#     #-------------------------------------------------------------------------------------------
+#     # classlabels
+#     #-------------------------------------------------------------------------------------------
+#     protNames = as.character(unique(quantilesTrain[,1]))
+#     lab = read.table("/home/willy/PredictingProteinInteractions/data/labels.txt", header = TRUE)
+#     
+#     # to circumnavigate problems in naming, ("_", is a problem) 
+#     mapping = data.frame(matrix(0,ncol = 2, nrow = length(unique(lab$label))))
+#     colnames(mapping) = c("originalName", "name")
+#     mapping[,1] = sort(unique(lab$label))
+#     mapping[,2] = as.numeric(as.factor(sort(unique(lab$label))))
+#     
+#     protClasses = unlist(lapply(c(1:length(protNames)), FUN = function(i){
+#       mapping[which(mapping[,1] == lab$label[which(lab$name == protNames[i])]),2]
+#     }))
+#     
+#     classLabels = unlist(lapply(c(1:nrow(quantilesTrain)), FUN = function(i){
+#                                   protClasses[which(protNames == quantilesTrain[i,1])]
+#                                 }))
+#     
+#     quantilesTrain[,1] = unlist(lapply(c(1:length(classLabels)), FUN = function(i){
+#       paste(classLabels[i],"_",quantilesTrain[i,1], sep = "")
+#     }))
+#     
+#     # functionals = c(getFunctionalProteins(), "000_Trx")
+#     # protNames = unique(quantilesTrain[,1])
+#     # functionalInds = which((as.character(as.factor(quantilesTrain[,1])) %in% functionals) == TRUE)
+#     # 
+#     # 
+#     # classLabels = rep("notFunctional", nrow(quantilesTrain))
+#     # classLabels[functionalInds] = rep("Functional", length(functionalInds))
+#     # 
+#     # quantilesTrain[,1] = unlist(lapply(c(1:length(classLabels)), FUN = function(i){
+#     #   paste(classLabels[i],"_",quantilesTrain[i,1], sep = "")
+#     # }))
+#     
+#     
+#     # quantilesTrain = quantilesTrain[,c(1,8,9,10)]
+#     classLevels = mapping$name
+#     
+#     
+#     print("Creating train-set ...")
+#     Train = getSamplesSurf2(quantilesTrain,sampleSize = sampleSize,sampleTimes = sampleTimes,euklid = euklid, numPermutations = numPermutations, numClasses = numClasses, m = m,reDo = reCalculateTrainTest)
+# 
+#     
+#     quantilesTest = c()
+#     if(fNameTrain != fNameTest){
+#       # have to change test-names here too
+#       quantilesTest = read.csv(file =fNameTest, header = TRUE)
+#       
+#       ### TODO! ^^^
+#     } else {
+#       quantilesTest = quantilesTrain
+#     }
+#     
+#     print("Creating test-set ...")
+#     Test = getSamplesSurf2(quantilesTest,sampleSize = sampleSize,sampleTimes = sampleTimes_test,euklid = euklid, numPermutations = numPermutations, numClasses = numClasses, m = m,reDo = reCalculateTrainTest)
+#     
+#     
+#     if(global_flag){
+#       #-------------------------------------------------------------------------------------------
+#       # classlabels for the global part
+#       #-------------------------------------------------------------------------------------------
+#       print("adding global information to the model ...")
+# 
+#       quantilesTrain_global = read.csv(file =fNameTrain_global, header = TRUE)
+#       
+#       # quantilesTrain_global[,-1] = apply(quantilesTrain_global[,-1],2, FUN = function(i) as.numeric(as.character(i)))
+# 
+#       protClasses_global = unlist(lapply(c(1:length(protNames)), FUN = function(i){
+#         mapping[which(mapping[,1] == lab$label[which(lab$name == protNames[i])]),2]
+#       }))
+# 
+#       classLabels_global = unlist(lapply(c(1:nrow(quantilesTrain_global)),FUN = function(i){
+#                                     protClasses_global[which(protNames == quantilesTrain_global[i,1])]
+#                                   }))
+# 
+#       quantilesTrain_global[,1] = unlist(lapply(c(1:length(classLabels_global)), FUN = function(i){
+#         paste(classLabels_global[i],"_",quantilesTrain_global[i,1], sep = "")
+#       }))
+# 
+#       print("global Train ...")
+#       TrainGlobal = getSamplesSurf2(quantilesTrain_global,sampleSize = 1,sampleTimes = 1,euklid = euklid, numPermutations = 1, numClasses = numClasses, m = 1,reDo = TRUE)
+#       # merge the global and the local
+#       # the global comes in front of each local-featureset
+#       out = lapply(c(1:nrow(Train$X)), FUN = function(i){
+#         ind = ceil(i/sampleTimes)
+#         c(TrainGlobal$X[ind,],Train$X[i,])
+#       })
+# 
+#       Train$X = matrix(unlist(out), byrow = TRUE, nrow = nrow(Train$X))
+# 
+#       # #------------------------------------------------------------------------------------
+#       # # Test
+#       # #------------------------------------------------------------------------------------
+#       
+#       TestGlobal = c()
+#       if(fNameTrain_global != fNameTest_global){
+#         # have to change test-names here too
+#         quantilesTest_global = read.csv(file =fNameTest_global, header = TRUE)
+#         ### TODO! ^^^
+#       } else {
+#         TestGlobal = TrainGlobal
+#       }
+#       
+#       print("global Test ...")
+#        # merge the global and the local
+#       # the global comes in front of each local-featureset
+#       out = lapply(c(1:nrow(Test$X)), FUN = function(i){
+#         ind = ceil(i/sampleTimes_test)
+#         c(TestGlobal$X[ind,],Test$X[i,])
+#       })
+# 
+#     Test$X = matrix(unlist(out), byrow = TRUE, nrow = nrow(Test$X))
+#     }
+#     
+#     shuf = shuffle(1:nrow(Train$X))
+#     TrFinal = list("x_train" = Train$X[shuf,], "y_train" = Train$y[shuf,], "x_test" = Test$X, "y_test" = Test$y, "numClasses" = numClasses, "classLevels" = classLevels, "mapping" = mapping)
+#     
+#     saveRDS(TrFinal, ExperimentFile)
+#   } else {
+#     print("reading from previous experiment ...")
+#     TrFinal = readRDS(ExperimentFile)
+#   }
+#   
+#   TrFinal$x_train = apply(TrFinal$x_train,2, FUN = function(i) as.numeric(as.character(i)))
+#   TrFinal$x_test = apply(TrFinal$x_test,2, FUN = function(i) as.numeric(as.character(i)))
+#   
+#   # TrFinal$y_train = apply(TrFinal$y_train,2, FUN = function(i) as.character(i))
+#   # TrFinal$y_test = apply(TrFinal$y_test,2, FUN = function(i) as.character(i))
+#   # return(TrFinal)
+#   
+#   fac = 1
+#   if(euklid) fac=2
+#   model = modelFUN(TrainTest = TrFinal,sampleSize = sampleSize,sampleTimes = sampleTimes,q = (q+2)*3*fac,epochs = epochs, batch_size = batch_size)
+#   
+#   
+#   predictions <- model %>% predict_classes(TrFinal$x_test)
+#   
+#   # y_origNames = unlist(lapply(c(1:length(Train$y_original_names)), FUN = function(i){
+#   #                                                   paste(strsplit(Train$y_original_names[i], "_")[[1]][-1], collapse = "_")
+#   # }))
+# 
+#   
+#   pred = predictions+1
+#   print(pred)
+#   gt = reverseToCategorical(TrFinal$y_test,TrFinal$classLevels)
+#   y_test_pred = rep("0",length(pred))
+#   su = 0
+#   for(i in 1:length(gt)){
+#     if(gt[i] == TrFinal$classLevels[pred[i]]) su = su + 1
+#     
+#     y_test_pred[i] = TrFinal$classLevels[pred[i]]
+#   }
+#   su/length(gt)
+#   y_test_pred
+# 
+# 
+#   confMat = table(factor(as.character(TrFinal$mapping[as.numeric(y_test_pred),1]),
+#                          levels=TrFinal$mapping[TrFinal$classLevels,1]),
+#                   factor(as.character(TrFinal$mapping[as.numeric(gt),1]),
+#                          levels=TrFinal$mapping[TrFinal$classLevels,1]))
+#   
+#   
+#   sum(confMat)
+#   confMatNormalized = confMat/colSums(confMat)[col(confMat)]
+#   
+#   print(confMat)
+#   print(confMatNormalized)
+#   
+#   accuracy = sum(diag(confMat)) / sum(confMat)
+#   
+#   print("-----------------------------")
+#   print(paste("accuracy:", accuracy))
+#   print("-----------------------------")
+#   
+#   # return(list("pred" = as.numeric(y_test_pred), "actual" = as.numeric(gt)))
+#   # f1_score = ModelMetrics::f1Score(predicted = as.numeric(y_test_pred), actual = as.numeric(gt))
+#   auc = ModelMetrics::auc(predicted = as.numeric(y_test_pred), actual = as.numeric(gt))
+#   
+#   
+#   # f1 from the caret-package
+#   pred = as.factor(as.numeric(y_test_pred))
+#   act = as.factor(as.numeric(gt))
+#   
+#   newLevels  = unique(c(as.numeric(y_test_pred),as.numeric(gt)))
+#   
+#   # return(list("pred" = pred, "act" = act, "newLevels" = newLevels, "gt" = gt, "y_pred" =y_test_pred ))
+#   
+#   levels(pred) = newLevels
+#   levels(act) = newLevels 
+#   
+#   
+#   ?confusionMatrix
+#   resu <- confusionMatrix(data = pred, reference = act, mode="prec_recall")
+#   f1_score = resu$byClass["F1"]
+#   
+#   print(paste("f1_score: ", f1_score))
+#   
+#   write.table(x = signif(accuracy,2),file = paste("/home/willy/PredictingProteinInteractions/Results/TablesProt/Accuracy_", ExperimentName, ".tex", sep = ""),
+#               quote = FALSE, col.names = FALSE, row.names = FALSE)
+#   
+#   print(xtable(x = confMat,caption = "Confusion-matrix 106 Redoxins ",label = "ModelNet10Conf", type = "latex"),
+#         file = paste("/home/willy/PredictingProteinInteractions/Results/TablesProt/106TestConf_", ExperimentName, ".tex", sep = ""))
+#   
+#   
+#   print(xtable(x = confMatNormalized,
+#                caption = "Confusion-matrix 106 Redoxins (normalized)",
+#                label = "106TestConfNormalized",
+#                type = "latex"),
+#         file = paste("/home/willy/PredictingProteinInteractions/Results/TablesProt/106TestConfNormalized_", ExperimentName, ".tex", sep = ""))
+#   
+#   
+#   writeExperimentParametersToFile(pathToStats = "/home/willy/PredictingProteinInteractions/Results/TablesProt/",
+#                                   sampleSize = sampleSize,
+#                                   sampleTimes = sampleTimes,
+#                                   sampleTimes_test = sampleTimes_test,
+#                                   batch_size = batch_size,
+#                                   epochs = epochs,
+#                                   euklid = euklid,
+#                                   q = q,
+#                                   m = m, 
+#                                   numClasses = numClasses,
+#                                   potentials = potentials,
+#                                   fNameTrain = fNameTrain,
+#                                   fNameTest = fNameTest,
+#                                   ExperimentName = ExperimentName,
+#                                   fNameTrain_global = fNameTrain_global,
+#                                   fNameTest_global = fNameTest_global,
+#                                   modelName = modelName,
+#                                   accuracy = accuracy,
+#                                   f1_score = f1_score,
+#                                   auc = auc)
+#   
+#   stats = joinStats()
+#   write.csv(stats, "/home/willy/PredictingProteinInteractions/Results/ProtSummary.csv",row.names = FALSE)
+# }
 
 selectFeatures <- function(q, pos_flag, neg_flag, pos_neg_flag){
   #-------------------------------------------------------------------------------------------
@@ -1665,14 +1685,9 @@ createModelStatistics <- function(model, TrFinal, expDir, foldNum, testNames){
   # f1 from the caret-package
   pred = as.factor(as.numeric(y_test_pred))
   act = as.factor(as.numeric(gt))
-  
   newLevels  = unique(c(as.numeric(y_test_pred),as.numeric(gt)))
-  
-  # return(list("pred" = pred, "act" = act, "newLevels" = newLevels, "gt" = gt, "y_pred" =y_test_pred ))
-  
   levels(pred) = newLevels
   levels(act) = newLevels 
-  
   
   resu <- confusionMatrix(data = pred, reference = act, mode="prec_recall")
   f1_score = resu$byClass["F1"]
@@ -1758,13 +1773,12 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
                                reCalculateTrainTest = FALSE,
                                labels = "/home/willy/PredictingProteinInteractions/data/labels.txt",
                                k = 10,
-                               onlySummarizeFolds = FALSE){
+                               onlySummarizeFolds = FALSE,
+                               normalizeInputs = TRUE){
   
   print("------------------------------------------------------")
   print(paste("Experiment ", ExperimentName))
   print("------------------------------------------------------")
-  
-
   
     numPermutations = 1
     
@@ -1789,8 +1803,33 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
                            ".Rdata", sep ="")
     
     print(ExperimentFile)
+
+    df = data.frame(matrix(0,ncol = 2, nrow = 17))
+    colnames(df) = c("parameter","value")
+    df[1,] = c("sampleSize", sampleSize)
+    df[2,] = c("sampleTimes", sampleTimes)
+    df[3,] = c("sampleTimes_test", sampleTimes_test)
+    df[4,] = c("batch_size", batch_size)
+    df[5,] = c("epochs", epochs)
+    df[6,] = c("euklid", euklid)
+    df[7,] = c("q", q)
+    df[8,] = c("m", m)
+    df[9,] = c("numClasses", numClasses)
+    df[10,] = c("pos_flag", pos_flag)
+    df[11,] = c("neg_flag", neg_flag)
+    df[12,] = c("pos_neg_flag", pos_neg_flag)
+    df[13,] = c("fNameTrain", fNameTrain)
+    df[14,] = c("fNameTrain_global", fNameTrain_global)
+    df[15,] = c("ExperimentName", ExperimentName)
+    df[16,] = c("modelName", modelName)
+    df[17,] = c("k", k)
+
+    print(expDir)
+    write.table(df, paste(expDir,"/Call.txt", sep =""), row.names = FALSE)
     
+        
     if(!onlySummarizeFolds){
+      print("Setting up model ...")
     
     TrainTest = list()
     originalNames = c()
@@ -1800,6 +1839,7 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
     lab = read.table(labels, header = TRUE)
     if(!file.exists(ExperimentFile) || recalculate){
       quantilesTrain = read.csv(file =fNameTrain, header = TRUE)
+      
       # quantilesTrain[,-1] = apply(quantilesTrain[,-1],2, FUN = function(i) as.numeric(as.character(i)))
       
       if(length(which(is.na(quantilesTrain) == TRUE)) > 0) {
@@ -1813,8 +1853,8 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
       # which features to use
       #-------------------------------------------------------------------------------------------
       colIndsTokeep = selectFeatures(q, pos_flag, neg_flag, pos_neg_flag)
-      
       quantilesTrain = quantilesTrain[,colIndsTokeep]
+      
       #-------------------------------------------------------------------------------------------
       # classlabels
       #-------------------------------------------------------------------------------------------
@@ -1869,10 +1909,13 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
       folds = createFolds(lab$label, k = k,list = TRUE)
   
       for(foldInd in 1:length(folds)){
+      # foreach(foldInd=1:length(folds)) %do% {
         y_test_name_inds = folds[[foldInd]]
         
         test_inds = which(originalNames %in% protNames[y_test_name_inds])
         train_inds = c(1:nrow(TrainTest$X))[-test_inds]
+        
+        if(k == 1) train_inds = c(1:nrow(TrainTest$X))
         
         trainNames = protNames[-y_test_name_inds]
         testNames = protNames[y_test_name_inds]
@@ -1883,20 +1926,24 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
         Test_X = TrainTest$X[test_inds,]
         Test_y = TrainTest$y[test_inds,]
         
-        # Train_X = apply(Train_X,2, FUN = function(i) as.numeric(as.character(i)))
-        # Test_X = apply(Test_X,2, FUN = function(i) as.numeric(as.character(i)))
-        # 
-        # Train_y = apply(Train_y,2, FUN = function(i) as.numeric(as.character(i)))
-        # Test_y = apply(Test_y,2, FUN = function(i) as.numeric(as.character(i)))
-        # 
+        Train_X = apply(Train_X, 2, FUN = function(i) as.numeric(as.character(i)))
+        Test_X = apply(Test_X, 2, FUN = function(i) as.numeric(as.character(i)))
+
+        Train_y = apply(Train_y, 2, FUN = function(i) as.numeric(as.character(i)))
+        Test_y = apply(Test_y, 2, FUN = function(i) as.numeric(as.character(i)))
+
         
-  
+        if(normalizeInputs){
+          colMins = apply(Train_X,2,min)
+          colMaxs = apply(Train_X,2,max)
+          colRanges = colMaxs - colMins
+          Train_X = sapply(c(1:length(colRanges)), FUN = function(i){ Train_X[,i]/colRanges[i] })
+          Test_X = sapply(c(1:length(colRanges)), FUN = function(i){ Test_X[,i]/colRanges[i] })
+        }
+
         
-        # shuf = shuffle(1:nrow(Train_X))
-        shuf = c(1:nrow(Train_X))
+        shuf = shuffle(1:nrow(Train_X))
         TrFinal = list("x_train" = Train_X[shuf,], "y_train" = Train_y[shuf,], "x_test" = Test_X, "y_test" = Test_y, "numClasses" = numClasses, "classLevels" = classLevels, "mapping" = mapping)
-        
-        # return(TrFinal)
         
         classLabels = reverseToCategorical(oneHot = TrFinal$y_train, mapping$name)
         
@@ -1926,13 +1973,19 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
   
   # now read in all confusion-matrices and average over the performance
   conf_all = read.table(paste(expDir, "/confMat_fold_", 1, ".txt", sep = ""))
-  
-  
-  for(i in 2:k){
-    conf_i = read.table(paste(expDir, "/confMat_fold_", i, ".txt", sep = ""))
-    
-    conf_all = conf_all + conf_i
-  }
+  f1_all = read.table(paste(expDir,"/f1_score_",1,".txt", sep =""), header = TRUE)
+
+  if(k > 1){
+    for(i in 2:k){
+      conf_i = read.table(paste(expDir, "/confMat_fold_", i, ".txt", sep = ""))
+      conf_all = conf_all + conf_i
+      
+      
+      f1_all = f1_all + read.table(paste(expDir,"/f1_score_",i,".txt", sep =""), header = TRUE)
+      
+    }
+  }  
+
   
   conf_all = as.matrix(conf_all)
   
@@ -1942,38 +1995,281 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
   
   confMatNormalized = conf_all/colSums(conf_all)[col(conf_all)]
   
-  write.table(x = signif(accuracy,2),file = paste(dirName,"/Accuracy.tex", sep = ""),
+  write.table(x = signif(accuracy,2),file = paste(expDir,"/Accuracy.tex", sep = ""),
               quote = FALSE, col.names = FALSE, row.names = FALSE)
   
   print(xtable(x = conf_all,caption = paste("Confusion-matrix from the 106-Redoxins-test-set.",sep =""),label = "Redoxins106TestConf", type = "latex"),
-        file = paste(dirName,"Confusion.tex", sep = ""))
+        file = paste(expDir,"Confusion.tex", sep = ""))
   
   print(xtable(x = confMatNormalized,caption = paste("Confusion-matrix from the 106-Redoxins-test-set.",sep =""),label = "Redoxins106TestConfNormalized", type = "latex"),
-        file = paste(dirName,"ConfusionNormalized.tex", sep = ""))
+        file = paste(expDir,"ConfusionNormalized.tex", sep = ""))
+  
+  
+  
+  f1_all = f1_all/k
+  
+  write.table(x = signif(f1_all,2),file = paste(expDir,"/F1.tex", sep = ""),
+              quote = FALSE, col.names = FALSE, row.names = FALSE)
+  
+  
+    # writeExperimentParametersToFile(pathToStats = expDir,
+    #                                 sampleSize = sampleSize,
+    #                                 sampleTimes = sampleTimes,
+    #                                 sampleTimes_test = sampleTimes_test,
+    #                                 batch_size = batch_size,
+    #                                 epochs = epochs,
+    #                                 euklid = euklid,
+    #                                 q = q,
+    #                                 m = m,
+    #                                 numClasses = numClasses,
+    #                                 potentials = potentials,
+    #                                 fNameTrain = fNameTrain,
+    #                                 fNameTest = fNameTest,
+    #                                 ExperimentName = ExperimentName,
+    #                                 fNameTrain_global = fNameTrain_global,
+    #                                 fNameTest_global = fNameTest_global,
+    #                                 modelName = modelName,
+    #                                 accuracy = accuracy,
+    #                                 f1_score = -1,
+    #                                 auc = auc)
+  
+}
+
+# f1_all = read.table("/home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Test1/f1_score_1.txt", header = TRUE)
+# f1_all
+# 
+# ProteinsExperimentKfoldCV( sampleSize = 20,
+#                            sampleTimes = 400,
+#                            sampleTimes_test = 10,
+#                            batch_size = 64,
+#                            epochs = 50,
+#                            euklid = TRUE,
+#                            q = 1,
+#                            m = 1000,
+#                            numClasses = 2,
+#                            fNameTrain = "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+#                            fNameTrain_global = "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_1_m_1_q_1_muNN_10_alpha_0_betha_0_loc_FALSE.csv",
+#                            ExperimentName = "Test1",
+#                            modelName = getVarName(modelProt1),
+#                            modelFUN = modelProt1,
+#                            recalculate = FALSE,
+#                            k = 1,
+#                            onlySummarizeFolds = TRUE,
+#                            normalizeInputs = TRUE)
+# 
+# 
+# ProteinsExperimentKfoldCV( sampleSize = 5,
+#                            sampleTimes = 10,
+#                            sampleTimes_test = 10,
+#                            batch_size = 10,
+#                            epochs = 5,
+#                            euklid = TRUE,
+#                            q = 1,
+#                            m = 1000,
+#                            numClasses = 2,
+#                            fNameTrain = "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+#                            fNameTrain_global = "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_1_m_1_q_1_muNN_10_alpha_0_betha_0_loc_FALSE.csv",
+#                            ExperimentName = "Test3",
+#                            modelName = getVarName(modelProt1),
+#                            modelFUN = modelProt1,
+#                            recalculate = FALSE,
+#                            k = 1,
+#                            onlySummarizeFolds = FALSE,
+#                            normalizeInputs = TRUE)
+
+
+
+getExperimentSummary <- function(expDir = "/home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/"){
+  
+  ExperimentFolders = list.dirs(expDir, recursive = FALSE)
+  
+  if(length(ExperimentFolders) == 0) return(NULL)
+  print(ExperimentFolders)
+  
+  
+  df_summary = data.frame(matrix(0, nrow = length(ExperimentFolders), ncol = 21))
+  colnames(df_summary) = c("accuracy", "f1","alpha_local","betha_local","alpha_global","betha_global","q_local","q_global","sampleSize", "sampleTimes", "epochs", "batch_size", "k", "pos_flag", "neg_flag",
+                           "pos_neg_flag","modelName","ExperimentName", "n_local", "fNameTrain", "fNameTrain_global")
+  
+  
+  
+  for(i in 1 :length(ExperimentFolders)){
+    df = read.table(paste(ExperimentFolders[i], "/Call.txt", sep  = ""), header = TRUE)
+    
+    fNameTrain = as.character(df[which(df$parameter == "fNameTrain"),2])
+    fNameTrain_global = as.character(df[which(df$parameter == "fNameTrain_global"),2])
+    
+    alpha_local = as.numeric(strsplit(fNameTrain, "_")[[1]][11])
+    betha_local = as.numeric(strsplit(fNameTrain, "_")[[1]][13])
+    n_local = as.numeric(strsplit(fNameTrain, "_")[[1]][3])
+    q_local = as.numeric(strsplit(fNameTrain, "_")[[1]][7])
+    
+    alpha_global = as.numeric(strsplit(fNameTrain_global, "_")[[1]][11])
+    betha_global = as.numeric(strsplit(fNameTrain_global, "_")[[1]][13])
+    q_global = as.numeric(strsplit(fNameTrain_global, "_")[[1]][7])
+    
+    
+    Acc = as.numeric(read.table(paste(ExperimentFolders[i],"/Accuracy.tex", sep = ""), header = FALSE))
+    F1 = as.numeric(read.table(paste(ExperimentFolders[i],"/F1.tex", sep = ""), header = FALSE))
+    
+    df_summary[i,1] = Acc
+    df_summary[i,2] = F1
+    df_summary[i,3] = alpha_local
+    df_summary[i,4] = betha_local
+    
+    df_summary[i,5] = alpha_global
+    df_summary[i,6] = betha_global
+    # 
+    df_summary[i,7] = q_local
+    df_summary[i,8] = q_global
+    
+    df_summary[i,9] = as.numeric(as.character(df[which(df$parameter == "sampleSize"),2]))
+    df_summary[i,10] = as.numeric(as.character(df[which(df$parameter == "sampleTimes"),2]))
+    df_summary[i,11] = as.numeric(as.character(df[which(df$parameter == "epochs"),2]))
+    df_summary[i,12] = as.numeric(as.character(df[which(df$parameter == "batch_size"),2]))
+    
+    df_summary[i,13] = as.numeric(as.character(df[which(df$parameter == "k"),2]))
+    df_summary[i,14] = as.character(df[which(df$parameter == "pos_flag"),2])
+    df_summary[i,15] = as.character(df[which(df$parameter == "neg_flag"),2])
+    df_summary[i,16] = as.character(df[which(df$parameter == "pos_neg_flag"),2])
+    df_summary[i,17] = as.character(df[which(df$parameter == "modelName"),2])
+    df_summary[i,18] = as.character(df[which(df$parameter == "ExperimentName"),2])
+    df_summary[i,19] = n_local
+    df_summary[i,20] = fNameTrain
+    df_summary[i,21] = fNameTrain_global
+  }
+  
+  df_summary = df_summary[order(df_summary$f1, decreasing = TRUE),]
+  write.csv(df_summary, file = paste(expDir, "/summary.csv", sep =""), row.names = FALSE)
+  
+  return(df_summary)
 }
 
 
 
 
+getExperimentSummary()
+
+checkIfParametersAreSame <- function(parameters1, parameters2){
+  
+  relevantParameters = intersect(names(parameters2),names(parameters1))
+  for(i in 1:length(relevantParameters)){
+    ind1 = which(names(parameters1) == relevantParameters[i])
+    ind2 = which(names(parameters2) == relevantParameters[i])
+    if(unlist(parameters1[ind1]) != unlist(parameters2[ind2])) return(FALSE)
+  }
+  
+  return(TRUE)
+}
+
+getTrainFName <- function(path, name = "All", n = 0.2, m = 1, q = 1, muNN = 10, alpha = 0, betha = 0, local = TRUE){
+  paste(path, "/",name, "_n_", n, "_m_", m, "_q_", q, "_muNN_", muNN, "_alpha_", alpha,"_betha_", betha, "_loc_", local,".csv", sep ="")
+}
+
+ExperimentWrapper <- function(parameters){
+  #--------------------------------------------------------------------------------
+  # first check if the experiment with the needed parameters has already been done.
+  # If not check if all the necessary files are already generated.
+  # Then do the experiment.
+  # parameters ... a list with the parameters
+  #--------------------------------------------------------------------------------
+  
+  df_summary = getExperimentSummary()
+  
+  if(!is.null(df_summary)){
+    # check if there is another experiment with the exact same parameters
+
+    for(j in 1:nrow(df_summary)){
+      dfList = as.list(df_summary[1,])
+      flag = checkIfParametersAreSame(parameters,dfList)
+      if(flag == TRUE){
+        print(paste("found experiment with same parameters in ", df_summary$ExperimentName[j], ". Skipping this Experiment.", sep = ""))
+        return(NULL)
+      }
+    }
+  }
+  
+  # if we came until here, then there is no previous experiment with the same parameters
+  
+  # check if these files exist. If not skip this experiment
+  fNameTrain = getTrainFName(path = parameters$path,
+                             name = "All",
+                             n = parameters$n_local,
+                             m = 1,
+                             q = parameters$q_local,
+                             muNN = 10,
+                             alpha = parameters$alpha_local,
+                             betha = parameters$betha_local,
+                             local = TRUE)
+  
+  fNameTrain_global = getTrainFName(path = parameters$path,
+                             name = "All",
+                             n = 1,
+                             m = 1,
+                             q = parameters$q_global,
+                             muNN = 10,
+                             alpha = parameters$alpha_global,
+                             betha = parameters$betha_global,
+                             local = FALSE)
+  
+  print("calculating necessary quantiles ...")
+  if(!file.exists(fNameTrain_global)){
+    tmp = getQuantilesAlphaBetha(alpha = parameters$alpha_global,
+                                 betha = parameters$betha_global,
+                                 n = 1,
+                                 m = 1,
+                                 q = parameters$q_global,
+                                 locale = FALSE,
+                                 path = path106Experiment,
+                                 n_s_euclidean = 1000,
+                                 n_s_dijkstra = 1000,
+                                 stitchNum = 2000,
+                                 measureNearestNeighbors = 10,
+                                 recalculate = FALSE,
+                                 recalculateQuants = TRUE)
+  }
+  
+  if(!file.exists(fNameTrain)){
+    tmp = getQuantilesAlphaBetha(alpha = parameters$alpha_local,
+                                 betha = parameters$betha_local,
+                                 n = parameters$n_local,
+                                 m = 1,
+                                 q = parameters$q_local,
+                                 locale = TRUE,
+                                 path = path106Experiment,
+                                 n_s_euclidean = 1000,
+                                 n_s_dijkstra = 1000,
+                                 stitchNum = 2000,
+                                 measureNearestNeighbors = 10,
+                                 recalculate = FALSE,
+                                 recalculateQuants = TRUE)
+  }
+  
+  
+  print("starting Experiment ...")
+  ProteinsExperimentKfoldCV( sampleSize = parameters$sampleSize,
+                             sampleTimes = parameters$sampleTimes,
+                             sampleTimes_test = parameters$sampleTimes_test,
+                             batch_size = parameters$batch_size,
+                             epochs = parameters$epochs,
+                             euklid = parameters$euklid,
+                             q = parameters$q_local,
+                             m = 1000,
+                             numClasses = 2,
+                             fNameTrain = fNameTrain,
+                             fNameTrain_global = fNameTrain_global,
+                             ExperimentName = getNextExperimentName(),
+                             modelName = parameters$modelName,
+                             modelFUN = parameters$modelFun,
+                             recalculate = TRUE,
+                             k = parameters$k,
+                             onlySummarizeFolds = FALSE,
+                             normalizeInputs = TRUE)
+}
 
 
-ProteinsExperimentKfoldCV( sampleSize = 20,
-                           sampleTimes = 200,
-                           sampleTimes_test = 1,
-                           batch_size = 32,
-                           epochs = 50,
-                           euklid = FALSE,
-                           q = 1,
-                           m = 1000,
-                           numClasses = 2,
-                           potentials = c("pos_neg"),
-                           fNameTrain = "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_transformed_n_0.2_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
-                           fNameTrain_global = "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_transformed_n_1_m_1_q_1_muNN_10_alpha_0_betha_0_loc_FALSE.csv",
-                           ExperimentName = "Test2",
-                           modelName = getVarName(modelProt2),
-                           modelFUN = modelProt2,
-                           recalculate = FALSE,
-                           k = 10)
+
+
 
 
 #------------------------------------------------------------------------
@@ -2003,42 +2299,67 @@ if(mode == "onlyExperiments" || mode == "both"){
   }
   
   #------------------------------------------------------------------------
-  # done
-  ProteinsExperimentKfoldCV( sampleSize = 10,
-                             sampleTimes = 200,
-                             sampleTimes_test = 10,
-                             batch_size = 64,
-                             epochs = 100,
-                             euklid = FALSE,
-                             q = 1,
-                             m = 1000,
-                             numClasses = 2,
-                             fNameTrain = "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
-                             fNameTrain_global = "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_1_m_1_q_1_muNN_10_alpha_0_betha_0_loc_FALSE.csv",
-                             ExperimentName = getNextExperimentName(),
-                             modelName = getVarName(modelProt1),
-                             modelFUN = modelProt1,
-                             recalculate = FALSE,
-                             k = 10,
-                             onlySummarizeFolds = TRUE)
- 
+
+  alphas_local = c(0,1,2,3,5)
+  bethas_local = c(0,1,2,3,5)
   
-  ProteinsExperimentKfoldCV( sampleSize = 10,
-                             sampleTimes = 200,
-                             sampleTimes_test = 10,
-                             batch_size = 64,
-                             epochs = 100,
-                             euklid = FALSE,
-                             q = 1,
-                             m = 1000,
-                             numClasses = 2,
-                             fNameTrain = "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_1_betha_1_loc_TRUE.csv",
-                             fNameTrain_global = "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_1_m_1_q_1_muNN_10_alpha_0_betha_0_loc_FALSE.csv",
-                             ExperimentName = getNextExperimentName(),
-                             modelName = getVarName(modelProt1),
-                             modelFUN = modelProt1,
-                             recalculate = FALSE,
-                             k = 10)
+  alphas_global = c(1,0)
+  bethas_global = c(0)
+  
+  sampleSizes = c(5)
+  sampleTimes = c(200)
+  batch_sizes = c(32)
+  epochs = c(50)
+  
+  q_locals = c(1)
+  q_globals = c(1)
+  
+  k = 1
+  
+  for(alpha_loc in alphas_local){
+    for(betha_loc in bethas_local){
+      for(alpha_global in alphas_global){
+        for(betha_global in bethas_global){
+          for(sampleSize in sampleSizes){
+            for(sampleTime in sampleTimes){
+              for(batch_size in batch_sizes){
+                for(epoch in epochs){
+                  for(q_local in q_locals){
+                    for(q_global in q_globals){
+                      parameters = list("alpha_local" = alpha_loc,
+                                        "betha_local" = betha_loc,
+                                        "alpha_global" = alpha_global,
+                                        "betha_global" = betha_global,
+                                        "sampleSize" = sampleSize,
+                                        "sampleTimes" = sampleTime,
+                                        "sampleTimes_test" = 10,
+                                        "batch_size" = batch_size,
+                                        "epochs" = epoch,
+                                        "euklid" = TRUE,
+                                        "q_local" = q_local,
+                                        "q_global" = q_global,
+                                        "k" = k,
+                                        "pos_flag" = TRUE,
+                                        "neg_flag" = TRUE,
+                                        "pos_neg_flag" = TRUE,
+                                        "modelName" = getVarName(modelProt1),
+                                        "modelFun" = modelProt1,
+                                        "n_local" = 0.2,
+                                        "path" = "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/")
+                      
+                      
+                      ExperimentWrapper(parameters)
+                    } 
+                  } 
+                } 
+              } 
+            }
+          }
+        } 
+      } 
+    }
+  }
+
 }
 
 # stats = joinStats()
