@@ -23,9 +23,11 @@ sourceFiles(c("kerasFunctions"))
 
 path106Experiment = getPath("106Experiment")
 path120Experiment = getPath("120Experiment")
+pathpdbDownloaderExperiment = getPath("pdbDownloaderExperiment")
 
-pathToExperiment = path120Experiment
-LABELS = "/home/willy/PredictingProteinInteractions/data/labels120.txt"
+pathToExperiment = pathpdbDownloaderExperiment
+# LABELS = "/home/willy/PredictingProteinInteractions/data/labels120.txt"
+LABELS = "/home/willy/PredictingProteinInteractions/data/pdbDownloaderExperiment/labels.txt"
 
 path2Manifold = getPath("Manifold")
 
@@ -2251,7 +2253,7 @@ ExperimentWrapper <- function(parameters, pathKfold, labels){
                                  m = 1,
                                  q = parameters$q_global,
                                  locale = FALSE,
-                                 path = parameters$path,
+                                 path = pathToExperiment,
                                  n_s_euclidean = 1000,
                                  n_s_dijkstra = 1000,
                                  stitchNum = 2000,
@@ -2267,7 +2269,7 @@ ExperimentWrapper <- function(parameters, pathKfold, labels){
                                  m = 1,
                                  q = parameters$q_local,
                                  locale = TRUE,
-                                 path = parameters$path,
+                                 path = pathToExperiment,
                                  n_s_euclidean = 1000,
                                  n_s_dijkstra = 1000,
                                  stitchNum = 2000,
@@ -2339,7 +2341,7 @@ if(mode == "onlyExperiments" || mode == "both"){
   
   #------------------------------------------------------------------------
 
-  alphas_local = c(3)
+  alphas_local = c(0)
   bethas_local = c(3)
   
   alphas_global = c(0)
