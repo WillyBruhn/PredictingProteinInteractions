@@ -1660,8 +1660,8 @@ createModelStatistics <- function(model, TrFinal, expDir, foldNum, testNames){
   su/length(gt)
   y_test_pred
   
-  print(y_test_pred)
-  print(gt)
+  # print(y_test_pred)
+  # print(gt)
   
   
   confMat = table(factor(as.character(TrFinal$mapping[as.numeric(y_test_pred),1]),
@@ -1684,7 +1684,7 @@ createModelStatistics <- function(model, TrFinal, expDir, foldNum, testNames){
   
   # return(list("pred" = as.numeric(y_test_pred), "actual" = as.numeric(gt)))
   # f1_score = ModelMetrics::f1Score(predicted = as.numeric(y_test_pred), actual = as.numeric(gt))
-  auc = ModelMetrics::auc(predicted = as.numeric(y_test_pred), actual = as.numeric(gt))
+  # auc = ModelMetrics::auc(predicted = as.numeric(y_test_pred), actual = as.numeric(gt))
   
   
   # f1 from the caret-package
@@ -2288,7 +2288,7 @@ ExperimentWrapper <- function(parameters, pathKfold, labels){
                              euklid = parameters$euklid,
                              q = parameters$q_local,
                              m = 1000,
-                             numClasses = 2,
+                             numClasses = 4,
                              fNameTrain = fNameTrain,
                              fNameTrain_global = fNameTrain_global,
                              ExperimentName = getNextExperimentName(),
