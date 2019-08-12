@@ -50,3 +50,21 @@ data/ModelNet10Processed.zip
 data/106Test/
 
 
+
+
+Drugs/
+P06401.html
+P06401_pdbs/
+
+pdbDownloader/P03372.html
+pdbDownloader/P03372_pdbs/
+
+data/pdbDownloaderExperiment/
+pdbDownloader/P10275.html
+pdbDownloader/P10275_pdbs/
+pdbDownloader/P11511.html
+pdbDownloader/P11511_pdbs/
+pdbDownloader/labels.txt
+pdbDownloader/merged/
+
+

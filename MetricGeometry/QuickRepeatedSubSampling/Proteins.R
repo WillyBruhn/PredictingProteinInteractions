@@ -24,6 +24,9 @@ sourceFiles(c("kerasFunctions"))
 path106Experiment = getPath("106Experiment")
 path120Experiment = getPath("120Experiment")
 
+pathToExperiment = path120Experiment
+LABELS = "/home/willy/PredictingProteinInteractions/data/labels120.txt"
+
 path2Manifold = getPath("Manifold")
 
 library(keras)
@@ -1774,7 +1777,9 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
                                labels = "/home/willy/PredictingProteinInteractions/data/labels.txt",
                                k = 10,
                                onlySummarizeFolds = FALSE,
-                               normalizeInputs = TRUE){
+                               normalizeInputs = TRUE,
+                               saveExperiment = TRUE,
+                               splitPattern = ""){
   
   print("------------------------------------------------------")
   print(paste("Experiment ", ExperimentName))
@@ -1866,6 +1871,10 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
       mapping[,1] = sort(unique(lab$label))
       mapping[,2] = as.numeric(as.factor(sort(unique(lab$label))))
       
+      # remove all proteinNames that are not specified in
+      quantilesTrain = quantilesTrain[which(quantilesTrain[,1] %in% lab$name),]
+      protNames = as.character(unique(quantilesTrain[,1]))
+      
       protClasses = unlist(lapply(c(1:length(protNames)), FUN = function(i){
         mapping[which(mapping[,1] == lab$label[which(lab$name == protNames[i])]),2]
       }))
@@ -1878,17 +1887,24 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
         paste(classLabels[i],"_",quantilesTrain[i,1], sep = "")
       }))
       
+      # print(quantilesTrain[1:5,1])
+      
+      # return(quantilesTrain)
+      
       classLevels = mapping$name
   
-      TrainTest = getSamplesSurf2(quantilesTrain, sampleSize = sampleSize,sampleTimes = sampleTimes,euklid = euklid, numPermutations = numPermutations, numClasses = numClasses, m = m,reDo = reCalculateTrainTest)
+      TrainTest = getSamplesSurf2(quantilesTrain, sampleSize = sampleSize,sampleTimes = sampleTimes,euklid = euklid, numPermutations = numPermutations, numClasses = numClasses, m = m,reDo = reCalculateTrainTest, splitPattern = splitPattern)
       
       originalNames = getProtNameFromNameWithClassAsNumber(TrainTest$y_original_names)
-      
+
       if(global_flag){
         TrainTest$X = addGlobalInformationToModel(protNames = protNames, fNameTrain_global = fNameTrain_global,mapping = mapping,Train = TrainTest,lab = lab,euklid = euklid)
       }
       
-        saveRDS(list("TrainTest" = TrainTest, "originalNames" = originalNames, "protNames" = protNames, "classLevels" = classLevels, "mapping" = mapping), ExperimentFile)
+        if(saveExperiment == TRUE){
+          saveRDS(list("TrainTest" = TrainTest, "originalNames" = originalNames, "protNames" = protNames, "classLevels" = classLevels, "mapping" = mapping), ExperimentFile)
+          
+        }
       } else {
         print("reading from previous experiment ...")
         TR = readRDS(ExperimentFile)
@@ -1981,8 +1997,11 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
       conf_all = conf_all + conf_i
       
       
-      f1_all = f1_all + read.table(paste(expDir,"/f1_score_",i,".txt", sep =""), header = TRUE)
+      f1_tmp = read.table(paste(expDir,"/f1_score_",i,".txt", sep =""), header = TRUE)
       
+      if(is.na(f1_tmp)) f1_tmp = 0
+      
+      f1_all = f1_all + f1_tmp
     }
   }  
 
@@ -2039,23 +2058,33 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
 # f1_all
 # 
 # ProteinsExperimentKfoldCV( sampleSize = 20,
-#                            sampleTimes = 400,
+#                            sampleTimes = 200,
 #                            sampleTimes_test = 10,
-#                            batch_size = 64,
-#                            epochs = 50,
+#                            batch_size = 32,
+#                            epochs = 5,
 #                            euklid = TRUE,
 #                            q = 1,
 #                            m = 1000,
 #                            numClasses = 2,
-#                            fNameTrain = "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
-#                            fNameTrain_global = "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_1_m_1_q_1_muNN_10_alpha_0_betha_0_loc_FALSE.csv",
+#                            fNameTrain = "/home/willy/PredictingProteinInteractions/data/120Experiment/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+#                            fNameTrain_global = "/home/willy/PredictingProteinInteractions/data/120Experiment/Quantiles/All_n_1_m_1_q_1_muNN_10_alpha_0_betha_0_loc_FALSE.csv",
 #                            ExperimentName = "Test1",
 #                            modelName = getVarName(modelProt1),
 #                            modelFUN = modelProt1,
 #                            recalculate = FALSE,
-#                            k = 1,
-#                            onlySummarizeFolds = TRUE,
-#                            normalizeInputs = TRUE)
+#                            k = 10,
+#                            onlySummarizeFolds = FALSE,
+#                            normalizeInputs = TRUE,
+#                            labels = LABELS,
+#                            path = "/home/willy/PredictingProteinInteractions/data/120Experiment/NNexperimentsKfoldCV/",
+#                            splitPattern = "_")
+# 
+# unique(tp[,1])
+# 
+# tp[2001,1]
+# 
+# read.table(LABELS, header = TRUE)
+
 # 
 # 
 # ProteinsExperimentKfoldCV( sampleSize = 5,
@@ -2148,11 +2177,13 @@ getExperimentSummary <- function(expDir = "/home/willy/PredictingProteinInteract
 
 
 
-getExperimentSummary()
+# getExperimentSummary()
 
 checkIfParametersAreSame <- function(parameters1, parameters2){
   
   relevantParameters = intersect(names(parameters2),names(parameters1))
+  
+  
   for(i in 1:length(relevantParameters)){
     ind1 = which(names(parameters1) == relevantParameters[i])
     ind2 = which(names(parameters2) == relevantParameters[i])
@@ -2166,7 +2197,7 @@ getTrainFName <- function(path, name = "All", n = 0.2, m = 1, q = 1, muNN = 10, 
   paste(path, "/",name, "_n_", n, "_m_", m, "_q_", q, "_muNN_", muNN, "_alpha_", alpha,"_betha_", betha, "_loc_", local,".csv", sep ="")
 }
 
-ExperimentWrapper <- function(parameters){
+ExperimentWrapper <- function(parameters, pathKfold, labels){
   #--------------------------------------------------------------------------------
   # first check if the experiment with the needed parameters has already been done.
   # If not check if all the necessary files are already generated.
@@ -2174,13 +2205,13 @@ ExperimentWrapper <- function(parameters){
   # parameters ... a list with the parameters
   #--------------------------------------------------------------------------------
   
-  df_summary = getExperimentSummary()
+  df_summary = getExperimentSummary(pathKfold)
   
   if(!is.null(df_summary)){
     # check if there is another experiment with the exact same parameters
 
     for(j in 1:nrow(df_summary)){
-      dfList = as.list(df_summary[1,])
+      dfList = as.list(df_summary[j,])
       flag = checkIfParametersAreSame(parameters,dfList)
       if(flag == TRUE){
         print(paste("found experiment with same parameters in ", df_summary$ExperimentName[j], ". Skipping this Experiment.", sep = ""))
@@ -2220,7 +2251,7 @@ ExperimentWrapper <- function(parameters){
                                  m = 1,
                                  q = parameters$q_global,
                                  locale = FALSE,
-                                 path = path106Experiment,
+                                 path = parameters$path,
                                  n_s_euclidean = 1000,
                                  n_s_dijkstra = 1000,
                                  stitchNum = 2000,
@@ -2236,7 +2267,7 @@ ExperimentWrapper <- function(parameters){
                                  m = 1,
                                  q = parameters$q_local,
                                  locale = TRUE,
-                                 path = path106Experiment,
+                                 path = parameters$path,
                                  n_s_euclidean = 1000,
                                  n_s_dijkstra = 1000,
                                  stitchNum = 2000,
@@ -2264,7 +2295,10 @@ ExperimentWrapper <- function(parameters){
                              recalculate = TRUE,
                              k = parameters$k,
                              onlySummarizeFolds = FALSE,
-                             normalizeInputs = TRUE)
+                             normalizeInputs = TRUE,
+                             saveExperiment = FALSE,
+                             path = pathKfold,
+                             labels = labels)
 }
 
 
@@ -2278,9 +2312,14 @@ sampleTimes_test = 10
 
 if(mode == "onlyExperiments" || mode == "both"){
   
-  print("starting Experiments ...")
+  p2 = strsplit(pathToExperiment, "/Output/")[[1]][1]
   
-  tests = list.dirs("/home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/",recursive = FALSE,full.names = FALSE)
+  NNexperimentsKfoldDir = paste(p2, "/NNexperimentsKfoldCV/", sep = "")
+  if(!dir.exists(NNexperimentsKfoldDir)) dir.create(NNexperimentsKfoldDir)
+  
+  tests = list.dirs(NNexperimentsKfoldDir,recursive = FALSE,full.names = FALSE)
+  
+  print(paste("starting Experiments in", NNexperimentsKfoldDir, "...", sep = " "))
   
   EXPERIMENTCOUNT = 0
   if(length(tests) != 0) {
@@ -2300,13 +2339,13 @@ if(mode == "onlyExperiments" || mode == "both"){
   
   #------------------------------------------------------------------------
 
-  alphas_local = c(0,1,2,3,5)
-  bethas_local = c(0,1,2,3,5)
+  alphas_local = c(3)
+  bethas_local = c(3)
   
-  alphas_global = c(1,0)
+  alphas_global = c(0)
   bethas_global = c(0)
   
-  sampleSizes = c(5)
+  sampleSizes = c(20)
   sampleTimes = c(200)
   batch_sizes = c(32)
   epochs = c(50)
@@ -2314,7 +2353,7 @@ if(mode == "onlyExperiments" || mode == "both"){
   q_locals = c(1)
   q_globals = c(1)
   
-  k = 1
+  k = 10
   
   for(alpha_loc in alphas_local){
     for(betha_loc in bethas_local){
@@ -2345,10 +2384,10 @@ if(mode == "onlyExperiments" || mode == "both"){
                                         "modelName" = getVarName(modelProt1),
                                         "modelFun" = modelProt1,
                                         "n_local" = 0.2,
-                                        "path" = "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/")
+                                        "path" = paste(p2,"/Quantiles/", sep = ""))
                       
                       
-                      ExperimentWrapper(parameters)
+                      ExperimentWrapper(parameters, NNexperimentsKfoldDir, labels = LABELS)
                     } 
                   } 
                 } 
