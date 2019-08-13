@@ -16,8 +16,10 @@ is.installed <- function(mypkg){
 }
 
 loadPck <- function(pck){
-  if(!is.installed(pck)){install.packages(pck)}
+  if(!is.installed(pck)){install.packages(pck, repos='http://cran.us.r-project.org')}
 }
+
+install.packages('RMySQL', repos='http://cran.us.r-project.org')
 
 loadPck("plot3D")
 loadPck("funr")
@@ -48,12 +50,16 @@ loadPck("readobj")
 loadPck("permute")
 loadPck("DescTools")
 loadPck("doBy")
+loadPck("caret")
 
+
+library(keras)
+# install_keras(tensorflow = "gpu")
 
 # install.packages("keras")
 # library(keras)
-# 
-# # install.packages("lime")
+
+# install.packages("lime")
 # library(lime)
 # 
 # # install.packages("tidyquant")

@@ -7,8 +7,8 @@
 #
 #---------------------------------------------------------------------
 
-wsPath = "/home/willy/PredictingProteinInteractions/setUp/SourceLoader.R"
-# wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
+# wsPath = "/home/willy/PredictingProteinInteractions/setUp/SourceLoader.R"
+wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
 
 mode = "onlyExperiments"
 # mode = "onlyGenerateModels"
@@ -25,16 +25,22 @@ path106Experiment = getPath("106Experiment")
 path120Experiment = getPath("120Experiment")
 pathpdbDownloaderExperiment = getPath("pdbDownloaderExperiment")
 
-pathToExperiment = pathpdbDownloaderExperiment
+# pathToExperiment = pathpdbDownloaderExperiment
+pathToExperiment = path106Experiment
+LABELS = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/labels.txt"
 # LABELS = "/home/willy/PredictingProteinInteractions/data/labels120.txt"
-LABELS = "/home/willy/PredictingProteinInteractions/data/pdbDownloaderExperiment/labels.txt"
+# LABELS = "/home/willy/PredictingProteinInteractions/data/pdbDownloaderExperiment/labels.txt"
+
+NUMCLASSES = 2
 
 path2Manifold = getPath("Manifold")
 
 library(keras)
 library(readobj)
 library(FNN)
-library(rgl)
+
+if(is.installed("rgl")) library(rgl)
+
 library(rdist)
 
 library(caret) # F1-score
@@ -2288,7 +2294,7 @@ ExperimentWrapper <- function(parameters, pathKfold, labels){
                              euklid = parameters$euklid,
                              q = parameters$q_local,
                              m = 1000,
-                             numClasses = 4,
+                             numClasses = NUMCLASSES,
                              fNameTrain = fNameTrain,
                              fNameTrain_global = fNameTrain_global,
                              ExperimentName = getNextExperimentName(),
@@ -2315,6 +2321,7 @@ sampleTimes_test = 10
 if(mode == "onlyExperiments" || mode == "both"){
   
   p2 = strsplit(pathToExperiment, "/Output/")[[1]][1]
+  
   
   NNexperimentsKfoldDir = paste(p2, "/NNexperimentsKfoldCV/", sep = "")
   if(!dir.exists(NNexperimentsKfoldDir)) dir.create(NNexperimentsKfoldDir)
