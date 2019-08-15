@@ -59,7 +59,7 @@ if(strsplit(wsPath, "/")[[1]][3] == "sysgen"){
 library(keras)
 
 library(doParallel)
-registerDoParallel(16)
+registerDoParallel(10)
 
 SAVE_EXPERIMENTS = TRUE
 
@@ -2909,16 +2909,20 @@ if(mode == "onlyExperiments" || mode == "both"){
   
   #------------------------------------------------------------------------
 
-  alphas_local = c(0,1,2,3)
-  bethas_local = c(0,1,2,3)
+  alphas_local = c(0,1,2,3,5)
+  bethas_local = c(0,1,2,3,5)
   
-  alphas_global = c(0,1,2,3)
-  bethas_global = c(0,1,2,3)
+  alphas_global = c(0,1,2,3,5)
+  bethas_global = c(0,1,2,3,5)
+  
+  # models = c(modelProt3_f1, modelProt3_f1, modelProt1)
   
   sampleSizes = c(5,10,20)
-  sampleTimes = c(200,400)
-  batch_sizes = c(32)
+  sampleTimes = c(200, 400)
+  batch_sizes = c(32,16)
   epochs = c(20)
+  
+  nlocals = c(0.2, 0.5, 0.1)
   
   q_locals = c(1)
   q_globals = c(1)
@@ -2929,50 +2933,153 @@ if(mode == "onlyExperiments" || mode == "both"){
   
   k = 10
   
-  print("Stress ...")
-  
-  for(alpha_loc in alphas_local){
-    for(betha_loc in bethas_local){
-      for(alpha_global in alphas_global){
-        for(betha_global in bethas_global){
-          for(sampleSize in sampleSizes){
-            for(sampleTime in sampleTimes){
-              for(batch_size in batch_sizes){
-                for(epoch in epochs){
-                  for(q_local in q_locals){
-                    for(q_global in q_globals){
-                      parameters = list("alpha_local" = alpha_loc,
-                                        "betha_local" = betha_loc,
-                                        "alpha_global" = alpha_global,
-                                        "betha_global" = betha_global,
-                                        "sampleSize" = sampleSize,
-                                        "sampleTimes" = sampleTime,
-                                        "sampleTimes_test" = 200,
-                                        "batch_size" = batch_size,
-                                        "epochs" = epoch,
-                                        "euklid" = euklid_val,
-                                        "q_local" = q_local,
-                                        "q_global" = q_global,
-                                        "k" = k,
-                                        "pos_flag" = TRUE,
-                                        "neg_flag" = TRUE,
-                                        "pos_neg_flag" = TRUE,
-                                        "modelName" = getVarName(modelProt3_f1),
-                                        "modelFun" = modelProt3_f1,
-                                        "n_local" = 0.2,
-                                        "path" = paste(p2,"/Quantiles/", sep = ""))
-                      
-                      
-                      ExperimentWrapper(parameters, NNexperimentsKfoldDir, labels = LABELS, recalculateNAs)
-                     
+  for(nloc in nlocals){
+    for(alpha_loc in alphas_local){
+      for(betha_loc in bethas_local){
+        for(alpha_global in alphas_global){
+          for(betha_global in bethas_global){
+            for(sampleSize in sampleSizes){
+              for(sampleTime in sampleTimes){
+                for(batch_size in batch_sizes){
+                  for(epoch in epochs){
+                    for(q_local in q_locals){
+                      for(q_global in q_globals){
+                        parameters = list("alpha_local" = alpha_loc,
+                                          "betha_local" = betha_loc,
+                                          "alpha_global" = alpha_global,
+                                          "betha_global" = betha_global,
+                                          "sampleSize" = sampleSize,
+                                          "sampleTimes" = sampleTime,
+                                          "sampleTimes_test" = 200,
+                                          "batch_size" = batch_size,
+                                          "epochs" = epoch,
+                                          "euklid" = euklid_val,
+                                          "q_local" = q_local,
+                                          "q_global" = q_global,
+                                          "k" = k,
+                                          "pos_flag" = TRUE,
+                                          "neg_flag" = TRUE,
+                                          "pos_neg_flag" = TRUE,
+                                          "modelName" = getVarName(modelProt3_f1),
+                                          "modelFun" = modelProt3_f1,
+                                          "n_local" = nloc,
+                                          "path" = paste(p2,"/Quantiles/", sep = ""))
+                        
+                        
+                        ExperimentWrapper(parameters, NNexperimentsKfoldDir, labels = LABELS, recalculateNAs)
+                        
+                        
+                        system("/home/sysgen/Documents/LWB/Uploader/Uploader.sh")
+                       
+                      } 
                     } 
                   } 
                 } 
-              } 
+              }
             }
-          }
+          } 
         } 
-      } 
+      }
+    }
+  }
+  
+  for(nloc in nlocals){
+    for(alpha_loc in alphas_local){
+      for(betha_loc in bethas_local){
+        for(alpha_global in alphas_global){
+          for(betha_global in bethas_global){
+            for(sampleSize in sampleSizes){
+              for(sampleTime in sampleTimes){
+                for(batch_size in batch_sizes){
+                  for(epoch in epochs){
+                    for(q_local in q_locals){
+                      for(q_global in q_globals){
+                        parameters = list("alpha_local" = alpha_loc,
+                                          "betha_local" = betha_loc,
+                                          "alpha_global" = alpha_global,
+                                          "betha_global" = betha_global,
+                                          "sampleSize" = sampleSize,
+                                          "sampleTimes" = sampleTime,
+                                          "sampleTimes_test" = 200,
+                                          "batch_size" = batch_size,
+                                          "epochs" = epoch,
+                                          "euklid" = euklid_val,
+                                          "q_local" = q_local,
+                                          "q_global" = q_global,
+                                          "k" = k,
+                                          "pos_flag" = TRUE,
+                                          "neg_flag" = TRUE,
+                                          "pos_neg_flag" = TRUE,
+                                          "modelName" = getVarName(modelProt4_f1),
+                                          "modelFun" = modelProt4_f1,
+                                          "n_local" = nloc,
+                                          "path" = paste(p2,"/Quantiles/", sep = ""))
+                        
+                        
+                        ExperimentWrapper(parameters, NNexperimentsKfoldDir, labels = LABELS, recalculateNAs)
+                        
+                        
+                        system("/home/sysgen/Documents/LWB/Uploader/Uploader.sh")
+                        
+                      } 
+                    } 
+                  } 
+                } 
+              }
+            }
+          } 
+        } 
+      }
+    }
+  }
+  
+  for(nloc in nlocals){
+    for(alpha_loc in alphas_local){
+      for(betha_loc in bethas_local){
+        for(alpha_global in alphas_global){
+          for(betha_global in bethas_global){
+            for(sampleSize in sampleSizes){
+              for(sampleTime in sampleTimes){
+                for(batch_size in batch_sizes){
+                  for(epoch in epochs){
+                    for(q_local in q_locals){
+                      for(q_global in q_globals){
+                        parameters = list("alpha_local" = alpha_loc,
+                                          "betha_local" = betha_loc,
+                                          "alpha_global" = alpha_global,
+                                          "betha_global" = betha_global,
+                                          "sampleSize" = sampleSize,
+                                          "sampleTimes" = sampleTime,
+                                          "sampleTimes_test" = 200,
+                                          "batch_size" = batch_size,
+                                          "epochs" = epoch,
+                                          "euklid" = euklid_val,
+                                          "q_local" = q_local,
+                                          "q_global" = q_global,
+                                          "k" = k,
+                                          "pos_flag" = TRUE,
+                                          "neg_flag" = TRUE,
+                                          "pos_neg_flag" = TRUE,
+                                          "modelName" = getVarName(modelProt1_f1),
+                                          "modelFun" = modelProt1_f1,
+                                          "n_local" = nloc,
+                                          "path" = paste(p2,"/Quantiles/", sep = ""))
+                        
+                        
+                        ExperimentWrapper(parameters, NNexperimentsKfoldDir, labels = LABELS, recalculateNAs)
+                        
+                        
+                        system("/home/sysgen/Documents/LWB/Uploader/Uploader.sh")
+                        
+                      } 
+                    } 
+                  } 
+                } 
+              }
+            }
+          } 
+        } 
+      }
     }
   }
 
