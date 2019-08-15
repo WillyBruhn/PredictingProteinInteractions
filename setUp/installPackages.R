@@ -51,10 +51,91 @@ loadPck("permute")
 loadPck("DescTools")
 loadPck("doBy")
 loadPck("caret")
+loadPck("beepr")
 
 
-library(keras)
-# install_keras(tensorflow = "gpu")
+# # installation on WS:
+# # inside the virtual-env-directories you have to call
+# #
+# # ./pip3.6 install tensorflow
+# #
+# # ./pip3.6 install keras
+# #
+# # and optionally 
+# #
+# # ./pip3.6 install tensorflow-gpu
+# #
+# 
+# install.packages("devtools")
+# devtools::install_github("rstudio/reticulate")
+# library(reticulate)
+# use_python("/home/sysgen/.pyenv/versions/3.6.3/bin/python3.6", required = TRUE)
+# use_virtualenv("/home/sysgen/.pyenv/versions/3.6.3/",required = TRUE)
+# # use_virtualenv("~/.virtualenvs/r-reticulate/",required = TRUE)
+# 
+# reticulate::py_discover_config(required = TRUE)
+# py_config()
+# reticulate::py_config()
+# 
+# install.packages("tensorflow")
+# library(tensorflow)
+# tensorflow::install_tensorflow(envname = "/home/sysgen/.pyenv/versions/3.6.3/")
+# 
+# devtools::install_github("rstudio/keras")
+# library(keras)
+# install_keras(method = c("virtualenv"),tensorflow = "/home/sysgen/.pyenv/versions/3.6.3/")
+# # install_keras()
+# 
+# minimalExampleKeras()
+
+
+#-----------------------------------------------------------------
+## /.pyenv/versions/3.6.3/bin> ldd python3.6
+# .pyenv/versions/3.6.3/bin> ldd python3.6
+# linux-vdso.so.1 (0x00007fff033fd000)
+# libpthread.so.0 => /lib64/libpthread.so.0 (0x00007fc736b92000)
+# libdl.so.2 => /lib64/libdl.so.2 (0x00007fc73698e000)
+# libutil.so.1 => /lib64/libutil.so.1 (0x00007fc73678b000)
+# libm.so.6 => /lib64/libm.so.6 (0x00007fc73648e000)
+# libc.so.6 => /lib64/libc.so.6 (0x00007fc7360e9000)
+# /lib64/ld-linux-x86-64.so.2 (0x00007fc736daf000)
+#-----------------------------------------------------------------
+
+#-------------------------------------------------------------
+# python:         /usr/bin/python
+# libpython:      /usr/lib64/libpython2.7.so.1.0
+# pythonhome:     /usr:/usr
+# version:        2.7.13 (default, Jan 03 2017, 17:41:54) [GCC]
+# numpy:          /usr/lib64/python2.7/site-packages/numpy
+# numpy_version:  1.8.0
+# 
+# python versions found: 
+#   /home/sysgen/.virtualenvs/r-reticulate/bin/python
+# /usr/bin/python
+# /usr/bin/python3
+
+
+
+# use_python("/usr/bin/python3", required = TRUE)
+## python:         /usr/bin/python3
+## libpython:      /usr/lib64/libpython3.4m.so.1.0
+## pythonhome:     /usr:/usr
+## version:        3.4.6 (default, Mar 22 2017, 12:26:13) [GCC]
+## numpy:           [NOT FOUND]
+## 
+## NOTE: Python version was forced by use_python function
+
+# use_python("/home/sysgen/.virtualenvs/r-reticulate/bin/python3.4", required = TRUE)
+# python:         /home/sysgen/.virtualenvs/r-reticulate/bin/python3.4
+# libpython:      /usr/lib64/libpython3.4m.so.1.0
+# pythonhome:     /usr:/usr
+# virtualenv:     /home/sysgen/.virtualenvs/r-reticulate/bin/activate_this.py
+# version:        3.4.6 (default, Mar 22 2017, 12:26:13) [GCC]
+# numpy:           [NOT FOUND]
+# 
+# NOTE: Python version was forced by use_python function
+#-------------------------------------------------------------
+
 
 # install.packages("keras")
 # library(keras)
@@ -141,7 +222,67 @@ paths = addSource(paths, "120Experiment", "/data/120Experiment/Output/")
 paths = addSource(paths, "106Experiment", "/data/106Test/Output/")
 paths = addSource(paths, "pdbDownloaderExperiment", "/data/pdbDownloaderExperiment/Output/")
 paths = addSource(paths, "animals", "/home/willy/PredictingProteinInteractions/data/animals/models/")
+paths = addSource(paths, "106ExperimentLabels", "./data/106Test/labels.txt")
 
 write.table(paths, paste(PredictingProteinInteractionsFolder, "setUp/Paths.txt", sep = ""), row.names = FALSE)
 
+
+
+
+# #------------------------------------------------------------------------------------------------------------------------
+# # other paths and data-sets
+# #------------------------------------------------------------------------------------------------------------------------
+
+
+minimalExampleKeras <- function(){
+  #loading the keras inbuilt mnist dataset
+  data<-dataset_mnist()
+  
+  
+  #separating train and test file
+  train_x<-data$train$x
+  train_y<-data$train$y
+  test_x<-data$test$x
+  test_y<-data$test$y
+  
+  rm(data)
+  
+  
+  
+  # converting a 2D array into a 1D array for feeding into the MLP and normalising the matrix
+  train_x <- array(train_x, dim = c(dim(train_x)[1], prod(dim(train_x)[-1]))) / 255
+  test_x <- array(test_x, dim = c(dim(test_x)[1], prod(dim(test_x)[-1]))) / 255
+  
+  #converting the target variable to once hot encoded vectors using keras inbuilt function
+  train_y<-to_categorical(train_y,10)
+  test_y<-to_categorical(test_y,10)
+  
+  #defining a keras sequential model
+  model <- keras_model_sequential()
+  
+  #defining the model with 1 input layer[784 neurons], 1 hidden layer[784 neurons] with dropout rate 0.4 and 1 output layer[10 neurons]
+  #i.e number of digits from 0 to 9
+  
+  model %>%
+    layer_dense(units = 784, input_shape = 784) %>%
+    layer_dropout(rate=0.4)%>%
+    layer_activation(activation = 'relu') %>%
+    layer_dense(units = 10) %>%
+    layer_activation(activation = 'softmax')
+  
+  #compiling the defined model with metric = accuracy and optimiser as adam.
+  model %>% compile(
+    loss = 'categorical_crossentropy',
+    optimizer = 'adam',
+    metrics = c('accuracy')
+  )
+  
+  #fitting the model on the training dataset
+  model %>% fit(train_x, train_y, epochs = 2, batch_size = 128)
+  
+  #Evaluating model on the cross validation dataset
+  loss_and_metrics <- model %>% evaluate(test_x, test_y, batch_size = 128)
+  
+  return(TRUE)
+}
 

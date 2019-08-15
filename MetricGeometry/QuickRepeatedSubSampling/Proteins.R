@@ -7,8 +7,8 @@
 #
 #---------------------------------------------------------------------
 
-wsPath = "/home/willy/PredictingProteinInteractions/setUp/SourceLoader.R"
-# wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
+# wsPath = "/home/willy/PredictingProteinInteractions/setUp/SourceLoader.R"
+wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
 
 mode = "onlyExperiments"
 # mode = "onlyGenerateModels"
@@ -31,13 +31,14 @@ pathToExperiment = path106Experiment
 # LABELS = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/labels.txt"
 # LABELS = "/home/willy/PredictingProteinInteractions/data/labels120.txt"
 # LABELS = "/home/willy/PredictingProteinInteractions/data/pdbDownloaderExperiment/labels.txt"
-LABELS = "/home/willy/PredictingProteinInteractions/data/labels.txt"
+# LABELS = "/home/willy/PredictingProteinInteractions/data/labels.txt"
+LABELS = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/labels.txt"
 
 NUMCLASSES = 2
 
 path2Manifold = getPath("Manifold")
 
-library(keras)
+# library(keras)
 library(readobj)
 library(FNN)
 library(raster)
@@ -45,10 +46,26 @@ library(raster)
 library(beepr)
 
 if(is.installed("rgl")) library(rgl)
-
 library(rdist)
-
 library(caret) # F1-score
+
+# hacky way to check if we are on WS
+if(strsplit(wsPath, "/")[[1]][3] == "sysgen"){
+  library(reticulate)
+  use_python("/home/sysgen/.pyenv/versions/3.6.3/bin/python3.6", required = TRUE)
+  use_virtualenv("/home/sysgen/.pyenv/versions/3.6.3/",required = TRUE)
+}
+
+library(keras)
+
+library(doParallel)
+registerDoParallel(16)
+
+SAVE_EXPERIMENTS = TRUE
+
+
+# install.packages("e1071")
+library(e1071)
 
 print("done loading ...")
 
@@ -463,9 +480,10 @@ getAllProteinModels = function(path = "/home/willy/Schreibtisch/106Test/Output/"
   dirs = list.dirs(path = path, recursive = FALSE, full.names = FALSE)
   if(!is.null(onlyTheseIndices)) dirs = dirs[onlyTheseIndices]
   
-  proteinModels = list()
-  for(i in 1:length(dirs)){
-    proteinModels[[i]] = getProteinModelStichedSurface(path = path, protName = dirs[i], n_s_euclidean = n_s_euclidean,
+  # proteinModels = list()
+  proteinModels = foreach(i = 1:length(dirs)) %dopar% {
+    # proteinModels[[i]] = 
+    getProteinModelStichedSurface(path = path, protName = dirs[i], n_s_euclidean = n_s_euclidean,
                                                        n_s_dijkstra = n_s_dijkstra, plot = FALSE,
                                                        recalculate = recalculate,
                                                        stitchNum =stitchNum,
@@ -721,6 +739,15 @@ get_quantiles_protein <- function(path = "/home/willy/Schreibtisch/106Test/Outpu
   return(quantiles)
 }
 
+# install.packages("doParallel")
+# library(doParallel)
+# registerDoParallel(20)
+# 
+# 
+# foreach(i = 1:1000, .combine=rbind) %dopar%{
+#   i^2
+# }
+
 
 get_quantiles_all_proteins <- function(model_vec, path, n, m ,q, recalculate = FALSE, locale = TRUE){
   # quantiles_all = data.frame(matrix(0,ncol = (q+2)*3+1, nrow = m*length(model_vec)))
@@ -757,10 +784,17 @@ get_quantiles_all_proteins <- function(model_vec, path, n, m ,q, recalculate = F
     if(!file.exists(QuantName) || recalculate == TRUE){
     if(!dir.exists(QuantFolder)) dir.create(QuantFolder)
     
+    # this is a bit hacky, we circumnavigate the combine-methods of foreach
+    # in a first round we calculate all the quantiles and in a second loop we collect all the files
+    foreach(i = 1:length(model_vec)) %dopar%{
+      quant = get_quantiles_protein(path = path, model = model_vec[[i]],n = n, m = m, q = q, recalculate = recalculate, measureNN = measureNN, alpha = alpha, betha = betha, locale = locale)
+    }
+      
     for(i in 1:length(model_vec)){
+    # mat = 
       print(paste(model_vec[[i]]$name, i/length(model_vec)))
       
-      quant = get_quantiles_protein(path = path, model = model_vec[[i]],n = n, m = m, q = q, recalculate = recalculate, measureNN = measureNN, alpha = alpha, betha = betha, locale = locale)
+      quant = get_quantiles_protein(path = path, model = model_vec[[i]],n = n, m = m, q = q, recalculate = FALSE, measureNN = measureNN, alpha = alpha, betha = betha, locale = locale)
   
       start_ind = (i-1)*nrow(quant)+1
       end_ind = start_ind + nrow(quant)-1
@@ -783,6 +817,11 @@ get_quantiles_all_proteins <- function(model_vec, path, n, m ,q, recalculate = F
   return(quantiles_all)
 }
 
+# 
+# models_small = getAllProteinModels(path = path106Experiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE, alpha = 3,betha = 3)
+# quantiles2 = get_quantiles_all_proteins(model_vec = models_small, path = path106Experiment, n = 0.2, m = 1, q = 1, recalculate = TRUE,locale = TRUE)
+# 
+# quantiles2
 
 
 plot_one_prot_quant <- function(quantiles,q, col = "yellow", size = 15){
@@ -2296,7 +2335,8 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
                                normalizeInputs = TRUE,
                                saveExperiment = TRUE,
                                splitPattern = "",
-                               useColIndsToKeep = TRUE){
+                               useColIndsToKeep = TRUE,
+                               doParallel = TRUE){
   
   print("------------------------------------------------------")
   print(paste("Experiment ", ExperimentName))
@@ -2443,8 +2483,8 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
       #------------------------------------------------------------------------------------------------------------------
       folds = createFolds(lab$label, k = k,list = TRUE)
   
-      for(foldInd in 1:length(folds)){
-      # foreach(foldInd=1:length(folds)) %do% {
+      # for(foldInd in 1:length(folds)){
+      foreach(foldInd=1:length(folds)) %dopar% {
         
         print(paste("fold", foldInd, "/", k, sep =""))
         
@@ -2551,28 +2591,6 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
   
   write.table(x = signif(f1_all,2),file = paste(expDir,"/F1.tex", sep = ""),
               quote = FALSE, col.names = FALSE, row.names = FALSE)
-  
-  
-    # writeExperimentParametersToFile(pathToStats = expDir,
-    #                                 sampleSize = sampleSize,
-    #                                 sampleTimes = sampleTimes,
-    #                                 sampleTimes_test = sampleTimes_test,
-    #                                 batch_size = batch_size,
-    #                                 epochs = epochs,
-    #                                 euklid = euklid,
-    #                                 q = q,
-    #                                 m = m,
-    #                                 numClasses = numClasses,
-    #                                 potentials = potentials,
-    #                                 fNameTrain = fNameTrain,
-    #                                 fNameTest = fNameTest,
-    #                                 ExperimentName = ExperimentName,
-    #                                 fNameTrain_global = fNameTrain_global,
-    #                                 fNameTest_global = fNameTest_global,
-    #                                 modelName = modelName,
-    #                                 accuracy = accuracy,
-    #                                 f1_score = -1,
-    #                                 auc = auc)
   
 }
 
@@ -2736,11 +2754,9 @@ ExperimentWrapper <- function(parameters, pathKfold, labels, recalculateNAs){
   df_summary = getExperimentSummary(pathKfold)
   
   
-  
+  ExperimentName = "EMPTY"
   if(!is.null(df_summary)){
     # check if there is another experiment with the exact same parameters
-
-    ExperimentName = NULL
     for(j in 1:nrow(df_summary)){
       dfList = as.list(df_summary[j,])
       flag = checkIfParametersAreSame(parameters,dfList)
@@ -2757,7 +2773,12 @@ ExperimentWrapper <- function(parameters, pathKfold, labels, recalculateNAs){
     }
   }
   
-  if(is.null(ExperimentName)) ExperimentName = getNextExperimentName()
+  if(ExperimentName == "EMPTY"){
+    ExperimentName = getNextExperimentName()
+  }
+  
+  print(ExperimentName) 
+  
   
   # if we came until here, then there is no previous experiment with the same parameters
   
@@ -2796,7 +2817,7 @@ ExperimentWrapper <- function(parameters, pathKfold, labels, recalculateNAs){
                                  stitchNum = 2000,
                                  measureNearestNeighbors = 10,
                                  recalculate = FALSE,
-                                 recalculateQuants = TRUE)
+                                 recalculateQuants = FALSE)
   }
   
   if(!file.exists(fNameTrain)){
@@ -2812,7 +2833,7 @@ ExperimentWrapper <- function(parameters, pathKfold, labels, recalculateNAs){
                                  stitchNum = 2000,
                                  measureNearestNeighbors = 10,
                                  recalculate = FALSE,
-                                 recalculateQuants = TRUE)
+                                 recalculateQuants = FALSE)
   }
   
   potentials = c()
@@ -2841,9 +2862,10 @@ ExperimentWrapper <- function(parameters, pathKfold, labels, recalculateNAs){
                              k = parameters$k,
                              onlySummarizeFolds = FALSE,
                              normalizeInputs = TRUE,
-                             saveExperiment = FALSE,
+                             saveExperiment = SAVE_EXPERIMENTS,
                              path = pathKfold,
-                             labels = labels)
+                             labels = labels,
+                             reCalculateTrainTest = FALSE)
   
   beep(1)
 }
@@ -2887,14 +2909,14 @@ if(mode == "onlyExperiments" || mode == "both"){
   
   #------------------------------------------------------------------------
 
-  alphas_local = c(3)
-  bethas_local = c(3)
+  alphas_local = c(0,1,2,3)
+  bethas_local = c(0,1,2,3)
   
-  alphas_global = c(3)
-  bethas_global = c(3)
+  alphas_global = c(0,1,2,3)
+  bethas_global = c(0,1,2,3)
   
-  sampleSizes = c(20)
-  sampleTimes = c(200)
+  sampleSizes = c(5,10,20)
+  sampleTimes = c(200,400)
   batch_sizes = c(32)
   epochs = c(20)
   
@@ -2903,9 +2925,11 @@ if(mode == "onlyExperiments" || mode == "both"){
   
   euklid_val = TRUE
   
-  recalculateNAs = FALSE
+  recalculateNAs = TRUE
   
   k = 10
+  
+  print("Stress ...")
   
   for(alpha_loc in alphas_local){
     for(betha_loc in bethas_local){
@@ -2933,9 +2957,9 @@ if(mode == "onlyExperiments" || mode == "both"){
                                         "pos_flag" = TRUE,
                                         "neg_flag" = TRUE,
                                         "pos_neg_flag" = TRUE,
-                                        "modelName" = getVarName(modelProt4_f1),
-                                        "modelFun" = modelProt4_f1,
-                                        "n_local" = 0.5,
+                                        "modelName" = getVarName(modelProt3_f1),
+                                        "modelFun" = modelProt3_f1,
+                                        "n_local" = 0.2,
                                         "path" = paste(p2,"/Quantiles/", sep = ""))
                       
                       
