@@ -608,14 +608,11 @@ getSamplesSurf2 <- function( quantiles,
     v[i] = length(which(sampledQuantiles[,1] == un[i]))
   }
   
-  print(v)
   if(var(v) != 0) return(NULL)
   
   print("generating x and y ...")
   
   y_all_class_names = getClassNamesFromSubClasses(sampledQuantiles[,1],splitPattern = splitPattern)
-  
-  print(y_all_class_names)
   
   y = y_all_class_names
   X = as.matrix(sampledQuantiles[,-1])

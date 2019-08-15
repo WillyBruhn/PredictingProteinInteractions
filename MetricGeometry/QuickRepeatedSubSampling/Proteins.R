@@ -7,8 +7,8 @@
 #
 #---------------------------------------------------------------------
 
-# wsPath = "/home/willy/PredictingProteinInteractions/setUp/SourceLoader.R"
-wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
+wsPath = "/home/willy/PredictingProteinInteractions/setUp/SourceLoader.R"
+# wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
 
 mode = "onlyExperiments"
 # mode = "onlyGenerateModels"
@@ -27,9 +27,11 @@ pathpdbDownloaderExperiment = getPath("pdbDownloaderExperiment")
 
 # pathToExperiment = pathpdbDownloaderExperiment
 pathToExperiment = path106Experiment
-LABELS = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/labels.txt"
+# pathToExperiment = path120Experiment
+# LABELS = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/labels.txt"
 # LABELS = "/home/willy/PredictingProteinInteractions/data/labels120.txt"
 # LABELS = "/home/willy/PredictingProteinInteractions/data/pdbDownloaderExperiment/labels.txt"
+LABELS = "/home/willy/PredictingProteinInteractions/data/labels.txt"
 
 NUMCLASSES = 2
 
@@ -38,6 +40,9 @@ path2Manifold = getPath("Manifold")
 library(keras)
 library(readobj)
 library(FNN)
+library(raster)
+
+library(beepr)
 
 if(is.installed("rgl")) library(rgl)
 
@@ -46,6 +51,23 @@ library(rdist)
 library(caret) # F1-score
 
 print("done loading ...")
+
+# install.packages("keras")
+
+# library(keras)
+
+# use_python("/usr/bin/python3.6")
+# install_keras()
+# 
+# library(keras)
+# use_python("/usr/bin/python3.7")
+# k=backend()
+# sess = k$get_session()
+# sess$list_devices()
+# 
+# 
+# library(tensorflow)
+# install_tensorflow(version = "gpu")
 
 getClassNamesFromSubClassesProteins <- function(subClasses, splitPattern = "_"){
   # gets the className from a subclass
@@ -1051,6 +1073,387 @@ modelProt2 <- function(TrainTest, epochs = 30, batch_size = 64, sampleSize = NUL
   return(model)
 }
 
+
+modelProt3 <- function(TrainTest, epochs = 30, batch_size = 64, weights, sampleSize = NULL, sampleTimes =NULL, q = NULL ){
+  print("Calling model3 ...")
+  
+  x_train = TrainTest$x_train
+  y_train = TrainTest$y_train
+  x_test = TrainTest$x_test
+  y_test = TrainTest$y_test
+  
+  numClasses = TrainTest$numClasses
+  #---------------------------------------------------------
+  model <- keras_model_sequential()
+  model %>% 
+    layer_dense(units = 600, activation = 'relu', input_shape = c(ncol(x_train))) %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 400, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 200, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 20, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 20, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 20, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = numClasses, activation = 'softmax')
+  
+  model %>% compile(
+    loss = 'categorical_crossentropy',
+    optimizer = optimizer_rmsprop(),
+    metrics = c('accuracy')
+  )
+  
+  history <- model %>% fit(
+    x_train, y_train, 
+    epochs = epochs, batch_size = batch_size, 
+    class_weight = weights,
+    validation_split = 0.05
+  )
+  return(model)
+}
+
+modelProt4 <- function(TrainTest, epochs = 30, batch_size = 64, weights, sampleSize = NULL, sampleTimes =NULL, q = NULL ){
+  print("Calling model4 ...")
+  
+  x_train = TrainTest$x_train
+  y_train = TrainTest$y_train
+  x_test = TrainTest$x_test
+  y_test = TrainTest$y_test
+  
+  numClasses = TrainTest$numClasses
+  #---------------------------------------------------------
+  model <- keras_model_sequential()
+  model %>% 
+    layer_dense(units = 1200, activation = 'relu', input_shape = c(ncol(x_train))) %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 800, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 400, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 40, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 40, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 40, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 10, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = numClasses, activation = 'softmax')
+  
+  model %>% compile(
+    loss = 'categorical_crossentropy',
+    optimizer = optimizer_rmsprop(),
+    metrics = c('accuracy')
+  )
+  
+  history <- model %>% fit(
+    x_train, y_train, 
+    epochs = epochs, batch_size = batch_size, 
+    class_weight = weights,
+    validation_split = 0.05
+  )
+  return(model)
+}
+
+modelProt5 <- function(TrainTest, epochs = 30, batch_size = 64, weights, sampleSize = NULL, sampleTimes =NULL, q = NULL ){
+  # for inputs with 900 points
+  print("Calling model5 ...")
+  
+  x_train = TrainTest$x_train
+  y_train = TrainTest$y_train
+  x_test = TrainTest$x_test
+  y_test = TrainTest$y_test
+  
+  numClasses = TrainTest$numClasses
+  #---------------------------------------------------------
+  model <- keras_model_sequential()
+  model %>% 
+    layer_dense(units = 1300, activation = 'relu', input_shape = c(ncol(x_train))) %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 9000, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 4500, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 450, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 450, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 450, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = numClasses, activation = 'softmax')
+  
+  model %>% compile(
+    loss = 'categorical_crossentropy',
+    optimizer = optimizer_rmsprop(),
+    metrics = c('accuracy')
+  )
+  
+  # history <- model %>% fit(
+  #   x_train, y_train, 
+  #   epochs = epochs, batch_size = batch_size, 
+  #   class_weight = list("1"=106/89,"0"=106/17),
+  #   validation_split = 0.05
+  # )
+  
+  history <- model %>% fit(
+    x_train, y_train, 
+    epochs = epochs, batch_size = batch_size, 
+    class_weight = weights,
+    validation_split = 0.05
+  )
+  return(model)
+}
+
+
+
+# clamp(c(1,2,3,4,2,2), lower = 0, upper = 1)
+
+EPSILON = 0.00000001
+recall_keras_metric <- function(y_true, y_pred){
+  # """Recall metric.
+  # 
+  #   Only computes a batch-wise average of recall.
+  # 
+  #   Computes the recall, a metric for multi-label classification of
+  #   how many relevant items are selected.
+  # """
+  
+  # true_positives = sum(round(clamp(y_true * y_pred, 0, 1)))
+  # possible_positives = sum(round(clamp(y_true, 0, 1)))
+  # recall = true_positives / (possible_positives + EPSILON)
+  K <- backend()
+  
+  true_positives = K$sum(K$round(K$clip(y_true * y_pred, 0, 1)))
+  possible_positives = K$sum(K$round(K$clip(y_true, 0, 1)))
+  recall = true_positives / (possible_positives + EPSILON)
+  
+  return(recall)
+}
+
+# recall_keras_metric(c(1,0,1,0,1), c(1,1,1,0,0))
+
+precision_keras_metric <- function(y_true, y_pred){
+  #   """Precision metric.
+  # 
+  #         Only computes a batch-wise average of precision.
+  # 
+  #         Computes the precision, a metric for multi-label classification of
+  #         how many selected items are relevant.
+  #         """
+  # true_positives = sum(round(clamp(y_true * y_pred, 0, 1)))
+  # predicted_positives = sum(round(clamp(y_pred, 0, 1)))
+  # precision = true_positives / (predicted_positives + EPSILON)
+  
+  K <- backend()
+  
+  true_positives = K$sum(K$round(K$clip(y_true * y_pred, 0, 1)))
+  predicted_positives = K$sum(K$round(K$clip(y_pred, 0, 1)))
+  precision = true_positives / (predicted_positives + EPSILON)
+  
+  return(precision)
+}
+# precision_keras_metric(c(1,0,1,0,1), c(1,0,1,0,0))
+
+
+f1_keras_metric <- function(y_true, y_pred){
+  precision = precision_keras_metric(y_true, y_pred)
+  recall = recall_keras_metric(y_true, y_pred)
+  
+  return(2*((precision*recall)/(precision+recall+EPSILON)))
+}
+# f1_keras_metric(c(1,0,1,0,1), c(1,0,1,0,0))
+
+f1_keras_metric_wrapper <- custom_metric("f1", function(y_true, y_pred) {
+  # print("getting called ...")
+  f1_keras_metric(y_true, y_pred)
+})
+
+
+
+
+modelProt1_f1 <- function(TrainTest, epochs = 30, batch_size = 64, weights, sampleSize = NULL, sampleTimes =NULL, q = NULL ){
+  print("Calling model1 f1 ...")
+  
+  x_train = TrainTest$x_train
+  y_train = TrainTest$y_train
+  x_test = TrainTest$x_test
+  y_test = TrainTest$y_test
+  
+  numClasses = TrainTest$numClasses
+  #---------------------------------------------------------
+  model <- keras_model_sequential()
+  model %>% 
+    layer_dense(units = 300, activation = 'relu', input_shape = c(ncol(x_train))) %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 200, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 100, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 10, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 10, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = 10, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = numClasses, activation = 'softmax')
+  
+  model %>% compile(
+    loss = 'categorical_crossentropy',
+    optimizer = optimizer_adam(),
+    metrics = f1_keras_metric_wrapper
+  )
+  
+  history <- model %>% fit(
+    x_train, y_train, 
+    epochs = epochs, batch_size = batch_size, 
+    class_weight = weights,
+    validation_split = 0.05
+  )
+  return(model)
+}
+
+
+modelProt2_f1 <- function(TrainTest, epochs = 30, batch_size = 64, weights, sampleSize = NULL, sampleTimes =NULL, q = NULL ){
+  print("Calling model2 f1 ...")
+  
+  x_train = TrainTest$x_train
+  y_train = TrainTest$y_train
+  x_test = TrainTest$x_test
+  y_test = TrainTest$y_test
+  
+  numClasses = TrainTest$numClasses
+  #---------------------------------------------------------
+  model <- keras_model_sequential()
+  model %>% 
+    layer_dense(units = 300, activation = 'relu', input_shape = c(ncol(x_train))) %>% 
+    layer_dropout(rate = 0.25) %>%
+    layer_dense(units = 200, activation = 'relu') %>% 
+    layer_dropout(rate = 0.25) %>%
+    layer_dense(units = 100, activation = 'relu') %>% 
+    layer_dropout(rate = 0.25) %>%
+    layer_dense(units = 10, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = numClasses, activation = 'softmax')
+  
+  model %>% compile(
+    loss = 'categorical_crossentropy',
+    optimizer = optimizer_adam(),
+    metrics = f1_keras_metric_wrapper
+  )
+  
+  history <- model %>% fit(
+    x_train, y_train, 
+    epochs = epochs, batch_size = batch_size, 
+    class_weight = weights,
+    validation_split = 0.05
+  )
+  return(model)
+}
+
+
+modelProt3_f1 <- function(TrainTest, epochs = 30, batch_size = 64, weights, sampleSize = NULL, sampleTimes =NULL, q = NULL ){
+  print("Calling model3 f1 ...")
+  
+  x_train = TrainTest$x_train
+  y_train = TrainTest$y_train
+  x_test = TrainTest$x_test
+  y_test = TrainTest$y_test
+  
+  numClasses = TrainTest$numClasses
+  #---------------------------------------------------------
+  model <- keras_model_sequential()
+  model %>% 
+    layer_dense(units = 300, activation = 'relu', input_shape = c(ncol(x_train))) %>% 
+    layer_dropout(rate = 0.25) %>%
+    layer_dense(units = 100, activation = 'relu') %>% 
+    layer_dropout(rate = 0.25) %>%
+    layer_dense(units = 10, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = numClasses, activation = 'softmax')
+  
+  model %>% compile(
+    loss = 'categorical_crossentropy',
+    optimizer = optimizer_adam(),
+    metrics = f1_keras_metric_wrapper
+  )
+  
+  history <- model %>% fit(
+    x_train, y_train, 
+    epochs = epochs, batch_size = batch_size, 
+    class_weight = weights,
+    validation_split = 0.05
+  )
+  return(model)
+}
+
+
+
+
+modelProt4_f1 <- function(TrainTest, epochs = 30, batch_size = 64, weights, sampleSize = NULL, sampleTimes =NULL, q = NULL ){
+  print("Calling model4 f1 ...")
+  
+  x_train = TrainTest$x_train
+  y_train = TrainTest$y_train
+  x_test = TrainTest$x_test
+  y_test = TrainTest$y_test
+  
+  numClasses = TrainTest$numClasses
+  #---------------------------------------------------------
+  model <- keras_model_sequential()
+  model %>% 
+    layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_train))) %>% 
+    layer_dropout(rate = 0.25) %>%
+    layer_dense(units = 20, activation = 'relu') %>% 
+    layer_dropout(rate = 0.25) %>%
+    layer_dense(units = 10, activation = 'relu') %>% 
+    layer_dropout(rate = 0.1) %>%
+    layer_dense(units = numClasses, activation = 'softmax')
+  
+  model %>% compile(
+    loss = 'categorical_crossentropy',
+    optimizer = optimizer_adam(),
+    metrics = f1_keras_metric_wrapper
+  )
+  
+  history <- model %>% fit(
+    x_train, y_train, 
+    epochs = epochs, batch_size = batch_size, 
+    class_weight = weights,
+    validation_split = 0.05
+  )
+  return(model)
+}
+
+
+# ProteinsExperimentKfoldCV( sampleSize = 5,
+#                            sampleTimes = 10,
+#                            sampleTimes_test = 10,
+#                            batch_size = 10,
+#                            epochs = 5,
+#                            euklid = TRUE,
+#                            q = 1,
+#                            m = 1000,
+#                            numClasses = 2,
+#                            fNameTrain = "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+#                            ExperimentName = "Test999",
+#                            modelName = getVarName(modelProt1_f1),
+#                            modelFUN = modelProt1_f1,
+#                            recalculate = FALSE,
+#                            k = 1,
+#                            onlySummarizeFolds = FALSE,
+#                            normalizeInputs = TRUE,
+#                            saveExperiment = TRUE)
+
+
+
+
+
 convModelProtein <- function(TrainTest, sampleSize, sampleTimes, q, epochs = 30, batch_size = 64, weights){
   
   x_train = TrainTest$x_train
@@ -1156,6 +1559,111 @@ convModelProtein <- function(TrainTest, sampleSize, sampleTimes, q, epochs = 30,
   
   return(model)
 }
+
+convModelProtein2 <- function(TrainTest, sampleSize, sampleTimes, q, epochs = 30, batch_size = 64, weights){
+  
+  x_train = TrainTest$x_train
+  y_train = TrainTest$y_train
+  x_test = TrainTest$x_test
+  y_test = TrainTest$y_test
+  
+  numClasses = TrainTest$numClasses
+  
+  
+  #---------------------------------------------------------
+  model <- keras_model_sequential()
+  model %>% 
+    layer_reshape(target_shape = c(sampleSize, ncol(x_train)/sampleSize,1),input_shape = c(ncol(x_train))) %>%
+    
+    layer_conv_2d(filter = 32, kernel_size = c(3,1), padding = 'same', input_shape = c(sampleSize, ncol(x_train)/sampleSize,1)) %>%
+    layer_activation("relu") %>%
+    layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+    
+    layer_conv_2d(filter = 32, kernel_size = c(3,1), padding = 'same') %>%
+    layer_activation("relu") %>%
+    layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+    
+    layer_conv_2d(filter = 32, kernel_size = c(3,1), padding = 'same') %>%
+    layer_activation("relu") %>%
+    layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+    
+    layer_conv_2d(filter = 32, kernel_size = c(3,1), padding = 'same') %>%
+    layer_activation("relu") %>%
+    layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+    
+    layer_conv_2d(filter = 32, kernel_size = c(3,1), padding = 'same') %>%
+    layer_activation("relu") %>%
+    layer_average_pooling_2d(pool_size = c(3,1),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+    
+    layer_conv_2d(filter = 32, kernel_size = c(3,1), padding = 'same') %>%
+    layer_activation("relu") %>%
+    layer_average_pooling_2d(pool_size = c(3,1),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+    
+    layer_conv_2d(filter = 32, kernel_size = c(3,1), padding = 'same') %>%
+    layer_activation("relu") %>%
+    layer_average_pooling_2d(pool_size = c(3,1),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+    
+    layer_conv_2d(filter = 32, kernel_size = c(3,1), padding = 'same') %>%
+    layer_activation("relu") %>%
+    layer_average_pooling_2d(pool_size = c(3,1),padding = 'same') %>%
+    layer_dropout(0.1) %>%
+    
+    
+    layer_flatten() %>%
+    layer_dense(400) %>%
+    layer_dense(200) %>%
+    layer_activation("relu") %>%
+    layer_dropout(0.1) %>%
+    
+    
+    layer_dense(100) %>%
+    layer_activation("relu") %>%
+    layer_dropout(0.1) %>%
+    
+    layer_dense(100) %>%
+    layer_activation("relu") %>%
+    layer_dropout(0.1) %>%
+    
+    layer_dense(10) %>%
+    layer_activation("relu") %>%
+    layer_dropout(0.1) %>%
+    
+    layer_dense(10) %>%
+    layer_activation("relu") %>%
+    layer_dropout(0.1) %>%
+    
+    layer_dense(10) %>%
+    layer_activation("relu") %>%
+    layer_dropout(0.1) %>%
+    
+    layer_dense(units = numClasses, activation = 'softmax')
+  
+  # ?layer_global_average_pooling_1d
+  
+  model %>% compile(
+    loss = 'categorical_crossentropy',
+    optimizer = optimizer_rmsprop(),
+    metrics = c('accuracy')
+  )
+  
+  history <- model %>% fit(
+    x_train, y_train, 
+    epochs = epochs, batch_size = batch_size,
+    class_weight = weights,
+    validation_split = 0.1
+  )
+  
+  
+  return(model)
+}
+
 
 getStatsOnAccuracies <- function(path = "/home/willy/PredictingProteinInteractions/Results/TablesProt/"){
   
@@ -1654,7 +2162,7 @@ createModelStatistics <- function(model, TrFinal, expDir, foldNum, testNames){
   predictions <- model %>% predict_classes(TrFinal$x_test)
   
   pred = predictions+1
-  print(pred)
+  # print(pred)
   gt = reverseToCategorical(TrFinal$y_test,TrFinal$classLevels)
   y_test_pred = rep("0",length(pred))
   su = 0
@@ -1787,7 +2295,8 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
                                onlySummarizeFolds = FALSE,
                                normalizeInputs = TRUE,
                                saveExperiment = TRUE,
-                               splitPattern = ""){
+                               splitPattern = "",
+                               useColIndsToKeep = TRUE){
   
   print("------------------------------------------------------")
   print(paste("Experiment ", ExperimentName))
@@ -1865,9 +2374,11 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
       #-------------------------------------------------------------------------------------------
       # which features to use
       #-------------------------------------------------------------------------------------------
-      colIndsTokeep = selectFeatures(q, pos_flag, neg_flag, pos_neg_flag)
-      quantilesTrain = quantilesTrain[,colIndsTokeep]
-      
+      if(useColIndsToKeep == TRUE){
+        colIndsTokeep = selectFeatures(q, pos_flag, neg_flag, pos_neg_flag)
+        quantilesTrain = quantilesTrain[,colIndsTokeep]
+      }
+
       #-------------------------------------------------------------------------------------------
       # classlabels
       #-------------------------------------------------------------------------------------------
@@ -1934,6 +2445,9 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
   
       for(foldInd in 1:length(folds)){
       # foreach(foldInd=1:length(folds)) %do% {
+        
+        print(paste("fold", foldInd, "/", k, sep =""))
+        
         y_test_name_inds = folds[[foldInd]]
         
         test_inds = which(originalNames %in% protNames[y_test_name_inds])
@@ -1971,8 +2485,8 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
         
         classLabels = reverseToCategorical(oneHot = TrFinal$y_train, mapping$name)
         
-        print(mapping)
-        print(classLabels)
+        # print(mapping)
+        # print(classLabels)
         
         # classLevels = unique(classLabels)
         weights = rep(0,length(classLevels))
@@ -2093,27 +2607,28 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
 # 
 # read.table(LABELS, header = TRUE)
 
-# 
-# 
+
 # ProteinsExperimentKfoldCV( sampleSize = 5,
-#                            sampleTimes = 10,
+#                            sampleTimes = 500,
 #                            sampleTimes_test = 10,
-#                            batch_size = 10,
-#                            epochs = 5,
+#                            batch_size = 32,
+#                            epochs = 20,
 #                            euklid = TRUE,
 #                            q = 1,
 #                            m = 1000,
 #                            numClasses = 2,
-#                            fNameTrain = "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
-#                            fNameTrain_global = "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_1_m_1_q_1_muNN_10_alpha_0_betha_0_loc_FALSE.csv",
-#                            ExperimentName = "Test3",
-#                            modelName = getVarName(modelProt1),
-#                            modelFUN = modelProt1,
+#                            fNameTrain = "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0_m_1_q_1_muNN_10_alpha_3_betha_3_loc_FALSE.csv",
+#                            ExperimentName = "Test999999",
+#                            modelName = getVarName(modelProt4_f1),
+#                            modelFUN = modelProt4_f1,
 #                            recalculate = FALSE,
-#                            k = 1,
+#                            k = 10,
 #                            onlySummarizeFolds = FALSE,
-#                            normalizeInputs = TRUE)
-
+#                            normalizeInputs = TRUE,
+#                            saveExperiment = TRUE,
+#                            useColIndsToKeep = FALSE)
+# 
+# quit()
 
 
 getExperimentSummary <- function(expDir = "/home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/"){
@@ -2121,11 +2636,11 @@ getExperimentSummary <- function(expDir = "/home/willy/PredictingProteinInteract
   ExperimentFolders = list.dirs(expDir, recursive = FALSE)
   
   if(length(ExperimentFolders) == 0) return(NULL)
-  print(ExperimentFolders)
+  # print(ExperimentFolders)
   
   
-  df_summary = data.frame(matrix(0, nrow = length(ExperimentFolders), ncol = 21))
-  colnames(df_summary) = c("accuracy", "f1","alpha_local","betha_local","alpha_global","betha_global","q_local","q_global","sampleSize", "sampleTimes", "epochs", "batch_size", "k", "pos_flag", "neg_flag",
+  df_summary = data.frame(matrix(0, nrow = length(ExperimentFolders), ncol = 22))
+  colnames(df_summary) = c("accuracy", "f1","alpha_local","betha_local","alpha_global","betha_global","q_local","q_global","sampleSize", "sampleTimes", "epochs", "batch_size", "k",  "euklid", "pos_flag", "neg_flag",
                            "pos_neg_flag","modelName","ExperimentName", "n_local", "fNameTrain", "fNameTrain_global")
   
   
@@ -2145,9 +2660,13 @@ getExperimentSummary <- function(expDir = "/home/willy/PredictingProteinInteract
     betha_global = as.numeric(strsplit(fNameTrain_global, "_")[[1]][13])
     q_global = as.numeric(strsplit(fNameTrain_global, "_")[[1]][7])
     
-    
-    Acc = as.numeric(read.table(paste(ExperimentFolders[i],"/Accuracy.tex", sep = ""), header = FALSE))
-    F1 = as.numeric(read.table(paste(ExperimentFolders[i],"/F1.tex", sep = ""), header = FALSE))
+    accFile = paste(ExperimentFolders[i],"/Accuracy.tex", sep = "")
+    Acc = NA
+    if(file.exists(accFile)) Acc = as.numeric(read.table(accFile, header = FALSE))
+   
+    f1File = paste(ExperimentFolders[i],"/F1.tex", sep = "")
+    F1 = NA
+    if(file.exists(f1File)) F1 = as.numeric(read.table(f1File, header = FALSE))
     
     df_summary[i,1] = Acc
     df_summary[i,2] = F1
@@ -2166,14 +2685,15 @@ getExperimentSummary <- function(expDir = "/home/willy/PredictingProteinInteract
     df_summary[i,12] = as.numeric(as.character(df[which(df$parameter == "batch_size"),2]))
     
     df_summary[i,13] = as.numeric(as.character(df[which(df$parameter == "k"),2]))
-    df_summary[i,14] = as.character(df[which(df$parameter == "pos_flag"),2])
-    df_summary[i,15] = as.character(df[which(df$parameter == "neg_flag"),2])
-    df_summary[i,16] = as.character(df[which(df$parameter == "pos_neg_flag"),2])
-    df_summary[i,17] = as.character(df[which(df$parameter == "modelName"),2])
-    df_summary[i,18] = as.character(df[which(df$parameter == "ExperimentName"),2])
-    df_summary[i,19] = n_local
-    df_summary[i,20] = fNameTrain
-    df_summary[i,21] = fNameTrain_global
+    df_summary[i,14] = as.character(as.character(df[which(df$parameter == "euklid"),2]))
+    df_summary[i,15] = as.character(df[which(df$parameter == "pos_flag"),2])
+    df_summary[i,16] = as.character(df[which(df$parameter == "neg_flag"),2])
+    df_summary[i,17] = as.character(df[which(df$parameter == "pos_neg_flag"),2])
+    df_summary[i,18] = as.character(df[which(df$parameter == "modelName"),2])
+    df_summary[i,19] = as.character(df[which(df$parameter == "ExperimentName"),2])
+    df_summary[i,20] = n_local
+    df_summary[i,21] = fNameTrain
+    df_summary[i,22] = fNameTrain_global
   }
   
   df_summary = df_summary[order(df_summary$f1, decreasing = TRUE),]
@@ -2205,7 +2725,7 @@ getTrainFName <- function(path, name = "All", n = 0.2, m = 1, q = 1, muNN = 10, 
   paste(path, "/",name, "_n_", n, "_m_", m, "_q_", q, "_muNN_", muNN, "_alpha_", alpha,"_betha_", betha, "_loc_", local,".csv", sep ="")
 }
 
-ExperimentWrapper <- function(parameters, pathKfold, labels){
+ExperimentWrapper <- function(parameters, pathKfold, labels, recalculateNAs){
   #--------------------------------------------------------------------------------
   # first check if the experiment with the needed parameters has already been done.
   # If not check if all the necessary files are already generated.
@@ -2215,18 +2735,29 @@ ExperimentWrapper <- function(parameters, pathKfold, labels){
   
   df_summary = getExperimentSummary(pathKfold)
   
+  
+  
   if(!is.null(df_summary)){
     # check if there is another experiment with the exact same parameters
 
+    ExperimentName = NULL
     for(j in 1:nrow(df_summary)){
       dfList = as.list(df_summary[j,])
       flag = checkIfParametersAreSame(parameters,dfList)
       if(flag == TRUE){
-        print(paste("found experiment with same parameters in ", df_summary$ExperimentName[j], ". Skipping this Experiment.", sep = ""))
+        if(is.na(df_summary$accuracy[j]) && recalculateNAs == TRUE) {
+          print(paste("found experiment with same parameters in ", df_summary$ExperimentName[j], ", but the Test was not finished. Will redo the Test.", sep = ""))
+          ExperimentName = df_summary$ExperimentName[j]
+          
+          break
+        }
+        print(paste("found experiment with same parameters in ", df_summary$ExperimentName[j], " at position ", j," (l. ", j+1,") of ", nrow(df_summary) ,". Skipping this Experiment.", sep = ""))
         return(NULL)
       }
     }
   }
+  
+  if(is.null(ExperimentName)) ExperimentName = getNextExperimentName()
   
   # if we came until here, then there is no previous experiment with the same parameters
   
@@ -2284,6 +2815,11 @@ ExperimentWrapper <- function(parameters, pathKfold, labels){
                                  recalculateQuants = TRUE)
   }
   
+  potentials = c()
+  if(parameters$pos_flag == TRUE) potentials = c(potentials, "pos")
+  if(parameters$neg_flag == TRUE) potentials = c(potentials, "neg")
+  if(parameters$pos_neg_flag == TRUE) potentials = c(potentials, "pos_neg")
+  
   
   print("starting Experiment ...")
   ProteinsExperimentKfoldCV( sampleSize = parameters$sampleSize,
@@ -2297,16 +2833,19 @@ ExperimentWrapper <- function(parameters, pathKfold, labels){
                              numClasses = NUMCLASSES,
                              fNameTrain = fNameTrain,
                              fNameTrain_global = fNameTrain_global,
-                             ExperimentName = getNextExperimentName(),
+                             ExperimentName = ExperimentName,
                              modelName = parameters$modelName,
                              modelFUN = parameters$modelFun,
                              recalculate = TRUE,
+                             potentials = potentials,
                              k = parameters$k,
                              onlySummarizeFolds = FALSE,
                              normalizeInputs = TRUE,
                              saveExperiment = FALSE,
                              path = pathKfold,
                              labels = labels)
+  
+  beep(1)
 }
 
 
@@ -2348,19 +2887,23 @@ if(mode == "onlyExperiments" || mode == "both"){
   
   #------------------------------------------------------------------------
 
-  alphas_local = c(0)
+  alphas_local = c(3)
   bethas_local = c(3)
   
-  alphas_global = c(0)
-  bethas_global = c(0)
+  alphas_global = c(3)
+  bethas_global = c(3)
   
   sampleSizes = c(20)
   sampleTimes = c(200)
   batch_sizes = c(32)
-  epochs = c(50)
+  epochs = c(20)
   
   q_locals = c(1)
   q_globals = c(1)
+  
+  euklid_val = TRUE
+  
+  recalculateNAs = FALSE
   
   k = 10
   
@@ -2380,23 +2923,24 @@ if(mode == "onlyExperiments" || mode == "both"){
                                         "betha_global" = betha_global,
                                         "sampleSize" = sampleSize,
                                         "sampleTimes" = sampleTime,
-                                        "sampleTimes_test" = 10,
+                                        "sampleTimes_test" = 200,
                                         "batch_size" = batch_size,
                                         "epochs" = epoch,
-                                        "euklid" = TRUE,
+                                        "euklid" = euklid_val,
                                         "q_local" = q_local,
                                         "q_global" = q_global,
                                         "k" = k,
                                         "pos_flag" = TRUE,
                                         "neg_flag" = TRUE,
                                         "pos_neg_flag" = TRUE,
-                                        "modelName" = getVarName(modelProt1),
-                                        "modelFun" = modelProt1,
-                                        "n_local" = 0.2,
+                                        "modelName" = getVarName(modelProt4_f1),
+                                        "modelFun" = modelProt4_f1,
+                                        "n_local" = 0.5,
                                         "path" = paste(p2,"/Quantiles/", sep = ""))
                       
                       
-                      ExperimentWrapper(parameters, NNexperimentsKfoldDir, labels = LABELS)
+                      ExperimentWrapper(parameters, NNexperimentsKfoldDir, labels = LABELS, recalculateNAs)
+                     
                     } 
                   } 
                 } 
@@ -2408,15 +2952,19 @@ if(mode == "onlyExperiments" || mode == "both"){
     }
   }
 
+  summary = getExperimentSummary(NNexperimentsKfoldDir)
 }
 
-# stats = joinStats()
-# write.csv(stats, "/home/willy/PredictingProteinInteractions/Results/ProtSummary.csv",row.names = FALSE)
 
+beep(5)
 
-#-------------------------------------------------------------------------------------------------------------
-# experimental
-#-------------------------------------------------------------------------------------------------------------
+# # stats = joinStats()
+# # write.csv(stats, "/home/willy/PredictingProteinInteractions/Results/ProtSummary.csv",row.names = FALSE)
+# 
+# 
+# #-------------------------------------------------------------------------------------------------------------
+# # experimental
+# #-------------------------------------------------------------------------------------------------------------
 # 
 # n_s_euclidean = 1000
 # n_s_dijkstra = 500
@@ -2458,7 +3006,7 @@ if(mode == "onlyExperiments" || mode == "both"){
 # lapply(c(1:nrow(alpha_betha_grid)), FUN = function(i){
 #   print(alpha_betha_grid[i,])
 #   tmp = getQuantilesAlphaBetha(alpha = alpha_betha_grid[i,1],betha = alpha_betha_grid[i,2], n = 0.2, m = 1,q = 1, locale = TRUE, path = path, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = TRUE)
-#   
+# 
 # })
 # 
 # # for(i in 1:length(alphas)){
@@ -2480,7 +3028,32 @@ if(mode == "onlyExperiments" || mode == "both"){
 # plot_prot_quants(quantiles2, q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
 # plot_prot_quants(quantiles3, q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
 # plot_prot_quants(quantiles5, q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
-# plot_prot_quants(quantiles7, q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
+# 
+# 
+# plot_prot_quants(quantiles7[inds,], q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
+# 
+# 
+# protName = "000_Trx"
+# inds = which(quantiles7[,1] == protName)
+# indSamp = sample(inds, 20, replace = FALSE)
+# quantiles7[indSamp,]
+# 
+# points3d(quantiles7[indSamp,8:10], size = 20)
+# 
+# 
+# 
+# colMins = apply(quantiles7[,-1],2,min)
+# colMaxs = apply(quantiles7[,-1],2,max)
+# colRanges = colMaxs - colMins
+# 
+# quantiles7_withoutNames = quantiles7[,-1]
+# quantiles7_scaled = sapply(c(1:length(colRanges)), FUN = function(i){ quantiles7_withoutNames[,i]/colRanges[i] })
+# 
+# quantiles7_scaled_final = quantiles7
+# quantiles7_scaled_final[,-1] = quantiles7_scaled
+# 
+# plot_prot_quants(quantiles7_scaled_final[inds,], q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
+# plot_prot_quants(quantiles7_scaled_final[indSamp,], q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
 # 
 # 
 # lab120 = read.table("/home/willy/PredictingProteinInteractions/data/labels120.txt", header = TRUE)
@@ -2492,30 +3065,30 @@ if(mode == "onlyExperiments" || mode == "both"){
 # #   quants = q+2
 # #   quantsInds = c(1:quants)
 # #   names = quantiles[,1]
-# #   
-# #   
+# #
+# #
 # #   quantilesOut = quantiles
 # #   quantiles = quantiles[,-1]
-# #   
+# #
 # #   out = matrix(unlist(lapply(c(1:nrow(quantiles)), FUN = function(i){
 # #     print(i/nrow(quantiles))
 # #     tmp = rep(0,quants*6)
-# #     
+# #
 # #     inds = seq(1,quants*6,quants)
 # #     tmp[inds] = quantiles[inds]
 # #     for(j in 2:quants){
 # #       tmp[j] = quantiles[i,j]/quantiles[i,1]
 # #       tmp[j + quants] = quantiles[i,j+quants]/quantiles[i,1+quants]
 # #       tmp[j +quants*2] = quantiles[i,1+j+quants*2]/quantiles[i,1+quants*2]
-# #       
+# #
 # #       tmp[j+quants*3] = quantiles[i,j+quants*3]/quantiles[i,1+quants*3]
 # #       tmp[j+quants*4] = quantiles[i,j+quants*4]/quantiles[i,1+quants*4]
 # #       tmp[j+quants*5] = quantiles[i,j+quants*5]/quantiles[i,1+quants*5]
-# #       
+# #
 # #     }
 # #     tmp
 # #   })), byrow = TRUE, ncol = ncol(quantiles))
-# #   
+# #
 # #   quantilesOut[,-1] = out
 # #   return(quantilesOut)
 # # }
@@ -2524,29 +3097,29 @@ if(mode == "onlyExperiments" || mode == "both"){
 # transformQuantsProtein <- function(quantiles, q = 1){
 #   quants = q+2
 #   quantsInds = c(1:quants)
-#   
+# 
 #   for(i in 1:nrow(quantiles)){
 #     print(i/nrow(quantiles))
-#     
+# 
 #     for(j in 2:quants){
 #       quantiles[i,j + 1] =           quantiles[i,j+1]/quantiles[i,2]
 #       quantiles[i,j + 1 + quants] =  quantiles[i,j+quants+1]/quantiles[i,2+quants]
 #       quantiles[i,j + 1 +quants*2] = quantiles[i,1+j+quants*2+1]/quantiles[i,quants*2+2]
-#       
+# 
 #       quantiles[i,j+ 1 + quants*3] = quantiles[i,j+quants*3+1]/quantiles[i,quants*3+2]
 #       quantiles[i,j+ 1 + quants*4] = quantiles[i,j+quants*4+1]/quantiles[i,quants*4+2]
 #       quantiles[i,j+ 1 + quants*5] = quantiles[i,j+quants*5+1]/quantiles[i,quants*5+2]
-#       
+# 
 #     }
 #   }
-#   
+# 
 #   return(quantiles)
 # }
 # 
 # 
 # 
 # quantilesGlob_trafo = transformQuantsProtein(quantilesGlob,q = 1)
-# quantilesLoc_trafo = transformQuantsProtein(quantilesLoc,q = 1)
+# quantilesLoc_trafo = transformQuantsProtein(quantiles7,q = 1)
 # 
 # 
 # quantilesLoc_trafo = transformQuantsProtein(quantiles7,q = 1)
@@ -2602,7 +3175,7 @@ if(mode == "onlyExperiments" || mode == "both"){
 #   distances = list()
 #   for(i in 1:106){
 #     distances[[i]] = dist(matrix(quantiles1[i,-1], nrow = 3), method = "manhattan")
-#     
+# 
 #     if(colnames(m)[i] %in% functionals) points3d(distances[[i]][1], distances[[i]][2], distances[[i]][3], col ="red", size = 10)
 #     else points3d(distances[[i]][1], distances[[i]][2], distances[[i]][3], col ="blue")
 #   }
@@ -2625,7 +3198,7 @@ if(mode == "onlyExperiments" || mode == "both"){
 # plot_one_prot_quant(quantiles[which(quantiles[,1] == "002"),],q = q,col = "black", size = 20)
 # functionals
 # 
-
-#-------------------------------------------------------------------------------------------------------------
-# experimental end
-#-------------------------------------------------------------------------------------------------------------
+# 
+# #-------------------------------------------------------------------------------------------------------------
+# # experimental end
+# #-------------------------------------------------------------------------------------------------------------
