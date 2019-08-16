@@ -2550,6 +2550,7 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
     mapping = c()
     lab = read.table(labels, header = TRUE)
     if(!file.exists(ExperimentFile) || recalculate){
+      print(paste("reading in ...", fNameTrain[1]))
       quantilesTrain = read.csv(file =fNameTrain[1], header = TRUE)
       
       
@@ -2642,8 +2643,8 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
       #------------------------------------------------------------------------------------------------------------------
       folds = createFolds(lab$label, k = k,list = TRUE)
   
-      for(foldInd in 1:length(folds)){
-      # foreach(foldInd=1:length(folds)) %dopar% {
+      # for(foldInd in 1:length(folds)){
+      foreach(foldInd=1:length(folds)) %dopar% {
         
         print(paste("fold", foldInd, "/", k, sep =""))
         
@@ -3191,12 +3192,16 @@ randomSearch <- function( NNexperimentsKfoldDir = "/home/willy/PredictingProtein
                           epochs = c(20),
                           labels = LABELS){
   
+  print("Starting random search ...")
+  
   iteration = 0
   while(MAXit > iteration){
     iteration = iteration + 1
     
     df_summary = getExperimentSummary(NNexperimentsKfoldDir)
     startNum = nrow(df_summary)
+    
+    if(is.null(startNum)) startNum = 0
     
     testName = paste("Test", startNum + 1, sep = "")
     
@@ -3211,41 +3216,49 @@ randomSearch <- function( NNexperimentsKfoldDir = "/home/willy/PredictingProtein
     q = qs[sample(1:length(qs), 1)]
     
     fNameTrain = c()
+    flag = TRUE
     for(i in 1:length(nlocals)){
       p2 = strsplit(pathToExperiment, "/Output/")[[1]][1]
       
       fNameTmp = getTrainFName(path = paste(p2, "/Quantiles/", sep = ""),name = "All",n = nlocals[i],m = 1,q = q,muNN = muNN,alpha = alpha,betha = betha,local = TRUE)
       if(!file.exists(fNameTmp)) {
         print(paste("generating missing file ...", fNameTmp))
-        tmp = getQuantilesAlphaBetha(alpha = alpha,betha = betha, n = nlocals[i], m = 1,q = q, locale = TRUE, path = pathToExperiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = muNN, recalculate = FALSE,recalculateQuants = TRUE)
+        # tmp = getQuantilesAlphaBetha(alpha = alpha,betha = betha, n = nlocals[i], m = 1,q = q, locale = TRUE, path = pathToExperiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = muNN, recalculate = FALSE,recalculateQuants = TRUE)
+
+        flag = FALSE
       }
       
       fNameTrain = c(fNameTrain, fNameTmp)
     }
     
-    ProteinsExperimentKfoldCV( sampleSize = sampleSize,
-                               sampleTimes = sampleTimes,
-                               sampleTimes_test = sampleTimes,
-                               batch_size = 32,
-                               epochs = 30,
-                               euklid = TRUE,
-                               q = 1,
-                               m = 1000,
-                               numClasses = 2,
-                               fNameTrain = fNameTrain,
-                               ExperimentName = testName,
-                               modelParameters = modelParameters,
-                               recalculate = FALSE,
-                               k = k,
-                               onlySummarizeFolds = FALSE,
-                               normalizeInputs = TRUE,
-                               saveExperiment = TRUE,
-                               useColIndsToKeep = FALSE,
-                               labels = labels)
+    if(flag == TRUE) {
+      ProteinsExperimentKfoldCV( sampleSize = sampleSize,
+                                 sampleTimes = sampleTimes,
+                                 sampleTimes_test = sampleTimes,
+                                 batch_size = 32,
+                                 epochs = 30,
+                                 euklid = TRUE,
+                                 q = 1,
+                                 m = 1000,
+                                 numClasses = 2,
+                                 fNameTrain = fNameTrain,
+                                 ExperimentName = testName,
+                                 modelParameters = modelParameters,
+                                 recalculate = FALSE,
+                                 k = k,
+                                 onlySummarizeFolds = FALSE,
+                                 normalizeInputs = TRUE,
+                                 saveExperiment = TRUE,
+                                 useColIndsToKeep = FALSE,
+                                 labels = labels,
+                                 path = NNexperimentsKfoldDir)
+      
+      df_summary = getExperimentSummary(NNexperimentsKfoldDir)
+      beep(5)
+      if(WS_flag == TRUE) system("/home/sysgen/Documents/LWB/Uploader/Uploader.sh")
+    }
     
-    
-    beep(5)
-    if(WS_flag == TRUE) system("/home/sysgen/Documents/LWB/Uploader/Uploader.sh")
+
   }
   
 
@@ -3253,8 +3266,17 @@ randomSearch <- function( NNexperimentsKfoldDir = "/home/willy/PredictingProtein
 
 
 #------------------------------------------------------------------------
+p2 = strsplit(pathToExperiment, "/Output/")[[1]][1]
 
-randomSearch(k = 1)
+print(p2)
+NNexperimentsKfoldDir = paste(p2, "/NNexperimentsKfoldCV/", sep = "")
+
+randomSearch(NNexperimentsKfoldDir = NNexperimentsKfoldDir,
+             k = 10,
+             nlocals = c(0.05,0.1,0.2,0.3,0.5,0.8),
+             alphas = c(0,1,2,3),
+             bethas = c(0,1,2,3),
+             MAXit = 100000)
 
 #------------------------------------------------------------------------
 
