@@ -56,10 +56,12 @@ if(strsplit(wsPath, "/")[[1]][3] == "sysgen"){
   WS_flag = TRUE
 }
 
+SAVE_EXPERIMENTS = FALSE
 if(WS_flag == TRUE){
   library(reticulate)
   use_python("/home/sysgen/.pyenv/versions/3.6.3/bin/python3.6", required = TRUE)
   use_virtualenv("/home/sysgen/.pyenv/versions/3.6.3/",required = TRUE)
+  SAVE_EXPERIMENTS = TRUE
 }
 
 library(keras)
@@ -68,7 +70,7 @@ library(doParallel)
 
 registerDoParallel(detectCores()/2)
 
-SAVE_EXPERIMENTS = FALSE
+
 
 
 # install.packages("e1071")
@@ -2455,7 +2457,7 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
                                m = 1000, 
                                numClasses = 2,
                                potentials = c("pos","neg","pos_neg"),
-                               fNameTrain = "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_2_betha_1_loc_TRUE.csv",
+                               fNameTrain = c("/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_2_betha_1_loc_TRUE.csv"),
                                ExperimentName = "Test1",
                                fNameTrain_global = NULL,
                                fNameTest_global = NULL,
@@ -2501,13 +2503,13 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
     
     print(ExperimentFile)
 
-    df = data.frame(matrix(0,ncol = 2, nrow = 17))
+    df = data.frame(matrix(0,ncol = 2, nrow = 17 + 2*length(modelParameters$layers)))
     colnames(df) = c("parameter","value")
     df[1,] = c("sampleSize", sampleSize)
     df[2,] = c("sampleTimes", sampleTimes)
     df[3,] = c("sampleTimes_test", sampleTimes_test)
-    df[4,] = c("batch_size", batch_size)
-    df[5,] = c("epochs", epochs)
+    df[4,] = c("batch_size", modelParameters$batch_size)
+    df[5,] = c("epochs", modelParameters$epochs)
     df[6,] = c("euklid", euklid)
     df[7,] = c("q", q)
     df[8,] = c("m", m)
@@ -2515,11 +2517,24 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
     df[10,] = c("pos_flag", pos_flag)
     df[11,] = c("neg_flag", neg_flag)
     df[12,] = c("pos_neg_flag", pos_neg_flag)
-    df[13,] = c("fNameTrain", fNameTrain)
-    df[14,] = c("fNameTrain_global", fNameTrain_global)
-    df[15,] = c("ExperimentName", ExperimentName)
-    df[16,] = c("modelName", "customModel")
-    df[17,] = c("k", k)
+    df[13,] = c("fNameTrain_global", fNameTrain_global)
+    df[14,] = c("ExperimentName", ExperimentName)
+    df[15,] = c("modelName", "customModel")
+    df[16,] = c("k", k)
+    
+    
+    for(i in 1:length(fNameTrain)){
+      df[16+i,] = c(paste("Ft",i, sep ="_"), fNameTrain[i])
+    }
+    
+    for(i in 1:length(modelParameters$layers)){
+      df[16+i + length(fNameTrain),] = c(paste("L",i, sep ="_"), modelParameters$layers[i])
+    }
+    
+    for(i in 1:length(modelParameters$dropOuts)){
+      df[16+i+ length(modelParameters$layers) + length(fNameTrain),] = c(paste("d",i, sep ="_"), modelParameters$dropOuts[i])
+    }
+    
 
     print(expDir)
     write.table(df, paste(expDir,"/Call.txt", sep =""), row.names = FALSE)
@@ -2535,9 +2550,18 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
     mapping = c()
     lab = read.table(labels, header = TRUE)
     if(!file.exists(ExperimentFile) || recalculate){
-      quantilesTrain = read.csv(file =fNameTrain, header = TRUE)
+      quantilesTrain = read.csv(file =fNameTrain[1], header = TRUE)
       
-      # quantilesTrain[,-1] = apply(quantilesTrain[,-1],2, FUN = function(i) as.numeric(as.character(i)))
+      
+      # fNameTrain is a vector of files that need to be combined
+      if(length(fNameTrain) > 1){
+        for(i in 2:length(fNameTrain)){
+          print(paste("reading in ...", fNameTrain[i]))
+          tmp = read.csv(fNameTrain[i], header = TRUE)
+          
+          quantilesTrain = cbind(quantilesTrain, tmp[,-1])
+        }
+      }
       
       if(length(which(is.na(quantilesTrain) == TRUE)) > 0) {
         print(paste("NAs detected in ", fNameTrain, sep = ""))
@@ -2777,34 +2801,31 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
 # read.table(LABELS, header = TRUE)
 
 
-modelParameters = list("layers" = c(50,10,10), "dropOuts" = c(0.4,0.1,0.1), "metrics" = "accuracy", "optimizerFunName" = "optimizer_adam", "batch_size" = 32, "epochs" = 20)
-modelParameters = list("layers" = c(500,100,100,10,10), "dropOuts" = c(0.5,0.4,0.4,0.1,0.1), "metrics" = "accuracy", "optimizerFunName" = "optimizer_adam", "batch_size" = 32, "epochs" = 20)
-# optimizer_adam
-# optimizer_rmsprop
-
-# TrainTest, weights, layers = c(10,10), dropOuts = c(0.1,0.1), 
-#optimizerFunName = "optimizer_adam",metrics = "f1_keras_metric_wrapper", batch_size = 32, epochs = 20
-  
-
-ProteinsExperimentKfoldCV( sampleSize = 10,
-                           sampleTimes = 400,
-                           sampleTimes_test = 10,
-                           batch_size = 32,
-                           epochs = 20,
-                           euklid = TRUE,
-                           q = 1,
-                           m = 1000,
-                           numClasses = 2,
-                           fNameTrain = "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.5_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
-                           fNameTest_global = "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0_m_1_q_1_muNN_10_alpha_3_betha_3_loc_FALSE.csv",
-                           ExperimentName = "Test10106",
-                           modelParameters = modelParameters,
-                           recalculate = FALSE,
-                           k = 1,
-                           onlySummarizeFolds = FALSE,
-                           normalizeInputs = TRUE,
-                           saveExperiment = TRUE,
-                           useColIndsToKeep = FALSE)
+# modelParameters = list("layers" = c(50,10,10,10), "dropOuts" = c(0.5,0.5,0.5,0.5), "metrics" = "accuracy", "optimizerFunName" = "optimizer_adam", "batch_size" = 32, "epochs" = 20)
+# modelParameters = list("layers" = c(500,100,100,10,10), "dropOuts" = c(0.5,0.4,0.4,0.1,0.1), "metrics" = "accuracy", "optimizerFunName" = "optimizer_adam", "batch_size" = 32, "epochs" = 20)
+# 
+# modelParameters = list("layers" = c(500,100,100,10,10), "dropOuts" = c(0.5,0.4,0.4,0.1,0.1), "metrics" = "accuracy", "optimizerFunName" = "optimizer_adam", "batch_size" = 32, "epochs" = 20)
+# ProteinsExperimentKfoldCV( sampleSize = 5,
+#                            sampleTimes = 200,
+#                            sampleTimes_test = 10,
+#                            batch_size = 32,
+#                            epochs = 30,
+#                            euklid = TRUE,
+#                            q = 1,
+#                            m = 1000,
+#                            numClasses = 2,
+#                            fNameTrain = c("/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.1_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+#                                           "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+#                                           "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.5_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+#                                           "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.8_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv"),
+#                            ExperimentName = "Test2",
+#                            modelParameters = modelParameters,
+#                            recalculate = FALSE,
+#                            k = 1,
+#                            onlySummarizeFolds = FALSE,
+#                            normalizeInputs = TRUE,
+#                            saveExperiment = TRUE,
+#                            useColIndsToKeep = FALSE)
 
 
 getExperimentSummary <- function(expDir = "/home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/"){
@@ -2815,27 +2836,55 @@ getExperimentSummary <- function(expDir = "/home/willy/PredictingProteinInteract
   # print(ExperimentFolders)
   
   
-  df_summary = data.frame(matrix(0, nrow = length(ExperimentFolders), ncol = 22))
-  colnames(df_summary) = c("accuracy", "f1","alpha_local","betha_local","alpha_global","betha_global","q_local","q_global","sampleSize", "sampleTimes", "epochs", "batch_size", "k",  "euklid", "pos_flag", "neg_flag",
-                           "pos_neg_flag","modelName","ExperimentName", "n_local", "fNameTrain", "fNameTrain_global")
+  df_summary = data.frame(matrix(0, nrow = length(ExperimentFolders), ncol = 31))
+  colnames(df_summary) = c("accuracy",
+                           "f1",
+                           "alpha",
+                           "betha",
+                           "q",
+                           
+                           "sampleSize",
+                           "sampleTimes",
+                           "epochs",
+                           "batch_size",
+                           
+                           "k",
+                           "euklid",
+                           "pos_flag",
+                           "neg_flag",
+                           "pos_neg_flag",
+                           "modelName",
+                           "ExperimentName",
+
+                           "Ft_1",
+                           "Ft_2",
+                           "Ft_3",
+                           "Ft_4",
+                           "Ft_5",
+                           
+                           "L_1",
+                           "L_2",
+                           "L_3",
+                           "L_4",
+                           "L_5",
+                           
+                           "d_1",
+                           "d_2",
+                           "d_3",
+                           "d_4",
+                           "d_5")
   
   
   
   for(i in 1 :length(ExperimentFolders)){
     df = read.table(paste(ExperimentFolders[i], "/Call.txt", sep  = ""), header = TRUE)
     
-    fNameTrain = as.character(df[which(df$parameter == "fNameTrain"),2])
-    fNameTrain_global = as.character(df[which(df$parameter == "fNameTrain_global"),2])
-    
-    alpha_local = as.numeric(strsplit(fNameTrain, "_")[[1]][11])
-    betha_local = as.numeric(strsplit(fNameTrain, "_")[[1]][13])
-    n_local = as.numeric(strsplit(fNameTrain, "_")[[1]][3])
-    q_local = as.numeric(strsplit(fNameTrain, "_")[[1]][7])
-    
-    alpha_global = as.numeric(strsplit(fNameTrain_global, "_")[[1]][11])
-    betha_global = as.numeric(strsplit(fNameTrain_global, "_")[[1]][13])
-    q_global = as.numeric(strsplit(fNameTrain_global, "_")[[1]][7])
-    
+    fNameTrain = as.character(df[which(df$parameter == "Ft_1"),2])
+    alpha = as.numeric(strsplit(fNameTrain, "_")[[1]][11])
+    betha = as.numeric(strsplit(fNameTrain, "_")[[1]][13])
+    # n_local = as.numeric(strsplit(fNameTrain, "_")[[1]][3])
+    q = as.numeric(strsplit(fNameTrain, "_")[[1]][7])
+
     accFile = paste(ExperimentFolders[i],"/Accuracy.tex", sep = "")
     Acc = NA
     if(file.exists(accFile)) Acc = as.numeric(read.table(accFile, header = FALSE))
@@ -2843,33 +2892,59 @@ getExperimentSummary <- function(expDir = "/home/willy/PredictingProteinInteract
     f1File = paste(ExperimentFolders[i],"/F1.tex", sep = "")
     F1 = NA
     if(file.exists(f1File)) F1 = as.numeric(read.table(f1File, header = FALSE))
-    
+
     df_summary[i,1] = Acc
     df_summary[i,2] = F1
-    df_summary[i,3] = alpha_local
-    df_summary[i,4] = betha_local
+    df_summary[i,3] = alpha
+    df_summary[i,4] = betha
+    df_summary[i,5] = q
+
+    df_summary[i,6] = as.numeric(as.character(df[which(df$parameter == "sampleSize"),2]))
+    df_summary[i,7] = as.numeric(as.character(df[which(df$parameter == "sampleTimes"),2]))
+    df_summary[i,8] = as.numeric(as.character(df[which(df$parameter == "epochs"),2]))
+    df_summary[i,9] = as.numeric(as.character(df[which(df$parameter == "batch_size"),2]))
     
-    df_summary[i,5] = alpha_global
-    df_summary[i,6] = betha_global
-    # 
-    df_summary[i,7] = q_local
-    df_summary[i,8] = q_global
+    df_summary[i,10] = as.numeric(as.character(df[which(df$parameter == "k"),2]))
+    df_summary[i,11] = as.character(as.character(df[which(df$parameter == "euklid"),2]))
+    df_summary[i,12] = as.character(df[which(df$parameter == "pos_flag"),2])
+    df_summary[i,13] = as.character(df[which(df$parameter == "neg_flag"),2])
+    df_summary[i,14] = as.character(df[which(df$parameter == "pos_neg_flag"),2])
+    df_summary[i,15] = as.character(df[which(df$parameter == "modelName"),2])
+    df_summary[i,16] = as.character(df[which(df$parameter == "ExperimentName"),2])
     
-    df_summary[i,9] = as.numeric(as.character(df[which(df$parameter == "sampleSize"),2]))
-    df_summary[i,10] = as.numeric(as.character(df[which(df$parameter == "sampleTimes"),2]))
-    df_summary[i,11] = as.numeric(as.character(df[which(df$parameter == "epochs"),2]))
-    df_summary[i,12] = as.numeric(as.character(df[which(df$parameter == "batch_size"),2]))
+    lastInd = 16
+   
+    for(j in 1:5){
+      ind =which(df$parameter == paste("Ft", j, sep = "_"))
+      
+      if(length(ind) == 0 ){
+        df_summary[i,lastInd+j] = -1
+      } else {
+        df_summary[i,lastInd+j] = as.character(df[ind,2])
+      }
+    }
+
+    for(j in 1:5){
+      ind = which(df$parameter == paste("L", j, sep = "_"))
+      
+      if(length(ind) == 0 ){
+        df_summary[i,lastInd+j+5] = -1
+      } else {
+        df_summary[i,lastInd+j+5] = as.numeric(as.character(df[ind,2]))
+      }
+
+    }
     
-    df_summary[i,13] = as.numeric(as.character(df[which(df$parameter == "k"),2]))
-    df_summary[i,14] = as.character(as.character(df[which(df$parameter == "euklid"),2]))
-    df_summary[i,15] = as.character(df[which(df$parameter == "pos_flag"),2])
-    df_summary[i,16] = as.character(df[which(df$parameter == "neg_flag"),2])
-    df_summary[i,17] = as.character(df[which(df$parameter == "pos_neg_flag"),2])
-    df_summary[i,18] = as.character(df[which(df$parameter == "modelName"),2])
-    df_summary[i,19] = as.character(df[which(df$parameter == "ExperimentName"),2])
-    df_summary[i,20] = n_local
-    df_summary[i,21] = fNameTrain
-    df_summary[i,22] = fNameTrain_global
+    for(j in 1:5){
+      ind = which(df$parameter == paste("d", j, sep = "_"))
+      
+      if(length(ind) == 0 ){
+        df_summary[i,lastInd+j+5+5] = -1
+      } else {
+        df_summary[i,lastInd+j+5+5] = as.numeric(as.character(df[ind,2]))
+      }
+    }
+
   }
   
   df_summary = df_summary[order(df_summary$f1, decreasing = TRUE),]
@@ -2878,10 +2953,9 @@ getExperimentSummary <- function(expDir = "/home/willy/PredictingProteinInteract
   return(df_summary)
 }
 
+# suma = getExperimentSummary()
 
 
-
-# getExperimentSummary()
 
 checkIfParametersAreSame <- function(parameters1, parameters2){
   
@@ -2900,6 +2974,7 @@ checkIfParametersAreSame <- function(parameters1, parameters2){
 getTrainFName <- function(path, name = "All", n = 0.2, m = 1, q = 1, muNN = 10, alpha = 0, betha = 0, local = TRUE){
   paste(path, "/",name, "_n_", n, "_m_", m, "_q_", q, "_muNN_", muNN, "_alpha_", alpha,"_betha_", betha, "_loc_", local,".csv", sep ="")
 }
+
 
 ExperimentWrapper <- function(parameters, pathKfold, labels, recalculateNAs){
   #--------------------------------------------------------------------------------
@@ -2950,33 +3025,6 @@ ExperimentWrapper <- function(parameters, pathKfold, labels, recalculateNAs){
                              alpha = parameters$alpha_local,
                              betha = parameters$betha_local,
                              local = TRUE)
-  
-  fNameTrain_global = getTrainFName(path = parameters$path,
-                             name = "All",
-                             n = 1,
-                             m = 1,
-                             q = parameters$q_global,
-                             muNN = 10,
-                             alpha = parameters$alpha_global,
-                             betha = parameters$betha_global,
-                             local = FALSE)
-  
-  print("calculating necessary quantiles ...")
-  if(!file.exists(fNameTrain_global)){
-    tmp = getQuantilesAlphaBetha(alpha = parameters$alpha_global,
-                                 betha = parameters$betha_global,
-                                 n = 1,
-                                 m = 1,
-                                 q = parameters$q_global,
-                                 locale = FALSE,
-                                 path = pathToExperiment,
-                                 n_s_euclidean = 1000,
-                                 n_s_dijkstra = 1000,
-                                 stitchNum = 2000,
-                                 measureNearestNeighbors = 10,
-                                 recalculate = FALSE,
-                                 recalculateQuants = FALSE)
-  }
   
   if(!file.exists(fNameTrain)){
     tmp = getQuantilesAlphaBetha(alpha = parameters$alpha_local,
@@ -3096,165 +3144,190 @@ gridSearch <- function( alphas_local = c(0,1,2,3,5),
 }
 
 
+generateRandomModelParameters <- function(maxLayerNum = 5,
+                                          layerSizes = c(5,10,50,20,30,100,500),
+                                          dropOuts = c(0.1,0.2,0.7,0.05,0.5),
+                                          optimizerFunNames = c("optimizer_adam", "optimizer_rmsprop"),
+                                          batch_sizes = c(32,16),
+                                          epochs = c(20)){
+  
+  modelSize = sample(c(1:maxLayerNum), 1)
+  layers = sample(layerSizes, size = modelSize, replace = TRUE)
+  dropOuts = sample(dropOuts, size = modelSize, replace = TRUE)
+  
+  opti = sample(optimizerFunNames, 1)
+  
+  
+  modelParameters = list("layers" = layers, 
+                         "dropOuts" = dropOuts, 
+                         "metrics" = "accuracy",
+                         "optimizerFunName" = opti,
+                         "batch_size" = batch_sizes[sample(1:length(batch_sizes), 1)],
+                         "epochs" = epochs[sample(1:length(epochs), 1)])
+  
+  
+  return(modelParameters)
+}
 
-modelParameters
 
-randomSearch <- function( alphas_local = c(0,1,2,3,5),
-                        bethas_local = c(0,1,2,3,5),
-                        alphas_global = c(0,1,2,3,5),
-                        bethas_global = c(0,1,2,3,5),
-                        sampleSizes = c(5,10,20),
-                        sampleTimes = c(200, 400),
-                        nlocals = c(0.2, 0.5, 0.1),
-                        q_locals = c(1),
-                        q_globals = c(1),
-                        euklid_val = TRUE,
-                        recalculateNAs = TRUE,
-                        k = 10,
-                        layerNums = c(1,2,3,4,5),
-                        layerSizes = c()
-                        dropOuts = c(0.1,0.2,0.7),
-                        metrics = c("accuracy"),
-                        optimizerFunNames = c("optimizer_adam", "optimizer_rmsprop"),
-                        batch_sizes = c(32,16),
-                        epochs = c(20),){
-  
-  df_parameters = expand.grid(alphas_local,bethas_local,alphas_global,bethas_global,models,sampleSizes,sampleTimes,batch_sizes,epochs,nlocals,q_locals,q_globals)
-  
-  
-  df_parameters = data.frame(matrix(0, nrow = 0, ncol = 17))
-  colnames(df_parameters) = c("alpha_local","betha_local","alpha_global","betha_global","q_local","q_global","sampleSize", "sampleTimes", "epochs", "batch_size", "k",  "euklid", "pos_flag", "neg_flag",
-                           "pos_neg_flag","modelName", "n_local")
-  
-  for(nloc in nlocals){
-    for(alpha_loc in alphas_local){
-      for(betha_loc in bethas_local){
-        for(alpha_global in alphas_global){
-          for(betha_global in bethas_global){
-            for(sampleSize in sampleSizes){
-              for(sampleTime in sampleTimes){
-                for(batch_size in batch_sizes){
-                  for(epoch in epochs){
-                    for(q_local in q_locals){
-                      for(q_global in q_globals){
 
-                        
-                      } 
-                    } 
-                  } 
-                } 
-              }
-            }
-          } 
-        } 
+randomSearch <- function( NNexperimentsKfoldDir = "/home/willy/PredictingProteinInteractions//data/106Test/NNexperimentsKfoldCV/",
+                          MAXit = 1,
+                          sampleSizes = c(5,10,20),
+                          sampleTimes = c(200, 400),
+                          alphas = c(3),
+                          bethas = c(3),
+                          qs = c(1),
+                          nlocals = c(0.1,0.2,0.5,0.8),
+                          muNN = 10,
+                          euklid_val = TRUE,
+                          recalculateNAs = TRUE,
+                          k = 10,
+                          layerSizes = c(5,10,50,20,30,100,500),
+                          dropOuts = c(0.1,0.2,0.7,0.05,0.5),
+                          metrics = c("accuracy"),
+                          optimizerFunNames = c("optimizer_adam", "optimizer_rmsprop"),
+                          batch_sizes = c(32,16),
+                          epochs = c(20),
+                          labels = LABELS){
+  
+  iteration = 0
+  while(MAXit > iteration){
+    iteration = iteration + 1
+    
+    df_summary = getExperimentSummary(NNexperimentsKfoldDir)
+    startNum = nrow(df_summary)
+    
+    testName = paste("Test", startNum + 1, sep = "")
+    
+    modelParameters = generateRandomModelParameters()
+    
+    sampleTimes = sampleTimes[sample(1:length(sampleTimes), 1)]
+    sampleSize = sampleSizes[sample(1:length(sampleSizes), 1)]
+    
+    
+    alpha = alphas[sample(1:length(alphas), 1)]
+    betha = bethas[sample(1:length(bethas), 1)]
+    q = qs[sample(1:length(qs), 1)]
+    
+    fNameTrain = c()
+    for(i in 1:length(nlocals)){
+      p2 = strsplit(pathToExperiment, "/Output/")[[1]][1]
+      
+      fNameTmp = getTrainFName(path = paste(p2, "/Quantiles/", sep = ""),name = "All",n = nlocals[i],m = 1,q = q,muNN = muNN,alpha = alpha,betha = betha,local = TRUE)
+      if(!file.exists(fNameTmp)) {
+        print(paste("generating missing file ...", fNameTmp))
+        tmp = getQuantilesAlphaBetha(alpha = alpha,betha = betha, n = nlocals[i], m = 1,q = q, locale = TRUE, path = pathToExperiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = muNN, recalculate = FALSE,recalculateQuants = TRUE)
       }
+      
+      fNameTrain = c(fNameTrain, fNameTmp)
     }
+    
+    ProteinsExperimentKfoldCV( sampleSize = sampleSize,
+                               sampleTimes = sampleTimes,
+                               sampleTimes_test = sampleTimes,
+                               batch_size = 32,
+                               epochs = 30,
+                               euklid = TRUE,
+                               q = 1,
+                               m = 1000,
+                               numClasses = 2,
+                               fNameTrain = fNameTrain,
+                               ExperimentName = testName,
+                               modelParameters = modelParameters,
+                               recalculate = FALSE,
+                               k = k,
+                               onlySummarizeFolds = FALSE,
+                               normalizeInputs = TRUE,
+                               saveExperiment = TRUE,
+                               useColIndsToKeep = FALSE,
+                               labels = labels)
+    
+    
+    beep(5)
+    if(WS_flag == TRUE) system("/home/sysgen/Documents/LWB/Uploader/Uploader.sh")
   }
   
-  
-  
-  
-  parameters = list("alpha_local" = alpha_loc,
-                    "betha_local" = betha_loc,
-                    "alpha_global" = alpha_global,
-                    "betha_global" = betha_global,
-                    "sampleSize" = sampleSize,
-                    "sampleTimes" = sampleTime,
-                    "sampleTimes_test" = 200,
-                    "batch_size" = batch_size,
-                    "epochs" = epoch,
-                    "euklid" = euklid_val,
-                    "q_local" = q_local,
-                    "q_global" = q_global,
-                    "k" = k,
-                    "pos_flag" = TRUE,
-                    "neg_flag" = TRUE,
-                    "pos_neg_flag" = TRUE,
-                    "modelName" = getVarName(modelProt3_f1),
-                    "modelFun" = modelProt3_f1,
-                    "n_local" = nloc,
-                    "path" = paste(p2,"/Quantiles/", sep = ""))
-  
-  
-  ExperimentWrapper(parameters, NNexperimentsKfoldDir, labels = LABELS, recalculateNAs)
-  
-  
-  if(WS_flag == TRUE) system("/home/sysgen/Documents/LWB/Uploader/Uploader.sh")
+
 }
 
 
 #------------------------------------------------------------------------
 
+randomSearch(k = 1)
+
+#------------------------------------------------------------------------
 
 
 
-sampleTimes_test = 10
-
-if(mode == "onlyExperiments" || mode == "both"){
-  
-  p2 = strsplit(pathToExperiment, "/Output/")[[1]][1]
-  
-  
-  NNexperimentsKfoldDir = paste(p2, "/NNexperimentsKfoldCV/", sep = "")
-  if(!dir.exists(NNexperimentsKfoldDir)) dir.create(NNexperimentsKfoldDir)
-  
-  tests = list.dirs(NNexperimentsKfoldDir,recursive = FALSE,full.names = FALSE)
-  
-  print(paste("starting Experiments in", NNexperimentsKfoldDir, "...", sep = " "))
-  
-  EXPERIMENTCOUNT = 0
-  if(length(tests) != 0) {
-    testInds = as.numeric(unlist(strsplit(tests, "Test")))
-    testInds = testInds[!is.na(testInds)]
-    
-    EXPERIMENTCOUNT = max(testInds)
-  }
-  
-  print(paste("starting with ",EXPERIMENTCOUNT, sep = ""))
-
-  getNextExperimentName <- function(){
-    EXPERIMENTCOUNT <<- EXPERIMENTCOUNT+1
-    
-    return(paste("Test", EXPERIMENTCOUNT, sep = ""))
-  }
-  
-  #------------------------------------------------------------------------
-
-  alphas_local = c(0,1,2,3,5)
-  bethas_local = c(0,1,2,3,5)
-  
-  alphas_global = c(0,1,2,3,5)
-  bethas_global = c(0,1,2,3,5)
-  
-  # models = c(modelProt3_f1, modelProt3_f1, modelProt1)
-  
-  sampleSizes = c(5,10,20)
-  sampleTimes = c(200, 400)
-  batch_sizes = c(32,16)
-  epochs = c(20)
-  
-  nlocals = c(0.2, 0.5, 0.1)
-  
-  q_locals = c(1)
-  q_globals = c(1)
-  
-  euklid_val = TRUE
-  
-  recalculateNAs = TRUE
-  
-  k = 10
-  
-  
- 
-  
-
-
-
-  summary = getExperimentSummary(NNexperimentsKfoldDir)
-}
-
-
-beep(5)
+# 
+# sampleTimes_test = 10
+# 
+# if(mode == "onlyExperiments" || mode == "both"){
+#   
+#   p2 = strsplit(pathToExperiment, "/Output/")[[1]][1]
+#   
+#   
+#   NNexperimentsKfoldDir = paste(p2, "/NNexperimentsKfoldCV/", sep = "")
+#   if(!dir.exists(NNexperimentsKfoldDir)) dir.create(NNexperimentsKfoldDir)
+#   
+#   tests = list.dirs(NNexperimentsKfoldDir,recursive = FALSE,full.names = FALSE)
+#   
+#   print(paste("starting Experiments in", NNexperimentsKfoldDir, "...", sep = " "))
+#   
+#   EXPERIMENTCOUNT = 0
+#   if(length(tests) != 0) {
+#     testInds = as.numeric(unlist(strsplit(tests, "Test")))
+#     testInds = testInds[!is.na(testInds)]
+#     
+#     EXPERIMENTCOUNT = max(testInds)
+#   }
+#   
+#   print(paste("starting with ",EXPERIMENTCOUNT, sep = ""))
+# 
+#   getNextExperimentName <- function(){
+#     EXPERIMENTCOUNT <<- EXPERIMENTCOUNT+1
+#     
+#     return(paste("Test", EXPERIMENTCOUNT, sep = ""))
+#   }
+#   
+#   #------------------------------------------------------------------------
+# 
+#   alphas_local = c(0,1,2,3,5)
+#   bethas_local = c(0,1,2,3,5)
+#   
+#   alphas_global = c(0,1,2,3,5)
+#   bethas_global = c(0,1,2,3,5)
+#   
+#   # models = c(modelProt3_f1, modelProt3_f1, modelProt1)
+#   
+#   sampleSizes = c(5,10,20)
+#   sampleTimes = c(200, 400)
+#   batch_sizes = c(32,16)
+#   epochs = c(20)
+#   
+#   nlocals = c(0.2, 0.5, 0.1)
+#   
+#   q_locals = c(1)
+#   q_globals = c(1)
+#   
+#   euklid_val = TRUE
+#   
+#   recalculateNAs = TRUE
+#   
+#   k = 10
+#   
+#   
+#  
+#   
+# 
+# 
+# 
+#   summary = getExperimentSummary(NNexperimentsKfoldDir)
+# }
+# 
+# 
+# beep(5)
 
 # # stats = joinStats()
 # # write.csv(stats, "/home/willy/PredictingProteinInteractions/Results/ProtSummary.csv",row.names = FALSE)
