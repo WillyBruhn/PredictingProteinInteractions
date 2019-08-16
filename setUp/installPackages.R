@@ -19,8 +19,7 @@ loadPck <- function(pck){
   if(!is.installed(pck)){install.packages(pck, repos='http://cran.us.r-project.org')}
 }
 
-install.packages('RMySQL', repos='http://cran.us.r-project.org')
-
+loadPck("RMySQL")
 loadPck("plot3D")
 loadPck("funr")
 loadPck("emdist")
