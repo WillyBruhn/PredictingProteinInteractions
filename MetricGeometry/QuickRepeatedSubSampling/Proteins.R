@@ -10,8 +10,8 @@
 wsPath = "/home/willy/PredictingProteinInteractions/setUp/SourceLoader.R"
 # wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
 
-mode = "onlyExperiments"
-# mode = "onlyGenerateModels"
+# mode = "onlyExperiments"
+mode = "onlyGenerateModels"
 
 wsPath = as.character(paste(funr::get_script_path(), "/../../setUp/SourceLoader.R", sep = ""))
 
@@ -28,6 +28,7 @@ pathpdbDownloaderExperiment = getPath("pdbDownloaderExperiment")
 # pathToExperiment = pathpdbDownloaderExperiment
 pathToExperiment = path106Experiment
 # pathToExperiment = path120Experiment
+
 # LABELS = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/labels.txt"
 # LABELS = "/home/willy/PredictingProteinInteractions/data/labels120.txt"
 # LABELS = "/home/willy/PredictingProteinInteractions/data/pdbDownloaderExperiment/labels.txt"
@@ -68,8 +69,8 @@ library(keras)
 
 library(doParallel)
 
-registerDoParallel(detectCores()/2)
-
+# registerDoParallel(detectCores()/2)
+registerDoParallel(2)
 
 
 
@@ -522,6 +523,7 @@ plotProteinModel <- function(fNameOrigingal = NULL,lis, openNew = TRUE, sz = 1, 
   
   my_print("plotting measure ...")
   for(i in 1:nrow(lis$centers)){
+    # print(lis$measure[i]*sc)
     points3d(x = lis$centers[i,1], y = lis$centers[i,2], z = lis$centers[i,3], col = "green", size = lis$measure[i]*sc)
   }
   
@@ -1368,7 +1370,7 @@ modelProt1_f1 <- function(TrainTest, epochs = 30, batch_size = 64, weights, samp
   return(model)
 }
 
-modelProt_custom <- function(TrainTest, weights, layers = c(10,10), dropOuts = c(0.1,0.1), optimizerFunName = "optimizer_adam",metrics = "f1_keras_metric_wrapper", batch_size = 32, epochs = 20){
+modelProt_custom <- function(TrainTest, weights, layers = c(10,10), dropOuts = c(0.1,0.1), optimizerFunName = "optimizer_adam",metrics = "f1_keras_metric_wrapper", batch_size = 32, epochs = 20, conv = FALSE){
   x_train = TrainTest$x_train
   y_train = TrainTest$y_train
   x_test = TrainTest$x_test
@@ -1378,15 +1380,47 @@ modelProt_custom <- function(TrainTest, weights, layers = c(10,10), dropOuts = c
   
   # define the architecture of the model
   model <- keras_model_sequential()
-  model %>%   layer_dense(units = layers[1], activation = 'relu', input_shape = c(ncol(x_train)))%>%layer_dropout(rate = dropOuts[1]) 
-  
-  if(length(layers) > 1){
-    for(i in 2:length(layers)){
-      model %>%   layer_dense(units = layers[1], activation = 'relu')%>%layer_dropout(rate = dropOuts[i]) 
+  if(conv == FALSE){
+    model %>%   layer_dense(units = layers[1], activation = 'relu', input_shape = c(ncol(x_train)))%>%layer_dropout(rate = dropOuts[1])
+    
+    if(length(layers) > 1){
+      for(i in 2:length(layers)){
+        model %>%   layer_dense(units = layers[1], activation = 'relu')%>%layer_dropout(rate = dropOuts[i])
+      }
     }
+    model %>% layer_dense(units = numClasses, activation = 'softmax')
+  }else{
+    model %>% 
+      layer_reshape(target_shape = c(SAMPLESIZE, ncol(x_train)/SAMPLESIZE,1),input_shape = c(ncol(x_train))) %>%
+      
+      layer_conv_2d(filter = 30, kernel_size = c(3,3), padding = 'same', input_shape = c(SAMPLESIZE, ncol(x_train)/SAMPLESIZE,1)) %>%
+      layer_activation("relu") %>%
+      layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+      layer_dropout(0.1) %>%
+      
+      layer_conv_2d(filter = 30, kernel_size = c(3,3), padding = 'same') %>%
+      layer_activation("relu") %>%
+      layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+      layer_dropout(0.1) %>%
+      
+      layer_conv_2d(filter = 30, kernel_size = c(3,3), padding = 'same') %>%
+      layer_activation("relu") %>%
+      layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+      layer_dropout(0.1) %>%
+      
+      layer_flatten() %>%
+      layer_dense(units = layers[1], activation = 'relu')%>%
+      layer_dropout(rate = dropOuts[1])
+    
+    if(length(layers) > 1){
+      for(i in 2:length(layers)){
+        model %>%   layer_dense(units = layers[1], activation = 'relu')%>%layer_dropout(rate = dropOuts[i])
+      }
+    }
+    
+    model %>% layer_dense(units = numClasses, activation = 'softmax')
   }
-  model %>% layer_dense(units = numClasses, activation = 'softmax')
-  
+
   optimizerFun = optimizer_adam
   print("specifiying optimizer ...")
   if(optimizerFunName == "optimizer_rmsprop") optimizerFun = optimizer_rmsprop
@@ -1901,9 +1935,12 @@ if(mode == "onlyGenerateModels" || mode == "Booth"){
   
   alpha_betha_grid = expand.grid(alphas,bethas)
   
-  foreach(i= 1:length(alphas), j= 1:length(bethas)) %do% {
+  # nlocals = c(0.2,0.3,0.5,0.8)
+  nlocals = c(0.8)
+  
+  for(i in 1:length(nlocals)) {
     # tmp = getQuantilesAlphaBetha(alpha = alphas[i],betha = bethas[j], n = 0.2, m = 1,q = 1, locale = TRUE, path = path106Experiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 20, recalculate = FALSE,recalculateQuants = TRUE)
-    tmp = getQuantilesAlphaBetha(alpha = alphas[i],betha = bethas[j], n = 1, m = 1,q = 1, locale = FALSE, path = path106Experiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 20, recalculate = FALSE,recalculateQuants = TRUE)
+    tmp = getQuantilesAlphaBetha(alpha = 1,betha = 1, n = nlocals[i], m = 1,q = 1, locale = TRUE, path = path106Experiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = TRUE)
     
   }
 }
@@ -3248,7 +3285,7 @@ randomSearch <- function( NNexperimentsKfoldDir = "/home/willy/PredictingProtein
                                  k = k,
                                  onlySummarizeFolds = FALSE,
                                  normalizeInputs = TRUE,
-                                 saveExperiment = TRUE,
+                                 saveExperiment = FALSE,
                                  useColIndsToKeep = FALSE,
                                  labels = labels,
                                  path = NNexperimentsKfoldDir)
@@ -3266,17 +3303,85 @@ randomSearch <- function( NNexperimentsKfoldDir = "/home/willy/PredictingProtein
 
 
 #------------------------------------------------------------------------
-p2 = strsplit(pathToExperiment, "/Output/")[[1]][1]
+# p2 = strsplit(pathToExperiment, "/Output/")[[1]][1]
+# 
+# print(p2)
+# NNexperimentsKfoldDir = paste(p2, "/NNexperimentsKfoldCV/", sep = "")
+# 
+# randomSearch(NNexperimentsKfoldDir = NNexperimentsKfoldDir,
+#              k = 10,
+#              nlocals = c(0.1,0.2,0.5,0.8),
+#              alphas = c(3),
+#              bethas = c(3),
+#              MAXit = 1)
 
+
+
+# df_summary = getExperimentSummary()
+# 
+# modelParameters = list("layers" = c(50,10,10,10), "dropOuts" = c(0.1,0.1,0.1,0.1), "metrics" = "accuracy", "optimizerFunName" = "optimizer_adam", "batch_size" = 32, "epochs" = 20)
+# ProteinsExperimentKfoldCV( sampleSize = 5,
+#                            sampleTimes = 400,
+#                            sampleTimes_test = 10,
+#                            batch_size = 32,
+#                            epochs = 30,
+#                            euklid = TRUE,
+#                            q = 1,
+#                            m = 1000,
+#                            numClasses = 2,
+#                            fNameTrain = c("/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.1_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+#                                           "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+#                                           "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.5_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+#                                           "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.8_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv"),
+#                            ExperimentName = "Test10",
+#                            modelParameters = modelParameters,
+#                            recalculate = FALSE,
+#                            k = 10,
+#                            onlySummarizeFolds = FALSE,
+#                            normalizeInputs = TRUE,
+#                            saveExperiment = FALSE,
+#                            useColIndsToKeep = FALSE)
+# 
+# 
+# df_summary = getExperimentSummary()
+
+
+p2 = strsplit(pathToExperiment, "/Output/")[[1]][1]
 print(p2)
 NNexperimentsKfoldDir = paste(p2, "/NNexperimentsKfoldCV/", sep = "")
 
-randomSearch(NNexperimentsKfoldDir = NNexperimentsKfoldDir,
-             k = 10,
-             nlocals = c(0.05,0.1,0.2,0.3,0.5,0.8),
-             alphas = c(0,1,2,3),
-             bethas = c(0,1,2,3),
-             MAXit = 100000)
+df_summary = getExperimentSummary(expDir = NNexperimentsKfoldDir)
+
+
+SAMPLESIZE = 5
+modelParameters = list("layers" = c(50,10,10), "dropOuts" = c(0.1,0.1,0.1), "metrics" = "accuracy", "optimizerFunName" = "optimizer_adam", "batch_size" = 32, "epochs" = 20)
+ProteinsExperimentKfoldCV( sampleSize = 5,
+                           sampleTimes = 400,
+                           sampleTimes_test = 10,
+                           batch_size = 32,
+                           epochs = 30,
+                           euklid = TRUE,
+                           q = 1,
+                           m = 1000,
+                           numClasses = 2,
+                           fNameTrain = c("/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.1_m_1_q_1_muNN_10_alpha_1_betha_1_loc_TRUE.csv",
+                                          "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_1_betha_1_loc_TRUE.csv",
+                                          "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.5_m_1_q_1_muNN_10_alpha_1_betha_1_loc_TRUE.csv",
+                                          "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.8_m_1_q_1_muNN_10_alpha_1_betha_1_loc_TRUE.csv"),
+                           ExperimentName = "Test31",
+                           modelParameters = modelParameters,
+                           recalculate = FALSE,
+                           k = 10,
+                           onlySummarizeFolds = FALSE,
+                           normalizeInputs = TRUE,
+                           saveExperiment = FALSE,
+                           useColIndsToKeep = FALSE,
+                           path = NNexperimentsKfoldDir,
+                           labels = LABELS)
+
+
+df_summary = getExperimentSummary(expDir = NNexperimentsKfoldDir)
+
 
 #------------------------------------------------------------------------
 

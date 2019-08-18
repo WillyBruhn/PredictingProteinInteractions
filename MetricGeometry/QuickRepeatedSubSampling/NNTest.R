@@ -1,3 +1,4 @@
+#-----------------------------
 # Willy Bruhn, 19.7.19
 #
 # Testing if a nn can distinguish 
@@ -10,10 +11,7 @@ library(mlbench)
 library(caret)
 library(doParallel)
 library(doBy)
-
-# install.packages("rfUtilities")
 library(rfUtilities)
-
 library(keras)
 
 unfold2dProj <- function(mat){
@@ -50,35 +48,45 @@ unfoldProjArbitraryDim <- function(mat){
 }
 
 
-
-sampleDistributions <- function(mat1, k, classLabel, m, plot = FALSE, col = NULL){
+sampleDistributions <- function(mat1, k, classLabel, m, plot = FALSE, col = NULL, order = TRUE){
   # mat1 ... points in 2d-space
   # simulate sampling m distributions  for k times
+  #---------------------------------------------------
   
-  dataOut = data.frame(matrix(0, ncol = m+1, nrow = k))
+  dataOut = data.frame(matrix(0, ncol = 2*m+1, nrow = k))
   colnames(dataOut)[1] = "class"
   
   dataOut[,1] = classLabel
   
   for(j in 1:k){
-    mat1_sample = mat1[sample(nrow(mat1), size = m, replace = FALSE),]
+    mat1_sample = mat1[c(1:nrow(mat1))[sample(c(1:nrow(mat1)), size = m, replace = FALSE)],]
     if(plot == TRUE){
       points(x = mat1_sample[,1], y = mat1_sample[,2], pch = 19, cex = 1, col = col)
     }
       
-    distributions = unfold2dProj(mat1_sample)
-    distributions_ordered = distributions[order(distributions[,1]),]
-    
-    # input-nodes
-    inputNodes = matrix(0, ncol = nrow(distributions_ordered)*2)
-    inputNodes
-    
-    for( i in 1:nrow(distributions_ordered)){
-      inputNodes[(i-1)*2+1] = distributions_ordered[i,1]
-      inputNodes[(i-1)*2+1+1] = distributions_ordered[i,2]
+    print(mat1_sample)
+    distributions_ordered = mat1_sample
+    if(length(mat1_sample) > 2){
+      distributions = unfold2dProj(mat1_sample)
+      distributions_ordered = distributions
+      if(order == TRUE){
+        distributions_ordered = distributions[order(distributions[,1]),]
+      }
+      
+      
+      # input-nodes
+      inputNodes = matrix(0, ncol = nrow(distributions_ordered)*2)
+      inputNodes
+      
+      for( i in 1:nrow(distributions_ordered)){
+        inputNodes[(i-1)*2+1] = distributions_ordered[i,1]
+        inputNodes[(i-1)*2+1+1] = distributions_ordered[i,2]
+      }
+      
+      dataOut[j,2:ncol(dataOut)] = inputNodes
+    } else {
+      dataOut[j,2:ncol(dataOut)] = matrix(mat1_sample, ncol = 2)
     }
-    
-    dataOut[j,2:ncol(dataOut)] = inputNodes
   }
   
   return(dataOut)
@@ -186,20 +194,161 @@ X1_demo = sampleDistributions(mat1 = X1,k = 1,"X",m = 20,TRUE, col ="green")
 # dev.off()
 
 # generate training set and test set
-k = 200
-splitRatio = 0.8
+experimentWithModel <- function(k = 200, splitRatio = 0.8, sampleSize = 10, X1, X2,X3,Y1, model, order = TRUE, numClasses = 2){
+  X1_s = sampleDistributions(mat1 = X1,k = k,"X",m = sampleSize,order = order)
+  X2_s = sampleDistributions(mat1 = X2,k = k,"X",m = sampleSize,order = order)
+  X3_s = sampleDistributions(mat1 = X3,k = k,"X",m = sampleSize,order = order)
+  Y_s = sampleDistributions(mat1 = Y1,k = k*3,"Y",m = sampleSize,order = order)
+  
+  All = rbind(X1_s,X2_s,X3_s,Y_s)
+  
+  inds = sample((1:nrow(All)), size = nrow(All)*0.3, replace = FALSE)
+  test = All[inds,]
+  train = All[-inds,]
+  
+  y = train[,1]
+  classLevels = unique(y)
+  numClasses = length(classLevels)
+  
+  y_train = as.numeric(as.factor(y))-1
+  x_train = as.matrix(train[,-1])
+  colnames(x_train) = seq(1:ncol(x_train))
+  
+  y_train <- to_categorical(y_train, numClasses)
+  
+  
+  x_test = as.matrix(test[,-1])
+  y_test = as.numeric(as.factor(test[,1]))-1
+  y_test <- to_categorical(y_test, numClasses)
+  
+  
+  # model <- keras_model_sequential() 
+  # model %>% 
+  #   layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_train))) %>% 
+  #   layer_dropout(rate = 0.1) %>%
+  #   layer_dense(units = 10, activation = 'relu') %>% 
+  #   layer_dropout(rate = 0.1) %>%
+  #   layer_dense(units = 10, activation = 'relu') %>% 
+  #   layer_dropout(rate = 0.1) %>%
+  #   layer_dense(units = numClasses, activation = 'softmax')
+  
+  model %>% compile(
+    loss = 'categorical_crossentropy',
+    optimizer = optimizer_adam(),
+    metrics = c('accuracy')
+  )
+  
+  history <- model %>% fit(
+    x_train, y_train, 
+    epochs = 30, batch_size = 10, 
+    validation_split = 0.1
+  )
+  
+  return((model %>% evaluate(x_test, y_test))$acc)
+}
 
-X1_s = sampleDistributions(mat1 = X1,k = k,"X",m = 10)
-X2_s = sampleDistributions(mat1 = X2,k = k,"X",m = 10)
-X3_s = sampleDistributions(mat1 = X3,k = k,"X",m = 10)
-Y_s = sampleDistributions(mat1 = Y1,k = k,"Y",m = 10)
 
-All = rbind(X1_s,X2_s,X3_s,Y_s)
+sampleSizes = c(1:30)
+accuracies = rep(0,length(sampleSizes))
+for(i in 1:length(sampleSizes)){
+  accuracies[i] = experimentWithModel(X1 = X1, X2 = X2, X3 = X3, Y1 = Y1, sampleSize = sampleSizes[i])
+}
 
-inds = sample((1:nrow(All)), size = nrow(All)*0.3, replace = FALSE)
-test = All[inds,]
-train = All[-inds,]
+par(mfrow = c(1,1))
+plot(x = sampleSizes, y = accuracies, type = "l")
 
+
+
+# X1 = getPoints(1000, c(1,-3), c(1,1))
+# X2 = getPoints(1000, c(1,1), c(1,1))
+# X3 = getPoints(1000, c(1,5), c(1,1))
+Y1 = getPoints(n1 = 1000, mean = c(0,0), sd = c(1,2))
+
+a = 1.3
+X1_inds = which(Y1[,2] > a)
+X2_inds = which(Y1[,2] < -a )
+X3_inds = c(1:nrow(Y1))[-c(X1_inds, X2_inds)]
+
+X1 = Y1[X1_inds,]
+X2 = Y1[X2_inds,]
+X3 = Y1[X3_inds,]
+
+# experimentWithModel(X1 = X1, X2 = X2, X3 = X3, Y1 = Y1, sampleSize = 40)
+
+numClasses = 2
+sampleSize = 40
+model <- keras_model_sequential()
+model %>%
+  layer_dense(units = 100, activation = 'relu', input_shape = c(sampleSize*2)) %>%
+  layer_dropout(rate = 0.1) %>%
+  layer_dense(units = 10, activation = 'relu') %>%
+  layer_dropout(rate = 0.1) %>%
+  layer_dense(units = 10, activation = 'relu') %>%
+  layer_dropout(rate = 0.1) %>%
+  layer_dense(units = numClasses, activation = 'softmax')
+experimentWithModel(X1 = X1, X2 = X2, X3 = X3, Y1 = Y1, sampleSize = sampleSize, model = model,order = TRUE)
+
+sampleSize = 1
+model <- keras_model_sequential()
+model %>%
+  layer_dense(units = 100, activation = 'relu', input_shape = c(sampleSize*2)) %>%
+  layer_dropout(rate = 0.1) %>%
+  layer_dense(units = 10, activation = 'relu') %>%
+  layer_dropout(rate = 0.1) %>%
+  layer_dense(units = 10, activation = 'relu') %>%
+  layer_dropout(rate = 0.1) %>%
+  layer_dense(units = numClasses, activation = 'softmax')
+experimentWithModel(X1 = X1, X2 = X2, X3 = X3, Y1 = Y1, sampleSize = sampleSize, model = model)
+
+
+sampleSize = 1
+model <- keras_model_sequential()
+model %>%
+  layer_dense(units = 1, activation = 'relu', input_shape = c(2*sampleSize)) %>%
+  layer_dropout(rate = 0.5) %>%
+  layer_dense(units = numClasses, activation = 'softmax')
+experimentWithModel(X1 = X1, X2 = X2, X3 = X3, Y1 = Y1, sampleSize = sampleSize, model = model)
+
+
+mat_both = rbind(X1,X2,X3,Y1)
+
+# pdf("/home/willy/PredictingProteinInteractions/Results/Images/NN2dExample.pdf")
+par(mfrow = c(1,3))
+xli = c(-6,15)
+yli = c(-6,15)
+plot(mat_both, col = "red", pch = 19, xlab = "", ylab ="", xlim = xli, ylim = yli)
+plot(Y1, col = "blue", pch = 19, xlab = "", ylab ="", xlim = xli, ylim = yli)
+plot(mat_both, col = "red", pch = 19, xlab = "", ylab ="", xlim = xli, ylim = yli)
+points(x = Y1[,1], y = Y1[,2], col ="blue", pch = 19)
+legend(x = 5,y = 10, legend = c("X","Y"),col = c("red", "blue"),pch = 19)
+# dev.off()
+
+
+# pdf("/home/willy/PredictingProteinInteractions/Results/Images/NN2dExampleSampleX1vsY1.pdf")
+par(mfrow = c(1,4))
+plot(mat_both, col = "red", pch = 19, xlab = "", ylab ="", xlim = xli, ylim = yli)
+points(x = Y1[,1], y = Y1[,2], col ="blue", pch = 19)
+legend(x = 3,y = 12, legend = c("X","Y"),col = c("red", "blue"),pch = 19)
+
+Y_demo = sampleDistributions(mat1 = Y1,k = 1,"Y",m = 20,TRUE, col = "green")
+
+# par(mfrow = c(1,1))
+plot(mat_both, col = "red", pch = 19, xlab = "", ylab ="", xlim = xli, ylim = yli)
+points(x = Y1[,1], y = Y1[,2], col ="blue", pch = 19)
+legend(x = 3,y = 12, legend = c("X","Y"),col = c("red", "blue"),pch = 19)
+X1_demo = sampleDistributions(mat1 = X1,k = 1,"X",m = 20,TRUE, col ="green")
+
+
+plot(mat_both, col = "red", pch = 19, xlab = "", ylab ="", xlim = xli, ylim = yli)
+points(x = Y1[,1], y = Y1[,2], col ="blue", pch = 19)
+legend(x = 3,y = 12, legend = c("X","Y"),col = c("red", "blue"),pch = 19)
+X2_demo = sampleDistributions(mat1 = X2,k = 1,"X",m = 20,TRUE, col ="green")
+
+plot(mat_both, col = "red", pch = 19, xlab = "", ylab ="", xlim = xli, ylim = yli)
+points(x = Y1[,1], y = Y1[,2], col ="blue", pch = 19)
+legend(x = 3,y = 12, legend = c("X","Y"),col = c("red", "blue"),pch = 19)
+X3_demo = sampleDistributions(mat1 = X3,k = 1,"X",m = 20,TRUE, col ="green")
+# dev.off()
 
 #-----------------------------------------------------------------------
 # Example 3
@@ -214,46 +363,7 @@ train = All[-inds,]
 
 
 
-y = train[,1]
 
-classLevels = unique(y)
-numClasses = length(classLevels)
-
-y_train = as.numeric(as.factor(y))-1
-x_train = as.matrix(train[,-1])
-colnames(x_train) = seq(1:ncol(x_train))
-
-y_train <- to_categorical(y_train, numClasses)
-
-
-x_test = as.matrix(test[,-1])
-y_test = as.numeric(as.factor(test[,1]))-1
-y_test <- to_categorical(y_test, numClasses)
-
-
-model <- keras_model_sequential() 
-model %>% 
-  layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_train))) %>% 
-  layer_dropout(rate = 0.1) %>%
-  layer_dense(units = 10, activation = 'relu') %>% 
-  layer_dropout(rate = 0.1) %>%
-  layer_dense(units = 10, activation = 'relu') %>% 
-  layer_dropout(rate = 0.1) %>%
-  layer_dense(units = numClasses, activation = 'softmax')
-
-model %>% compile(
-  loss = 'categorical_crossentropy',
-  optimizer = optimizer_rmsprop(),
-  metrics = c('accuracy')
-)
-
-history <- model %>% fit(
-  x_train, y_train, 
-  epochs = 30, batch_size = 10, 
-  validation_split = 0.1
-)
-
-model %>% evaluate(x_test, y_test)
 # 240/240 [==============================] - 0s 23us/sample - loss: 0.2200 - acc: 0.9667
 # $loss
 # [1] 0.2200407
@@ -261,11 +371,11 @@ model %>% evaluate(x_test, y_test)
 # $acc
 # [1] 0.9666666
 
-pdf("/home/willy/PredictingProteinInteractions/Results/Images/NN2dExampleHistoryTraining.pdf")
+# pdf("/home/willy/PredictingProteinInteractions/Results/Images/NN2dExampleHistoryTraining.pdf")
 plot(history)
 dev.off()
 
-model %>% predict_classes(x_test)
+# model %>% predict_classes(x_test)
 #----------------------------------------------------------------------------------------------------
 # 3dim
 getPointsArbitraryDim <- function(n1,mean1,sd1, className){
