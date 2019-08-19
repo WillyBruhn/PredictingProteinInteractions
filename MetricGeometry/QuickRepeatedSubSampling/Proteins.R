@@ -10,8 +10,10 @@
 wsPath = "/home/willy/PredictingProteinInteractions/setUp/SourceLoader.R"
 # wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
 
-# mode = "onlyExperiments"
-mode = "onlyGenerateModels"
+mode = "onlyExperiments"
+# mode = "onlyGenerateModels"
+
+mode ="randomSearch"
 
 wsPath = as.character(paste(funr::get_script_path(), "/../../setUp/SourceLoader.R", sep = ""))
 
@@ -3184,15 +3186,32 @@ gridSearch <- function( alphas_local = c(0,1,2,3,5),
 
 generateRandomModelParameters <- function(maxLayerNum = 5,
                                           layerSizes = c(5,10,50,20,30,100,500),
-                                          dropOuts = c(0.1,0.2,0.7,0.05,0.5),
+                                          dropOuts = c(0.1,0.2,0.7,0.05,0.5,0.3,0.2,0.4),
                                           optimizerFunNames = c("optimizer_adam", "optimizer_rmsprop"),
                                           batch_sizes = c(32,16),
                                           epochs = c(20)){
   
-  modelSize = sample(c(1:maxLayerNum), 1)
-  layers = sample(layerSizes, size = modelSize, replace = TRUE)
-  dropOuts = sample(dropOuts, size = modelSize, replace = TRUE)
+  modelSize = sample(maxLayerNum, 1)
+  # layers = rep(0,length(modelSize))
+  # layers[1] = chooseOneRandom(layerSizes)
+  # 
+  # print(layers[1])
+  # print(modelSize)
+  # if(modelSize > 1){
+  #   for(i in 2:length(layers)){
+  #     l = chooseOneRandom(layerSizes)
+  #     print(l)
+  #     print("layer")
+  #     print(layers[i-1])
+  #     while(l > layers[i-1]){
+  #       l = chooseOneRandom(layerSizes)
+  #     }
+  #     layers[i] = l
+  #   }
+  # }
   
+  layers = sort(sample(layerSizes, modelSize, replace = TRUE),decreasing = TRUE)
+  dropOuts = sort(sample(dropOuts, size = modelSize, replace = TRUE), decreasing = TRUE)
   opti = sample(optimizerFunNames, 1)
   
   
@@ -3345,43 +3364,118 @@ randomSearch <- function( NNexperimentsKfoldDir = "/home/willy/PredictingProtein
 # 
 # df_summary = getExperimentSummary()
 
+chooseOneRandom <- function(v){
+  return(v[sample(1:length(v), 1)])
+}
 
-p2 = strsplit(pathToExperiment, "/Output/")[[1]][1]
-print(p2)
-NNexperimentsKfoldDir = paste(p2, "/NNexperimentsKfoldCV/", sep = "")
+randomSearch2 <- function(modelParameters, NNexperimentsKfoldDir, ExperimentName, quantilePath,
+                          alphas = c(0,1,2,3),
+                          bethas = c(0,1,2,3),
+                          nlocals = c(0.1,0.2,0.3,0.5,0.8),
+                          sampleSizes = c(5,10,20,40),
+                          sampleTimes = c(200, 400, 800),
+                          Trials = 1){
+  
+  for(trial in 1:Trials){
+    
+    # choose numbter of feature-matrices at random
+    fNameTrainNum = sample(length(nlocals), size = 1)
+    
+    nlocals_samp = nlocals[sample(c(1:length(nlocals)), size = fNameTrainNum)]
+    
+    fNameTrain = c()
+    for(i in 1:length(nlocals_samp)){
+      alpha = chooseOneRandom(alphas)
+      betha = chooseOneRandom(bethas)
+      fName = getTrainFName(path = quantilePath, name = "All", n = nlocals_samp[i], m = 1, q = 1,muNN = 10,alpha = alpha, betha = betha,local = TRUE)
+      fNameTrain = c(fNameTrain, fName)
+      
+      if(!file.exists(fName)){
+        tmp = getQuantilesAlphaBetha(alpha = alpha,betha = betha, n = nlocals_samp[i], m = 1,q = 1, locale = TRUE, path = pathToExperiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = FALSE)
+      }
+    }
+    
+    modelParameters = generateRandomModelParameters()
 
-df_summary = getExperimentSummary(expDir = NNexperimentsKfoldDir)
+    ProteinsExperimentKfoldCV( sampleSize = chooseOneRandom(sampleSizes),
+                               sampleTimes = chooseOneRandom(sampleTimes),
+                               sampleTimes_test = 10,
+                               batch_size = 32,
+                               epochs = 30,
+                               euklid = TRUE,
+                               q = 1,
+                               m = 1000,
+                               numClasses = 2,
+                               fNameTrain = fNameTrain,
+                               ExperimentName = ExperimentName,
+                               modelParameters = modelParameters,
+                               recalculate = FALSE,
+                               k = 10,
+                               onlySummarizeFolds = FALSE,
+                               normalizeInputs = TRUE,
+                               saveExperiment = FALSE,
+                               useColIndsToKeep = FALSE,
+                               path = NNexperimentsKfoldDir,
+                               labels = LABELS)
+
+    df_summary = getExperimentSummary(expDir = NNexperimentsKfoldDir)
+  }
+}
+
+if(mode == "experimental"){
+  p2 = strsplit(pathToExperiment, "/Output/")[[1]][1]
+  print(p2)
+  NNexperimentsKfoldDir = paste(p2, "/NNexperimentsKfoldCV/", sep = "")
+  
+  df_summary = getExperimentSummary(expDir = NNexperimentsKfoldDir)
+  
+  
+  modelParameters = list("layers" = c(50,10), "dropOuts" = c(0.1,0.05), "metrics" = "accuracy", "optimizerFunName" = "optimizer_adam", "batch_size" = 32, "epochs" = 20)
+  ProteinsExperimentKfoldCV( sampleSize = 5,
+                             sampleTimes = 400,
+                             sampleTimes_test = 10,
+                             batch_size = 32,
+                             epochs = 30,
+                             euklid = TRUE,
+                             q = 1,
+                             m = 1000,
+                             numClasses = 2,
+                             fNameTrain = c("/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.1_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+                                            "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+                                            "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.5_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+                                            "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.8_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv"),
+                             ExperimentName = "Test35",
+                             modelParameters = modelParameters,
+                             recalculate = FALSE,
+                             k = 10,
+                             onlySummarizeFolds = FALSE,
+                             normalizeInputs = TRUE,
+                             saveExperiment = FALSE,
+                             useColIndsToKeep = FALSE,
+                             path = NNexperimentsKfoldDir,
+                             labels = LABELS)
+  
+  
+  df_summary = getExperimentSummary(expDir = NNexperimentsKfoldDir)
+}
 
 
-SAMPLESIZE = 5
-modelParameters = list("layers" = c(50,10,10), "dropOuts" = c(0.1,0.1,0.1), "metrics" = "accuracy", "optimizerFunName" = "optimizer_adam", "batch_size" = 32, "epochs" = 20)
-ProteinsExperimentKfoldCV( sampleSize = 5,
-                           sampleTimes = 400,
-                           sampleTimes_test = 10,
-                           batch_size = 32,
-                           epochs = 30,
-                           euklid = TRUE,
-                           q = 1,
-                           m = 1000,
-                           numClasses = 2,
-                           fNameTrain = c("/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.1_m_1_q_1_muNN_10_alpha_1_betha_1_loc_TRUE.csv",
-                                          "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_1_betha_1_loc_TRUE.csv",
-                                          "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.5_m_1_q_1_muNN_10_alpha_1_betha_1_loc_TRUE.csv",
-                                          "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.8_m_1_q_1_muNN_10_alpha_1_betha_1_loc_TRUE.csv"),
-                           ExperimentName = "Test31",
-                           modelParameters = modelParameters,
-                           recalculate = FALSE,
-                           k = 10,
-                           onlySummarizeFolds = FALSE,
-                           normalizeInputs = TRUE,
-                           saveExperiment = FALSE,
-                           useColIndsToKeep = FALSE,
-                           path = NNexperimentsKfoldDir,
-                           labels = LABELS)
+if(mode == "randomSearch"){
+  p2 = strsplit(pathToExperiment, "/Output/")[[1]][1]
+  print(p2)
+  NNexperimentsKfoldDir = paste(p2, "/NNexperimentsKfoldCV/", sep = "")
+  df_summary = getExperimentSummary(expDir = NNexperimentsKfoldDir)
+  
+  v = as.numeric(unlist(strsplit(df_summary$ExperimentName, split = "Test")))
+  nextV = max(v[!is.na(v)]) + 1
+  ExperimentName = paste("Test", nextV, sep = "")
 
-
-df_summary = getExperimentSummary(expDir = NNexperimentsKfoldDir)
-
+  quantilePath = paste(p2, "/Quantiles/", sep = "")
+  randomSearch2(modelParameters = modelParameters,
+               NNexperimentsKfoldDir = NNexperimentsKfoldDir,
+               ExperimentName = ExperimentName,
+               quantilePath = quantilePath)
+}
 
 #------------------------------------------------------------------------
 

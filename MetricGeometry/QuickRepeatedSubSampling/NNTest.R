@@ -276,7 +276,7 @@ X3 = Y1[X3_inds,]
 # experimentWithModel(X1 = X1, X2 = X2, X3 = X3, Y1 = Y1, sampleSize = 40)
 
 numClasses = 2
-sampleSize = 40
+sampleSize = 20
 model <- keras_model_sequential()
 model %>%
   layer_dense(units = 100, activation = 'relu', input_shape = c(sampleSize*2)) %>%
@@ -287,6 +287,7 @@ model %>%
   layer_dropout(rate = 0.1) %>%
   layer_dense(units = numClasses, activation = 'softmax')
 experimentWithModel(X1 = X1, X2 = X2, X3 = X3, Y1 = Y1, sampleSize = sampleSize, model = model,order = TRUE)
+# 0.9666666
 
 sampleSize = 1
 model <- keras_model_sequential()
@@ -299,7 +300,7 @@ model %>%
   layer_dropout(rate = 0.1) %>%
   layer_dense(units = numClasses, activation = 'softmax')
 experimentWithModel(X1 = X1, X2 = X2, X3 = X3, Y1 = Y1, sampleSize = sampleSize, model = model)
-
+# 0.4777778
 
 sampleSize = 1
 model <- keras_model_sequential()
@@ -312,22 +313,23 @@ experimentWithModel(X1 = X1, X2 = X2, X3 = X3, Y1 = Y1, sampleSize = sampleSize,
 
 mat_both = rbind(X1,X2,X3,Y1)
 
-# pdf("/home/willy/PredictingProteinInteractions/Results/Images/NN2dExample.pdf")
-par(mfrow = c(1,3))
-xli = c(-6,15)
-yli = c(-6,15)
-plot(mat_both, col = "red", pch = 19, xlab = "", ylab ="", xlim = xli, ylim = yli)
-plot(Y1, col = "blue", pch = 19, xlab = "", ylab ="", xlim = xli, ylim = yli)
-plot(mat_both, col = "red", pch = 19, xlab = "", ylab ="", xlim = xli, ylim = yli)
-points(x = Y1[,1], y = Y1[,2], col ="blue", pch = 19)
-legend(x = 5,y = 10, legend = c("X","Y"),col = c("red", "blue"),pch = 19)
-# dev.off()
-
-
-# pdf("/home/willy/PredictingProteinInteractions/Results/Images/NN2dExampleSampleX1vsY1.pdf")
+pdf("/home/willy/PredictingProteinInteractions/Results/Images/NN2dExample.pdf")
 par(mfrow = c(1,4))
-plot(mat_both, col = "red", pch = 19, xlab = "", ylab ="", xlim = xli, ylim = yli)
-points(x = Y1[,1], y = Y1[,2], col ="blue", pch = 19)
+xli = c(-6,5)
+yli = c(-6,10)
+plot(Y1, col = "red", pch = 19, xlab = "", ylab ="", xlim = xli, ylim = yli)
+plot(X1, col = "blue", pch = 19, xlab = "", ylab ="", xlim = xli, ylim = yli)
+plot(X3, col = "blue", pch = 19, xlab = "", ylab ="", xlim = xli, ylim = yli)
+plot(X2, col = "blue", pch = 19, xlab = "", ylab ="", xlim = xli, ylim = yli)
+# points(x = Y1[,1], y = Y1[,2], col ="blue", pch = 19)
+legend(x = 5,y = 10, legend = c("X","Y"),col = c("red", "blue"),pch = 19)
+dev.off()
+
+
+pdf("/home/willy/PredictingProteinInteractions/Results/Images/NN2dExampleSampleX1vsY1.pdf")
+par(mfrow = c(1,4))
+plot(Y1, col = "red", pch = 19, xlab = "", ylab ="", xlim = xli, ylim = yli)
+# points(x = Y1[,1], y = Y1[,2], col ="blue", pch = 19)
 legend(x = 3,y = 12, legend = c("X","Y"),col = c("red", "blue"),pch = 19)
 
 Y_demo = sampleDistributions(mat1 = Y1,k = 1,"Y",m = 20,TRUE, col = "green")
@@ -348,7 +350,7 @@ plot(mat_both, col = "red", pch = 19, xlab = "", ylab ="", xlim = xli, ylim = yl
 points(x = Y1[,1], y = Y1[,2], col ="blue", pch = 19)
 legend(x = 3,y = 12, legend = c("X","Y"),col = c("red", "blue"),pch = 19)
 X3_demo = sampleDistributions(mat1 = X3,k = 1,"X",m = 20,TRUE, col ="green")
-# dev.off()
+dev.off()
 
 #-----------------------------------------------------------------------
 # Example 3
