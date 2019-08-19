@@ -72,9 +72,16 @@ library(keras)
 library(doParallel)
 
 # registerDoParallel(detectCores()/2)
-registerDoParallel(2)
 
+numCores = 10
+args = commandArgs(trailingOnly=TRUE)
+if(length(args) > 0){
+  numCores = as.numeric(args[1])
+}
 
+print(paste("Using ", numCores, " numCores", sep =""))
+
+registerDoParallel(numCores)
 
 # install.packages("e1071")
 library(e1071)
@@ -2917,74 +2924,77 @@ getExperimentSummary <- function(expDir = "/home/willy/PredictingProteinInteract
   
   
   for(i in 1 :length(ExperimentFolders)){
-    df = read.table(paste(ExperimentFolders[i], "/Call.txt", sep  = ""), header = TRUE)
-    
-    fNameTrain = as.character(df[which(df$parameter == "Ft_1"),2])
-    alpha = as.numeric(strsplit(fNameTrain, "_")[[1]][11])
-    betha = as.numeric(strsplit(fNameTrain, "_")[[1]][13])
-    # n_local = as.numeric(strsplit(fNameTrain, "_")[[1]][3])
-    q = as.numeric(strsplit(fNameTrain, "_")[[1]][7])
-
-    accFile = paste(ExperimentFolders[i],"/Accuracy.tex", sep = "")
-    Acc = NA
-    if(file.exists(accFile)) Acc = as.numeric(read.table(accFile, header = FALSE))
-   
-    f1File = paste(ExperimentFolders[i],"/F1.tex", sep = "")
-    F1 = NA
-    if(file.exists(f1File)) F1 = as.numeric(read.table(f1File, header = FALSE))
-
-    df_summary[i,1] = Acc
-    df_summary[i,2] = F1
-    df_summary[i,3] = alpha
-    df_summary[i,4] = betha
-    df_summary[i,5] = q
-
-    df_summary[i,6] = as.numeric(as.character(df[which(df$parameter == "sampleSize"),2]))
-    df_summary[i,7] = as.numeric(as.character(df[which(df$parameter == "sampleTimes"),2]))
-    df_summary[i,8] = as.numeric(as.character(df[which(df$parameter == "epochs"),2]))
-    df_summary[i,9] = as.numeric(as.character(df[which(df$parameter == "batch_size"),2]))
-    
-    df_summary[i,10] = as.numeric(as.character(df[which(df$parameter == "k"),2]))
-    df_summary[i,11] = as.character(as.character(df[which(df$parameter == "euklid"),2]))
-    df_summary[i,12] = as.character(df[which(df$parameter == "pos_flag"),2])
-    df_summary[i,13] = as.character(df[which(df$parameter == "neg_flag"),2])
-    df_summary[i,14] = as.character(df[which(df$parameter == "pos_neg_flag"),2])
-    df_summary[i,15] = as.character(df[which(df$parameter == "modelName"),2])
-    df_summary[i,16] = as.character(df[which(df$parameter == "ExperimentName"),2])
-    
-    lastInd = 16
-   
-    for(j in 1:5){
-      ind =which(df$parameter == paste("Ft", j, sep = "_"))
+    callFName = paste(ExperimentFolders[i], "/Call.txt", sep  = "")
+    if(file.exists(callFName)){
+      df = read.table(paste(ExperimentFolders[i], "/Call.txt", sep  = ""), header = TRUE)
       
-      if(length(ind) == 0 ){
-        df_summary[i,lastInd+j] = -1
-      } else {
-        df_summary[i,lastInd+j] = as.character(df[ind,2])
-      }
-    }
-
-    for(j in 1:5){
-      ind = which(df$parameter == paste("L", j, sep = "_"))
+      fNameTrain = as.character(df[which(df$parameter == "Ft_1"),2])
+      alpha = as.numeric(strsplit(fNameTrain, "_")[[1]][11])
+      betha = as.numeric(strsplit(fNameTrain, "_")[[1]][13])
+      # n_local = as.numeric(strsplit(fNameTrain, "_")[[1]][3])
+      q = as.numeric(strsplit(fNameTrain, "_")[[1]][7])
+  
+      accFile = paste(ExperimentFolders[i],"/Accuracy.tex", sep = "")
+      Acc = NA
+      if(file.exists(accFile)) Acc = as.numeric(read.table(accFile, header = FALSE))
+     
+      f1File = paste(ExperimentFolders[i],"/F1.tex", sep = "")
+      F1 = NA
+      if(file.exists(f1File)) F1 = as.numeric(read.table(f1File, header = FALSE))
+  
+      df_summary[i,1] = Acc
+      df_summary[i,2] = F1
+      df_summary[i,3] = alpha
+      df_summary[i,4] = betha
+      df_summary[i,5] = q
+  
+      df_summary[i,6] = as.numeric(as.character(df[which(df$parameter == "sampleSize"),2]))
+      df_summary[i,7] = as.numeric(as.character(df[which(df$parameter == "sampleTimes"),2]))
+      df_summary[i,8] = as.numeric(as.character(df[which(df$parameter == "epochs"),2]))
+      df_summary[i,9] = as.numeric(as.character(df[which(df$parameter == "batch_size"),2]))
       
-      if(length(ind) == 0 ){
-        df_summary[i,lastInd+j+5] = -1
-      } else {
-        df_summary[i,lastInd+j+5] = as.numeric(as.character(df[ind,2]))
-      }
-
-    }
-    
-    for(j in 1:5){
-      ind = which(df$parameter == paste("d", j, sep = "_"))
+      df_summary[i,10] = as.numeric(as.character(df[which(df$parameter == "k"),2]))
+      df_summary[i,11] = as.character(as.character(df[which(df$parameter == "euklid"),2]))
+      df_summary[i,12] = as.character(df[which(df$parameter == "pos_flag"),2])
+      df_summary[i,13] = as.character(df[which(df$parameter == "neg_flag"),2])
+      df_summary[i,14] = as.character(df[which(df$parameter == "pos_neg_flag"),2])
+      df_summary[i,15] = as.character(df[which(df$parameter == "modelName"),2])
+      df_summary[i,16] = as.character(df[which(df$parameter == "ExperimentName"),2])
       
-      if(length(ind) == 0 ){
-        df_summary[i,lastInd+j+5+5] = -1
-      } else {
-        df_summary[i,lastInd+j+5+5] = as.numeric(as.character(df[ind,2]))
+      lastInd = 16
+     
+      for(j in 1:5){
+        ind =which(df$parameter == paste("Ft", j, sep = "_"))
+        
+        if(length(ind) == 0 ){
+          df_summary[i,lastInd+j] = -1
+        } else {
+          df_summary[i,lastInd+j] = as.character(df[ind,2])
+        }
       }
+  
+      for(j in 1:5){
+        ind = which(df$parameter == paste("L", j, sep = "_"))
+        
+        if(length(ind) == 0 ){
+          df_summary[i,lastInd+j+5] = -1
+        } else {
+          df_summary[i,lastInd+j+5] = as.numeric(as.character(df[ind,2]))
+        }
+  
+      }
+      
+      for(j in 1:5){
+        ind = which(df$parameter == paste("d", j, sep = "_"))
+        
+        if(length(ind) == 0 ){
+          df_summary[i,lastInd+j+5+5] = -1
+        } else {
+          df_summary[i,lastInd+j+5+5] = as.numeric(as.character(df[ind,2]))
+        }
+      }
+  
     }
-
   }
   
   df_summary = df_summary[order(df_summary$f1, decreasing = TRUE),]
@@ -3372,14 +3382,22 @@ randomSearch2 <- function(modelParameters, NNexperimentsKfoldDir, ExperimentName
                           alphas = c(0,1,2,3),
                           bethas = c(0,1,2,3),
                           nlocals = c(0.1,0.2,0.3,0.5,0.8),
+                          qs = c(1),
                           sampleSizes = c(5,10,20,40),
                           sampleTimes = c(200, 400, 800),
                           Trials = 1){
   
   for(trial in 1:Trials){
     
+    df_summary = getExperimentSummary(expDir = NNexperimentsKfoldDir)
+    
+    v = as.numeric(unlist(strsplit(df_summary$ExperimentName, split = "Test")))
+    nextV = max(v[!is.na(v)]) + 1
+    ExperimentName = paste("Test", nextV, sep = "")
+    
+    
     # choose numbter of feature-matrices at random
-    fNameTrainNum = sample(length(nlocals), size = 1)
+    fNameTrainNum = sample(5, size = 1)
     
     nlocals_samp = nlocals[sample(c(1:length(nlocals)), size = fNameTrainNum)]
     
@@ -3387,11 +3405,15 @@ randomSearch2 <- function(modelParameters, NNexperimentsKfoldDir, ExperimentName
     for(i in 1:length(nlocals_samp)){
       alpha = chooseOneRandom(alphas)
       betha = chooseOneRandom(bethas)
-      fName = getTrainFName(path = quantilePath, name = "All", n = nlocals_samp[i], m = 1, q = 1,muNN = 10,alpha = alpha, betha = betha,local = TRUE)
+      q = chooseOneRandom(qs)
+      fName = getTrainFName(path = quantilePath, name = "All", n = nlocals_samp[i], m = 1, q = q,muNN = 10,alpha = alpha, betha = betha,local = TRUE)
       fNameTrain = c(fNameTrain, fName)
       
       if(!file.exists(fName)){
-        tmp = getQuantilesAlphaBetha(alpha = alpha,betha = betha, n = nlocals_samp[i], m = 1,q = 1, locale = TRUE, path = pathToExperiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = FALSE)
+        
+        registerDoParallel(16)
+        tmp = getQuantilesAlphaBetha(alpha = alpha,betha = betha, n = nlocals_samp[i], m = 1,q = q, locale = TRUE, path = pathToExperiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = FALSE)
+        registerDoParallel(numCores)
       }
     }
     
@@ -3403,7 +3425,7 @@ randomSearch2 <- function(modelParameters, NNexperimentsKfoldDir, ExperimentName
                                batch_size = 32,
                                epochs = 30,
                                euklid = TRUE,
-                               q = 1,
+                               q = q,
                                m = 1000,
                                numClasses = 2,
                                fNameTrain = fNameTrain,
@@ -3419,6 +3441,8 @@ randomSearch2 <- function(modelParameters, NNexperimentsKfoldDir, ExperimentName
                                labels = LABELS)
 
     df_summary = getExperimentSummary(expDir = NNexperimentsKfoldDir)
+    
+    if(WS_flag == TRUE) system("/home/sysgen/Documents/LWB/Uploader/Uploader.sh")
   }
 }
 
@@ -3464,18 +3488,28 @@ if(mode == "randomSearch"){
   p2 = strsplit(pathToExperiment, "/Output/")[[1]][1]
   print(p2)
   NNexperimentsKfoldDir = paste(p2, "/NNexperimentsKfoldCV/", sep = "")
-  df_summary = getExperimentSummary(expDir = NNexperimentsKfoldDir)
-  
-  v = as.numeric(unlist(strsplit(df_summary$ExperimentName, split = "Test")))
-  nextV = max(v[!is.na(v)]) + 1
-  ExperimentName = paste("Test", nextV, sep = "")
+
 
   quantilePath = paste(p2, "/Quantiles/", sep = "")
   randomSearch2(modelParameters = modelParameters,
                NNexperimentsKfoldDir = NNexperimentsKfoldDir,
                ExperimentName = ExperimentName,
-               quantilePath = quantilePath)
+               quantilePath = quantilePath,
+               nlocals = c(0.05,0.1,0.2,0.3,0.8,0.5),
+               Trials = 100000)
 }
+
+
+# fNames = list.files("/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/106Test/Quantiles/", recursive = FALSE, pattern = "TRUE")
+# 
+# nlocVals = c()
+# for(i in 1:length(fNames)){
+#   nlocVal = as.numeric(strsplit(fNames[i], "_")[[1]][3])
+#   nlocVals = c(nlocVals, nlocVal)
+# }
+# 
+# 6*9
+# length(nlocVals)
 
 #------------------------------------------------------------------------
 
