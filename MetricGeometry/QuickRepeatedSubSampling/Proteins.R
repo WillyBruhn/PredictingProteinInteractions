@@ -10,10 +10,12 @@
 wsPath = "/home/willy/PredictingProteinInteractions/setUp/SourceLoader.R"
 # wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
 
-mode = "onlyExperiments"
+mode = "onlyExperiments2"
 # mode = "onlyGenerateModels"
 
-mode ="randomSearch"
+# mode ="randomSearch"
+
+# mode = "hlat"
 
 wsPath = as.character(paste(funr::get_script_path(), "/../../setUp/SourceLoader.R", sep = ""))
 
@@ -73,7 +75,7 @@ library(doParallel)
 
 # registerDoParallel(detectCores()/2)
 
-numCores = 10
+numCores = 1
 args = commandArgs(trailingOnly=TRUE)
 if(length(args) > 0){
   numCores = as.numeric(args[1])
@@ -875,9 +877,9 @@ plot_one_prot_quant <- function(quantiles,q, col = "yellow", size = 15){
 plot_prot_quants <- function(quantiles, q, functionals, plotMode = "Booth", withEuclid = FALSE){
 
   functionalInds = which(quantiles[,1] %in% functionals)
-  
-  
   nonFunctionalInds = c(1:nrow(quantiles))[-functionalInds]
+  
+  if(length(functionalInds) == 0) nonFunctionalInds = c(1:nrow(quantiles))
   
   quants = (1:(q+2))
   pos = quants+1
@@ -1379,7 +1381,8 @@ modelProt1_f1 <- function(TrainTest, epochs = 30, batch_size = 64, weights, samp
   return(model)
 }
 
-modelProt_custom <- function(TrainTest, weights, layers = c(10,10), dropOuts = c(0.1,0.1), optimizerFunName = "optimizer_adam",metrics = "f1_keras_metric_wrapper", batch_size = 32, epochs = 20, conv = FALSE){
+conv = FALSE
+modelProt_custom <- function(TrainTest, weights, layers = c(10,10), dropOuts = c(0.1,0.1), optimizerFunName = "optimizer_adam",metrics = "f1_keras_metric_wrapper", batch_size = 32, epochs = 20){
   x_train = TrainTest$x_train
   y_train = TrainTest$y_train
   x_test = TrainTest$x_test
@@ -1390,46 +1393,62 @@ modelProt_custom <- function(TrainTest, weights, layers = c(10,10), dropOuts = c
   # define the architecture of the model
   model <- keras_model_sequential()
   if(conv == FALSE){
-    model %>%   layer_dense(units = layers[1], activation = 'relu', input_shape = c(ncol(x_train)))%>%layer_dropout(rate = dropOuts[1])
+    model %>%   layer_dense(units = layers[1],input_shape = c(ncol(x_train))) %>% 
+      layer_dropout(rate = dropOuts[1]) %>% 
+      layer_activation("relu")
     
     if(length(layers) > 1){
       for(i in 2:length(layers)){
-        model %>%   layer_dense(units = layers[1], activation = 'relu')%>%layer_dropout(rate = dropOuts[i])
+        model %>%   layer_dense(units = layers[i])%>%layer_dropout(rate = dropOuts[i]) %>% layer_activation("relu")
       }
     }
     model %>% layer_dense(units = numClasses, activation = 'softmax')
   }else{
+    channels = 6*4
+    dropOutsFilters = 0.4
     model %>% 
-      layer_reshape(target_shape = c(SAMPLESIZE, ncol(x_train)/SAMPLESIZE,1),input_shape = c(ncol(x_train))) %>%
+      layer_reshape(target_shape = c(SAMPLESIZE, ncol(x_train)/(SAMPLESIZE*channels),channels),input_shape = c(ncol(x_train))) %>%
       
-      layer_conv_2d(filter = 30, kernel_size = c(3,3), padding = 'same', input_shape = c(SAMPLESIZE, ncol(x_train)/SAMPLESIZE,1)) %>%
+      layer_conv_2d(filter = 16, kernel_size = c(3,3), padding = 'same', input_shape = c(SAMPLESIZE, ncol(x_train)/SAMPLESIZE,1)) %>%
       layer_activation("relu") %>%
-      layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
-      layer_dropout(0.1) %>%
+      layer_average_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+      layer_dropout(dropOutsFilters) %>%
+
+      layer_conv_2d(filter = 16, kernel_size = c(3,3), padding = 'same') %>%
+      layer_activation("relu") %>%
+      layer_average_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+      layer_dropout(dropOutsFilters) %>%
       
-      layer_conv_2d(filter = 30, kernel_size = c(3,3), padding = 'same') %>%
+      layer_conv_2d(filter = 16, kernel_size = c(3,3), padding = 'same') %>%
       layer_activation("relu") %>%
-      layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
-      layer_dropout(0.1) %>%
-      
-      layer_conv_2d(filter = 30, kernel_size = c(3,3), padding = 'same') %>%
-      layer_activation("relu") %>%
-      layer_max_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
-      layer_dropout(0.1) %>%
+      layer_average_pooling_2d(pool_size = c(2,1),padding = 'same') %>%
+      layer_dropout(dropOutsFilters) %>%
       
       layer_flatten() %>%
-      layer_dense(units = layers[1], activation = 'relu')%>%
-      layer_dropout(rate = dropOuts[1])
+      
+      layer_dense(units = 50)%>%
+      layer_dropout(0.2) %>%
+      layer_activation("relu") %>%
+      
+      layer_dense(units = 50)%>%
+      layer_dropout(0.2) %>%
+      layer_activation("relu") %>%
+      
+      layer_dense(units = numClasses, activation = 'softmax')
     
-    if(length(layers) > 1){
-      for(i in 2:length(layers)){
-        model %>%   layer_dense(units = layers[1], activation = 'relu')%>%layer_dropout(rate = dropOuts[i])
-      }
-    }
     
-    model %>% layer_dense(units = numClasses, activation = 'softmax')
+    #   layer_dense(units = layers[1], rate = dropOuts[1]) %>% 
+    #   layer_activation("relu")
+    #   
+    # if(length(layers) > 1){
+    #   for(i in 2:length(layers)){
+    #     model %>%   layer_dense(units = layers[i])%>%layer_dropout(rate = dropOuts[i]) %>% layer_activation("relu")
+    #   }
+    # }
+    # model %>% layer_dense(units = numClasses, activation = 'softmax')
   }
 
+  
   optimizerFun = optimizer_adam
   print("specifiying optimizer ...")
   if(optimizerFunName == "optimizer_rmsprop") optimizerFun = optimizer_rmsprop
@@ -2721,8 +2740,10 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
           colMins = apply(Train_X,2,min)
           colMaxs = apply(Train_X,2,max)
           colRanges = colMaxs - colMins
-          Train_X = sapply(c(1:length(colRanges)), FUN = function(i){ Train_X[,i]/colRanges[i] })
-          Test_X = sapply(c(1:length(colRanges)), FUN = function(i){ Test_X[,i]/colRanges[i] })
+          # Train_X = sapply(c(1:length(colRanges)), FUN = function(i){ Train_X[,i]/colRanges[i] })
+          Train_X = sapply(c(1:length(colRanges)), FUN = function(i){ (Train_X[,i]- colMins[i])/colRanges[i]})
+          Test_X = sapply(c(1:length(colRanges)), FUN = function(i){ (Test_X[,i]- colMins[i])/colRanges[i]})
+          # Test_X = sapply(c(1:length(colRanges)), FUN = function(i){ Test_X[,i]/colRanges[i] })
         }
 
         
@@ -3446,7 +3467,8 @@ randomSearch2 <- function(modelParameters, NNexperimentsKfoldDir, ExperimentName
   }
 }
 
-if(mode == "experimental"){
+# mode = "onlyExperiments2"
+if(mode == "onlyExperiments2"){
   p2 = strsplit(pathToExperiment, "/Output/")[[1]][1]
   print(p2)
   NNexperimentsKfoldDir = paste(p2, "/NNexperimentsKfoldCV/", sep = "")
@@ -3454,8 +3476,10 @@ if(mode == "experimental"){
   df_summary = getExperimentSummary(expDir = NNexperimentsKfoldDir)
   
   
-  modelParameters = list("layers" = c(50,10), "dropOuts" = c(0.1,0.05), "metrics" = "accuracy", "optimizerFunName" = "optimizer_adam", "batch_size" = 32, "epochs" = 20)
-  ProteinsExperimentKfoldCV( sampleSize = 5,
+  conv = TRUE
+  SAMPLESIZE = 5
+  modelParameters = list("layers" = c(100,50,50), "dropOuts" = c(0.8,0.8,0.8), "metrics" = "accuracy", "optimizerFunName" = "optimizer_adam", "batch_size" = 32, "epochs" = 20)
+  ProteinsExperimentKfoldCV( sampleSize = SAMPLESIZE,
                              sampleTimes = 400,
                              sampleTimes_test = 10,
                              batch_size = 32,
@@ -3468,7 +3492,7 @@ if(mode == "experimental"){
                                             "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
                                             "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.5_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
                                             "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.8_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv"),
-                             ExperimentName = "Test35",
+                             ExperimentName = "Test50",
                              modelParameters = modelParameters,
                              recalculate = FALSE,
                              k = 10,
@@ -3592,239 +3616,280 @@ if(mode == "randomSearch"){
 # # experimental
 # #-------------------------------------------------------------------------------------------------------------
 # 
-# n_s_euclidean = 1000
-# n_s_dijkstra = 500
-# n = 10
-# m = 100
-# q = 1
+# # quit()
 # 
 # 
+# quantiles08 = getQuantilesAlphaBetha(alpha = 1,betha = 1,path = pathToExperiment,
+#                                     n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000,
+#                                     measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = FALSE,
+#                                     n = 0.8, m = 1,q = 1, locale = TRUE)
 # 
-# GLOBAL_VERBOSITY = 2
-# models_small = getAllProteinModels(path = path, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE, alpha = 2,betha = 1)
-# quantiles2 = get_quantiles_all_proteins(model_vec = models_small, path = path, n = 0.2, m = 1, q = 1, recalculate = FALSE,locale = TRUE)
-# quantiles2_global = get_quantiles_all_proteins(model_vec = models_small, path = path, n = 1, m = 1, q = 1, recalculate = FALSE,locale = FALSE)
-# 
-# quantiles1 = getQuantilesAlphaBetha(alpha = 2,betha = 1,path = path, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = FALSE, n = 0.2, m = 1,q = 1, locale = TRUE)
-# quantiles2 = getQuantilesAlphaBetha(alpha = 1,betha = 2,path = path, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = TRUE, n = 0.2, m = 1,q = 1, locale = TRUE)
-# quantiles3 = getQuantilesAlphaBetha(alpha = 0,betha = 0,path = path, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = TRUE, n = 0.2, m = 1,q = 1)
-# quantiles4 = getQuantilesAlphaBetha(alpha = 5,betha = 5,path = path, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = TRUE, n = 0.2, m = 1,q = 1)
-# quantiles5 = getQuantilesAlphaBetha(alpha = 10,betha = 10,path = path, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = TRUE, n = 0.2, m = 1,q = 1)
-# quantiles6 = getQuantilesAlphaBetha(alpha = 0,betha = 1,path = path, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = TRUE, n = 0.2, m = 1,q = 1)
-# quantiles7 = getQuantilesAlphaBetha(alpha = 3,betha = 3,path = path106Experiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = FALSE, n = 0.2, m = 1,q = 1, locale = TRUE)
-# 
-# quantiles7 = getQuantilesAlphaBetha(alpha = 0,betha = 0,path = path106Experiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = FALSE, n = 1, m = 1,q = 1, locale = FALSE)
-# 
-# 
-# quantiles8 = getQuantilesAlphaBetha(alpha = 0,betha = 0,path = path, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = TRUE, n = 1, m = 1,q = 10, locale = FALSE)
-# quantiles9 = getQuantilesAlphaBetha(alpha = 2,betha = 1,path = path, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = TRUE, n = 0.2, m = 1,q = 10, locale = TRUE)
-# 
-# transformQuantsProtein(quantiles7,q = 1)
-# 
-# # models_small = getAllProteinModels(path = path120Experiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE, alpha = 2,betha = 1)
-# 
-# quantilesLoc = getQuantilesAlphaBetha(alpha = 3,betha = 3,path = path106Experiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = TRUE, n = 0.1, m = 1,q = 1, locale = TRUE)
-# quantilesGlob = getQuantilesAlphaBetha(alpha = 0,betha = 0,path = path106Experiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = TRUE, n = 1, m = 1,q = 1, locale = FALSE)
-# 
-# 
-# 
-# 
-# lapply(c(1:nrow(alpha_betha_grid)), FUN = function(i){
-#   print(alpha_betha_grid[i,])
-#   tmp = getQuantilesAlphaBetha(alpha = alpha_betha_grid[i,1],betha = alpha_betha_grid[i,2], n = 0.2, m = 1,q = 1, locale = TRUE, path = path, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = TRUE)
-# 
-# })
-# 
-# # for(i in 1:length(alphas)){
-# #   for(j in 1:length(alphas)){
-# #     print(paste(alphas[i], bethas[j]))
-# #     tmp = getQuantilesAlphaBetha(alpha = alphas[i],betha = bethas[j], n = 0.2, m = 1,q = 1, locale = TRUE, path = path, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = TRUE)
-# #   }
-# # }
-# 
-# 
-# findPattern(quantiles7)
-# findPattern(quantiles4)
-# 
+# quantiles02 = getQuantilesAlphaBetha(alpha = 3,betha = 3,path = pathToExperiment,
+#                                      n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000,
+#                                      measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = FALSE,
+#                                      n = 0.2, m = 1,q = 1, locale = TRUE)
 # 
 # plotProteinModel(fNameOrigingal = "/home/willy/PredictingProteinInteractions/data/106Test/Output/000_Trx/000_Trx.obj", lis = models_small[[7]])
 # 
 # functionals = c(getFunctionalProteins(), "000_Trx")
 # plot_prot_quants(quantiles1, q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
-# plot_prot_quants(quantiles2, q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
-# plot_prot_quants(quantiles3, q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
-# plot_prot_quants(quantiles5, q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
-# 
-# 
-# plot_prot_quants(quantiles7[inds,], q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
-# 
-# 
-# protName = "000_Trx"
-# inds = which(quantiles7[,1] == protName)
-# indSamp = sample(inds, 20, replace = FALSE)
-# quantiles7[indSamp,]
-# 
-# points3d(quantiles7[indSamp,8:10], size = 20)
 # 
 # 
 # 
-# colMins = apply(quantiles7[,-1],2,min)
-# colMaxs = apply(quantiles7[,-1],2,max)
-# colRanges = colMaxs - colMins
-# 
-# quantiles7_withoutNames = quantiles7[,-1]
-# quantiles7_scaled = sapply(c(1:length(colRanges)), FUN = function(i){ quantiles7_withoutNames[,i]/colRanges[i] })
-# 
-# quantiles7_scaled_final = quantiles7
-# quantiles7_scaled_final[,-1] = quantiles7_scaled
-# 
-# plot_prot_quants(quantiles7_scaled_final[inds,], q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
-# plot_prot_quants(quantiles7_scaled_final[indSamp,], q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
 # 
 # 
-# lab120 = read.table("/home/willy/PredictingProteinInteractions/data/labels120.txt", header = TRUE)
+# inds = which(quantiles_trafo[,1] == "000_Trx")
+# plot_prot_quants(quantiles_trafo[inds,], q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
 # 
-# functionals = tolower(lab120$name[which(lab120$label == "glutathionineBinding")])
+# inds = which(quantiles_trafo[,1] == "022")
+# plot_prot_quants(quantiles_trafo[inds,], q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
+# 
+# # install.packages("VoxR")
+# library(VoxR)
+# 
+# voxelizeData  <- function(quantiles, res = 0.01){
+#   # only works with q = 1
+#   
+#   vox_pos = vox(quantiles[,2:4],res = res)
+#   vox_neg = vox(quantiles[,5:7],res = res)
+#   vox_pos_neg = vox(quantiles[,8:10],res = res)
+#   
+#   vox_pos_euc = vox(quantiles[,11:13],res = res)
+#   vox_neg_euc = vox(quantiles[,14:16],res = res)
+#   vox_pos_neg_euc = vox(quantiles[,17:19],res = res)
+#   
+#   return(list("vox_pos" = vox_pos,
+#               "vox_neg" = vox_neg,
+#               "vox_pos_neg" = vox_pos_neg,
+#               
+#               "vox_pos_euc" = vox_pos_euc,
+#               "vox_neg_euc" = vox_neg_euc,
+#               "vox_pos_neg_euc" = vox_pos_neg_euc))
+# }
+# 
+# plotvoxelizeData <- function(voxelizedData, size = 10, newPlot = TRUE){
+#   if(newPlot) {
+#     open3d()
+#   }
+#       
+#   cols = c("red", "blue","green", "brown", "pink", "lightblue")
+#   plot3d(voxelizedData$vox_pos, size = size, col = cols[1], add = !newPlot)
+#   plot3d(voxelizedData$vox_neg, size = size, col = cols[2], add = TRUE)
+#   plot3d(voxelizedData$vox_pos_neg, size = size, col = cols[3], add = TRUE)
+#   
+#   plot3d(voxelizedData$vox_pos_euc, size = size, col = cols[4], add = TRUE)
+#   plot3d(voxelizedData$vox_neg_euc, size = size, col = cols[5], add = TRUE)
+#   plot3d(voxelizedData$vox_pos_neg_euc, size = size, col = cols[6], add = TRUE)
+# }
+# 
+# getTensor <- function(vdata, m = 1000){
+#   ar <- array(0, c(resNum,resNum, resNum))
+#   for(i in 1:nrow(vdata)){
+#     x = vdata[i,1]*resNum
+#     y = vdata[i,2]*resNum
+#     z = vdata[i,3]*resNum
+#     
+#     ar[x,y,z] = vdata[i,4]/1000
+#   }
+#   return(ar)
+# }
+# 
+# pcaTransform <- function(quantiles1){
+#   PCA = prcomp(quantiles1[,-1],retx = TRUE,scale. = FALSE)
+#   quantiles1_pca = PCA$x
+#   
+#   Train_X = quantiles1_pca
+#   colMins = apply(Train_X,2,min)
+#   colMaxs = apply(Train_X,2,max)
+#   colRanges = colMaxs - colMins
+#   Train_X = sapply(c(1:length(colRanges)), FUN = function(i){ (Train_X[,i]- colMins[i])/colRanges[i]})
+#   apply(Train_X,2,max)
+#   apply(Train_X,2,min)
+#   
+#   quantiles_trafo = quantiles1
+#   quantiles_trafo[,-1] = Train_X
+#   
+#   return(quantiles_trafo)
+# }
 # 
 # 
-# # transformQuantsProtein <- function(quantiles, q = 1){
-# #   quants = q+2
-# #   quantsInds = c(1:quants)
-# #   names = quantiles[,1]
-# #
-# #
-# #   quantilesOut = quantiles
-# #   quantiles = quantiles[,-1]
-# #
-# #   out = matrix(unlist(lapply(c(1:nrow(quantiles)), FUN = function(i){
-# #     print(i/nrow(quantiles))
-# #     tmp = rep(0,quants*6)
-# #
-# #     inds = seq(1,quants*6,quants)
-# #     tmp[inds] = quantiles[inds]
-# #     for(j in 2:quants){
-# #       tmp[j] = quantiles[i,j]/quantiles[i,1]
-# #       tmp[j + quants] = quantiles[i,j+quants]/quantiles[i,1+quants]
-# #       tmp[j +quants*2] = quantiles[i,1+j+quants*2]/quantiles[i,1+quants*2]
-# #
-# #       tmp[j+quants*3] = quantiles[i,j+quants*3]/quantiles[i,1+quants*3]
-# #       tmp[j+quants*4] = quantiles[i,j+quants*4]/quantiles[i,1+quants*4]
-# #       tmp[j+quants*5] = quantiles[i,j+quants*5]/quantiles[i,1+quants*5]
-# #
-# #     }
-# #     tmp
-# #   })), byrow = TRUE, ncol = ncol(quantiles))
-# #
-# #   quantilesOut[,-1] = out
-# #   return(quantilesOut)
-# # }
+# get3dRepresentationFromProtein <- function(quantiles, res = 0.1, features = c(1,2)){
+#   voxelizedData = voxelizeData(quantiles,res = res)
+#   
+#   # tensorlist = list()
+#   # tensorlist = getTensor(voxelizedData$vox_pos)
+#   # tensor_pos_euc = getTensor(voxelizedData$vox_pos_euc)
+#   
+#   x_train <- array(0, c(1,resNum,resNum, resNum,length(features)))
+#   
+#   # first <- this protein, 
+#   # last <- chanel
+#   for(i in 1:length(features)){
+#     x_train[1,,,,i] = getTensor(matrix(unlist(voxelizedData[features[i]]), ncol = 4, byrow = FALSE))
+#   }
+#   
+#   return(x_train)
+# }
 # 
 # 
-# transformQuantsProtein <- function(quantiles, q = 1){
-#   quants = q+2
-#   quantsInds = c(1:quants)
+# Times = 20
+# resNum = 5
+# features = c(1,2,3,4,5,6)
 # 
-#   for(i in 1:nrow(quantiles)){
-#     print(i/nrow(quantiles))
+# quantiles_trafo = pcaTransform(quantiles08)
 # 
-#     for(j in 2:quants){
-#       quantiles[i,j + 1] =           quantiles[i,j+1]/quantiles[i,2]
-#       quantiles[i,j + 1 + quants] =  quantiles[i,j+quants+1]/quantiles[i,2+quants]
-#       quantiles[i,j + 1 +quants*2] = quantiles[i,1+j+quants*2+1]/quantiles[i,quants*2+2]
+# quantiles_trafo2 = pcaTransform(quantiles02)
 # 
-#       quantiles[i,j+ 1 + quants*3] = quantiles[i,j+quants*3+1]/quantiles[i,quants*3+2]
-#       quantiles[i,j+ 1 + quants*4] = quantiles[i,j+quants*4+1]/quantiles[i,quants*4+2]
-#       quantiles[i,j+ 1 + quants*5] = quantiles[i,j+quants*5+1]/quantiles[i,quants*5+2]
+# inds = which(quantiles_trafo[,1] == "016")
+# voxelizedData2 = voxelizeData(quantiles_trafo[inds,],1/resNum)
+# plotvoxelizeData(voxelizedData2,newPlot = TRUE)
 # 
-#     }
+# inds = which(quantiles_trafo2[,1] == "016")
+# voxelizedData2 = voxelizeData(quantiles_trafo2[inds,],1/resNum)
+# plotvoxelizeData(voxelizedData2,newPlot = TRUE)
+# 
+# 
+# 
+# protNames = as.character(unique(quantiles_trafo[,1]))
+# X <- array(dim = c(length(protNames)*Times,resNum,resNum, resNum,length(features)))
+# Y = matrix(0, ncol = 2, nrow = length(protNames)*Times)
+# Y_orig_names = rep("", length(protNames)*Times)
+# for(i in 1:length(protNames)){
+#   print(protNames[i])
+#   inds = which(quantiles_trafo[,1] == protNames[i])
+#   X1 = get3dRepresentationFromProtein(quantiles_trafo[inds,], res = 1/resNum, features = features)
+#   
+#   ind_start = (i-1)*Times+1
+#   ind_end = ind_start + Times -1
+#   
+#   for(j in ind_start:ind_end){
+#     X[j,,,,] = X1
+#     Y[j,] <- to_categorical(as.numeric((protNames[i] %in% functionals)), 2)
+#     Y_orig_names[j] =   protNames[i]
 #   }
 # 
-#   return(quantiles)
 # }
 # 
 # 
 # 
-# quantilesGlob_trafo = transformQuantsProtein(quantilesGlob,q = 1)
-# quantilesLoc_trafo = transformQuantsProtein(quantiles7,q = 1)
+# lab = read.table(LABELS, header = TRUE)
+# folds = createFolds(lab$label, k = 10,list = TRUE)
+# foldInd = 1
+# 
+# y_test_name_inds = c(folds[[1]], folds[[2]], folds[[3]])
+# 
+# test_inds = which(Y_orig_names %in% protNames[y_test_name_inds])
+# train_inds = c(1:nrow(X))[-test_inds]
+# 
+# if(k == 1) train_inds = c(1:nrow(X))
+# 
+# trainNames = protNames[-y_test_name_inds]
+# testNames = protNames[y_test_name_inds]
+# 
+# x_test = X[test_inds,,,,]
+# y_test = Y[test_inds,]
+# 
+# x_train= X[train_inds,,,,]
+# y_train = Y[train_inds,]
+# 
+# shuf = shuffle(1:nrow(x_train))
+# x_train = x_train[shuf,,,,]
+# y_train = y_train[shuf,]
 # 
 # 
-# quantilesLoc_trafo = transformQuantsProtein(quantiles7,q = 1)
+# filterSize = c(3,3,3)
+# filterNum = 16
+# filterDropOut = 0.4
+# 
+# model <- keras_model_sequential()
+# model %>% 
+#   layer_conv_3d(filter = filterNum, kernel_size = filterSize, padding = 'same', input_shape = c(resNum,resNum,resNum,length(features))) %>%
+#   layer_dropout(filterDropOut) %>%
+#   layer_activation("relu") %>%
+#   
+#   layer_conv_3d(filter = filterNum, kernel_size = filterSize, padding = 'same') %>%
+#   layer_dropout(filterDropOut) %>%
+#   layer_activation("relu") %>%
+#   layer_max_pooling_3d(pool_size = c(2,2,2))  %>%
+#   
+#   layer_conv_3d(filter = filterNum, kernel_size = filterSize, padding = 'same') %>%
+#   layer_dropout(filterDropOut) %>%
+#   layer_activation("relu") %>%
+#   layer_max_pooling_3d(pool_size = c(2,2,2))  %>%
+#   
+#   layer_flatten() %>%
+#   layer_dropout(0.5) %>%
+#   
+#   layer_dense(50) %>%
+#   layer_activation("relu") %>%
+#   layer_dropout(0.5) %>%
+#   
+#   layer_dense(20) %>%
+#   layer_activation("relu") %>%
+#   layer_dropout(0.5) %>%
+#     
+#   layer_dense(10) %>%
+#   layer_activation("relu") %>%
+#   layer_dropout(0.5) %>%
+#     
+#   layer_dense(units = 2, activation = 'softmax')
+# 
+# model %>% compile(
+#   loss = 'categorical_crossentropy',
+#   optimizer = optimizer_adam(),
+#   metrics = c('accuracy')
+# )
+# 
+# summary(model)
 # 
 # 
-# plot_prot_quants(quantilesLoc_trafo, q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
-# plot_prot_quants(quantilesGlob_trafo, q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
+# weights = c(1,100000)
+# weights_in <- split(weights, c(0,1))
+# print(weights_in)
 # 
-# models10[[1]]$measureNearestNeighbors
-# models5[[1]]$measureNearestNeighbors
-# models20[[1]]$measureNearestNeighbors
+# history <- model %>% fit(
+#   x_train, y_train, 
+#   epochs = 20, batch_size = 16,
+#   weights = list("0"=6,"1"=1),
+#   validation_split = 0.1
+# )
 # 
-# quantiles10[1:1,1:5]
-# quantiles5[1:1,1:5]
-# quantiles20[1:1,1:5]
+# predictions <- model %>% predict_classes(x_test)
 # 
-# quantiles10 + quantiles5
+# sum(predictions)
 # 
-# t = read.table("/home/willy/PredictingProteinInteractions/data/labels120.txt", header = TRUE)
-# functionals = tolower(as.character(t[which(t[,2] == "glutathionineBinding"),1]))
+# length(predictions)
+# gt = reverseToCategorical(y_test,c(0,1))
+# length(which((predictions == gt) == TRUE))/length(predictions)
 # 
-# inds = which(quantiles[,1] %in% functionals)
-# notInds = c(1:nrow(quantiles))[-inds]
-# 
-# 
-# plot_prot_quants(quantiles1, q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
-# plot_prot_quants(quantiles10, q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
-# plot_prot_quants(quantiles20, q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
-# plot_prot_quants(quantiles500, q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
-# plot_prot_quants(quantiles1, q=1, functionals, plotMode = "Booth", withEuclid = TRUE)
-# # plot_prot_quants
+# TInds = which(gt == "1")
+# length(which(predictions[TInds] == "1"))/length(TInds)
 # 
 # 
 # 
-# colnames(quantiles)[11:13]
-# df = cbind(as.character(quantiles1[,1]), rep(0.1,nrow(quantiles1)),quantiles1[,c(11:13)])
 # 
 # 
-# getGeometricCenters(df, 1.0)
-# getGeometricCenters
-# 
-# 
-# m = as.matrix(dist(quantiles1[,8:10], method = "manhattan"))
-# colnames(m) = quantiles1[,1]
-# rownames(m) = quantiles1[,1]
-# 
-# 
-# colnames(m)[which.minn(m[7,],n = 106)]
-# 
-# colnames(quantiles)
-# 
-# findPattern <- function(quantiles1){
-#   distances = list()
-#   for(i in 1:106){
-#     distances[[i]] = dist(matrix(quantiles1[i,-1], nrow = 3), method = "manhattan")
-# 
-#     if(colnames(m)[i] %in% functionals) points3d(distances[[i]][1], distances[[i]][2], distances[[i]][3], col ="red", size = 10)
-#     else points3d(distances[[i]][1], distances[[i]][2], distances[[i]][3], col ="blue")
-#   }
+# pred = predictions
+# # print(pred)
+# gt = reverseToCategorical(y_test,c(0,1))
+# y_test_pred = rep("0",length(pred))
+# su = 0
+# for(i in 1:length(gt)){
+#   if(gt[i] == as.character(pred[i])) su = su + 1
+#   
+#   # y_test_pred[i] = TrFinal$classLevels[pred[i]]
 # }
+# su/length(gt)
+# y_test_pred
 # 
 # 
-# functionals = c(getFunctionalProteins(), "000_Trx")
-# prot_indices = which(quantiles[,1] == "000_Trx")
 # 
-# plot_prot_quants(quantiles[prot_indices,],functionals = functionals,q)
+# confMat = table(factor(y_test_pred),levels = c("0","1"),
+#                 factor(gt), levels = c("0","1"))
 # 
-# q = 1
-# plot_one_prot_quant(quantiles1[which(quantiles1[,1] == "000_Trx"),],q = q,col = "black", size = 20)
-# plot_one_prot_quant(quantiles1[which(quantiles1[,1] == "000_Trx"),],q = q,col = "black", size = 20)
-# plot_one_prot_quant(quantiles[which(quantiles[,1] == "027"),],q = q,col = "black", size = 20)
-# plot_one_prot_quant(quantiles[which(quantiles[,1] == "013"),],q = q,col = "black", size = 20)
-# plot_one_prot_quant(quantiles[which(quantiles[,1] == "016"),],q = q,col = "black", size = 20)
-# plot_one_prot_quant(quantiles[which(quantiles[,1] == "053"),],q = q,col = "black", size = 20)
-# 
-# plot_one_prot_quant(quantiles[which(quantiles[,1] == "002"),],q = q,col = "black", size = 20)
-# functionals
-# 
-# 
+# confMat
+
+
 # #-------------------------------------------------------------------------------------------------------------
 # # experimental end
 # #-------------------------------------------------------------------------------------------------------------
