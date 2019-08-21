@@ -2788,6 +2788,8 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
                                  epochs = modelParameters$epochs)
         
         
+        model %>% save_model_hdf5(paste(expDir,"/my_model.h5", sep = ""))
+        
         createModelStatistics(model, TrFinal, expDir, foldInd, testNames = testNames)
       }
   }
@@ -3476,9 +3478,9 @@ if(mode == "onlyExperiments2"){
   df_summary = getExperimentSummary(expDir = NNexperimentsKfoldDir)
   
   
-  conv = TRUE
+  conv = FALSE
   SAMPLESIZE = 5
-  modelParameters = list("layers" = c(100,50,50), "dropOuts" = c(0.8,0.8,0.8), "metrics" = "accuracy", "optimizerFunName" = "optimizer_adam", "batch_size" = 32, "epochs" = 20)
+  modelParameters = list("layers" = c(50,3,10), "dropOuts" = c(0.05,0.05,0.05), "metrics" = "accuracy", "optimizerFunName" = "optimizer_adam", "batch_size" = 32, "epochs" = 20)
   ProteinsExperimentKfoldCV( sampleSize = SAMPLESIZE,
                              sampleTimes = 400,
                              sampleTimes_test = 10,
@@ -3492,13 +3494,13 @@ if(mode == "onlyExperiments2"){
                                             "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
                                             "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.5_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
                                             "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.8_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv"),
-                             ExperimentName = "Test50",
+                             ExperimentName = "Test51",
                              modelParameters = modelParameters,
                              recalculate = FALSE,
-                             k = 10,
+                             k = 1,
                              onlySummarizeFolds = FALSE,
                              normalizeInputs = TRUE,
-                             saveExperiment = FALSE,
+                             saveExperiment = TRUE,
                              useColIndsToKeep = FALSE,
                              path = NNexperimentsKfoldDir,
                              labels = LABELS)
