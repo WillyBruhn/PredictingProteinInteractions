@@ -1,80 +1,10 @@
+#!/usr/bin/Rscript
 #--------------------------------------------------
 # Willy Bruhn
 # 22.8.19
 #
-# Using SOMs to cluster the features.
 #
 #--------------------------------------------------
-
-install.packages("kohonen")
-library(kohonen)
-
-quantiles_01 = read.csv("/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.1_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv", header = TRUE)
-quantiles_08 = read.csv("/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.8_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv", header = TRUE)
-
-quantiles_01[1:5,]
-
-?kohonen
-
-
-data(degelder)
-mydata <- list(patterns = degelder$patterns,CellVol = log(degelder$properties[,"cell.vol"]))
-## custom distance function
-require(Rcpp)
-sourceCpp(system.file("Distances", "wcc.cpp", package = "kohonen"))
-set.seed(7)
-powsom <- supersom(data = mydata, grid = somgrid(6, 4, "hexagonal"),dist.fcts = c("WCCd", "sumofsquares"),keep.data = TRUE)
-summary(powsom)
-
-
-mydata
-
-
-quantiles_01_list = as.list(quantiles_01[,-1])
-
-length(quantiles_01_list)
-
-
-powsom <- supersom(data = as.list(quantiles_01[,-1]), grid = somgrid(10, 10, "hexagonal"),
-                                dist.fcts = c("manhattan"),keep.data = TRUE)
-
-
-powsom$unit.classif
-
-
-
-
-
-
-
-?supersom
-
-
-  
-data(yeast)
-yeast.supersom <- supersom(yeast, somgrid(6, 6, "hexagonal"),
-                           whatmap = c("alpha", "cdc15", "cdc28", "elu"),
-                           maxNA.fraction = .5)
-
-plot(yeast.supersom, "changes")
-
-length(yeast)
-
-
-mygrid <- somgrid(5, 5, "hexagonal")
-fakesom <- list(grid = mygrid)
-class(fakesom) <- "kohonen"
-
-par(mfrow = c(2,1))
-dists <- unit.distances(mygrid)
-plot(fakesom, type="property", property = dists[1,],
-     main="Distances to unit 1", zlim=c(0,6),
-     palette = rainbow, ncolors = 7)
-
-dists <- unit.distances(mygrid, toroidal=TRUE)
-plot(fakesom, type="property", property = dists[1,],
-     main="Distances to unit 1 (toroidal)", zlim=c(0,6),
-     palette = rainbow, ncolors = 7)
 
 #--------------------------------------------------------------------------------------------------
 
@@ -89,123 +19,233 @@ getGeos <- function(quantiles){
     
     inds = which(quantiles[,1] == names[i])
     geo = colMeans(quantiles[inds,-1])
+    # geo = colSums(quantiles[inds,-1])/nrow(quantiles[inds,-1])
     geos[i,-1] = geo
     geos[i,1] = as.character(names[i])
   }
   return(geos)
 }
 
-geos = getGeos(quantiles_08)
-
-library(rgl)
-functionals = c(getFunctionalProteins(), "000_Trx")
-plot_prot_quants(quantiles = geos,q = 1,functionals = functionals,withEuclid = TRUE)
-
-
-
 
 suppressPackageStartupMessages(library(keras))
 
-# set training data
-x_train <- as.matrix(quantiles_08[,-1])
+
+autoEncoder  <- function(x_train, epochs = 20, encoderDim = 3, unitNums = c(5,5,5), dropOuts = c(0.1,0.1,0.1)){
+  # set model
+  model <- keras_model_sequential()
+  model %>%
+    layer_dense(units = unitNums[1], activation = "relu", input_shape = ncol(x_train)) %>%
+    layer_dense(units = unitNums[2], activation = "relu") %>%
+    layer_dense(units = unitNums[3], activation = "relu") %>%
+    layer_dense(units = unitNums[4], activation = "relu") %>%
+    
+    layer_dense(units = encoderDim, activation = "relu", name = "bottleneck") %>%
+    
+    layer_dense(units = unitNums[4], activation = "relu") %>%
+    layer_dense(units = unitNums[3], activation = "relu") %>%
+    layer_dense(units = unitNums[2], activation = "relu") %>%
+    layer_dense(units = unitNums[1], activation = "relu") %>%
+    layer_dense(units = ncol(x_train))
+  
+
+  # 
+  # # complex but wrong
+  # model %>%
+  #   layer_dense(units = unitNums[1], activation = "relu", input_shape = ncol(x_train)) %>%
+  #   layer_dropout(dropOuts[1])
+  # 
+  # if(length(unitNums) > 1){
+  #   for(i in 2:length(unitNums)){
+  #     model %>%
+  #       layer_dense(units = unitNums[i], activation = "relu") %>%
+  #       layer_dropout(dropOuts[i])
+  #   }
+  # }
+  # 
+  # 
+  # model %>% layer_dense(units = encoderDim, activation = "relu", name = "bottleneck")
+  # 
+  # model %>%
+  #   layer_dense(units = unitNums[length(unitNums)], activation = "relu") %>%
+  #   layer_dropout(dropOuts[length(unitNums)])
+  # 
+  # if(length(unitNums) > 1){
+  #   for(i in (length(unitNums)-1):1){
+  #     model %>%
+  #       layer_dense(units = unitNums[i], activation = "relu") %>%
+  #       layer_dropout(dropOuts[i])
+  #   }
+  # }
+  # 
+  # 
+  # 
+  # model %>% layer_dense(units = ncol(x_train))
+  
+  
+  
+  # view model layers
+  summary(model)
+  
+  
+  # compile model
+  model %>% compile(
+    loss = "mean_squared_error", 
+    optimizer = "adam"
+  )
+  
+  # fit model
+  model %>% fit(
+    x = x_train, 
+    y = x_train,
+    batch_size = 30,
+    epochs = epochs,
+    verbose = 1
+  )
+  
+  return(model)
+}
 
 
-array_reshape(x = quantiles_08[,-1],dim = c(106, nrow(quantiles_08)*(ncol(quantiles_08)-1)/106))
-
-quantiles_08_reshaped = matrix(unlist(quantiles_08_num),nrow = 106, ncol = nrow(quantiles_08)*ncol(quantiles_08[,-1])/106, byrow = TRUE)
-
-quantiles_08_num = lapply(quantiles_08[,-1], FUN = function(i) as.numeric(i))
-
-
-
-
-
-
-
-
-
-# set model
-model <- keras_model_sequential()
-model %>%
-  layer_dense(units = 6, activation = "tanh", input_shape = ncol(x_train)) %>%
-  layer_dense(units = 2, activation = "tanh", name = "bottleneck") %>%
-  layer_dense(units = 6, activation = "tanh") %>%
-  layer_dense(units = ncol(x_train))
-
-# view model layers
-summary(model)
-
-
-# compile model
-model %>% compile(
-  loss = "mean_squared_error", 
-  optimizer = "adam"
-)
-
-# fit model
-model %>% fit(
-  x = x_train, 
-  y = x_train,
-  batch_size = 30,
-  epochs = 2,
-  verbose = 1
-)
-
-# evaluate the performance of the model
-mse.ae2 <- evaluate(model, x_train, x_train)
-mse.ae2
-
-
-# extract the bottleneck layer
-intermediate_layer_model <- keras_model(inputs = model$input, outputs = get_layer(model, "bottleneck")$output)
-intermediate_output <- predict(intermediate_layer_model, x_train)
-
-
-
-
-
-model = load_model_hdf5("/home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Test51/my_model.h5")
-
-TR = readRDS("/home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Test51/Test51sS_5_sT_400_sTt_10_euklid_TRUE_pos_TRUE_neg_TRUE_pos_neg_TRUE_globalToo_FALSE.Rdata")
-
-
+outPath = "/home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Test81/"
+TR_fname = list.files(outPath, pattern = ".Rdata")
+TR = readRDS(paste(outPath,TR_fname, sep = ""))
 TrainTest = TR$TrainTest
 Train_X = TrainTest$X
 Train_X = apply(Train_X, 2, FUN = function(i) as.numeric(as.character(i)))
 
+# Train_X = d2[,-c(1,2)]
+# Train_X = apply(Train_X, 2, FUN = function(i) as.numeric(as.character(i)))
 
-model
+
+ncol(Train_X)
+
+model = autoEncoder(Train_X, epochs = 15,encoderDim = 20,dropOuts = c(0.0,0.0), unitNums = c(100,100,50,30))
 
 
-intermediate_layer_model <- keras_model(inputs = model$input, outputs = get_layer(model, "dense_1")$output)
+
+intermediate_layer_model <- keras_model(inputs = model$input, outputs = get_layer(model, "bottleneck")$output)
 intermediate_output <- predict(intermediate_layer_model, Train_X)
 
-
-
-withNames = data.frame(matrix(0, ncol = 4, nrow = nrow(intermediate_output)))
-# withNames = cbind(TR$originalNames,intermediate_output)
-
+withNames = data.frame(matrix(0, ncol = ncol(intermediate_output)+1, nrow = nrow(intermediate_output)))
 withNames[,-1] = intermediate_output
 withNames[,1] = TR$originalNames
+# withNames[,1] = d2[,1]
+
 geos = getGeos(withNames)
 
-geos
+
+library(rgl)
+# 
+# functionals = getFunctionalProteins()
+# functionalInds2 = which(geos[,1] %in% c(functionals, "000_Trx"))
+# points3d(geos[functionalInds2, -1], col = "red", size = 10)
+# text3d(geos[functionalInds2, -1], texts = geos[functionalInds2, 1])
+# 
+# nonfunctionalInds2 = c(1:nrow(geos))[-functionalInds2]
+# points3d(geos[nonfunctionalInds2,-1], col = "blue", size = 5)  
+# text3d(geos[nonfunctionalInds2, -1], texts = geos[nonfunctionalInds2, 1])
+# 
+# #-------------------------------------------------------------------
+# functionalInds = which(TR$originalNames %in% c(functionals, "000_Trx"))
+# points3d(intermediate_output[functionalInds,], col = "red")
+# 
+# nonfunctionalInds = c(1:nrow(intermediate_output))[-functionalInds]
+# points3d(intermediate_output[nonfunctionalInds,], col = "blue")
+# #-------------------------------------------------------------------
+
+plotBootleNeck <- function(geos, TR, intermediate_output, onlyGeos = FALSE){
+  functionals = getFunctionalProteins()
+  functionalInds2 = which(geos[,1] %in% c(functionals, "000_Trx"))
+  points3d(geos[functionalInds2, -1], col = "red", size = 10)
+  text3d(geos[functionalInds2, -1], texts = geos[functionalInds2, 1])
+  
+  nonfunctionalInds2 = c(1:nrow(geos))[-functionalInds2]
+  points3d(geos[nonfunctionalInds2,-1], col = "blue", size = 5)  
+  text3d(geos[nonfunctionalInds2, -1], texts = geos[nonfunctionalInds2, 1])
+  
+  if(!onlyGeos){
+    #-------------------------------------------------------------------
+    functionalInds = which(TR$originalNames %in% c(functionals, "000_Trx"))
+    points3d(intermediate_output[functionalInds,], col = "red")
+    
+    nonfunctionalInds = c(1:nrow(intermediate_output))[-functionalInds]
+    points3d(intermediate_output[nonfunctionalInds,], col = "blue")
+    #-------------------------------------------------------------------
+  }
+
+}
+
+library("cluster")
+library("tcltk")
+library("ggplot2")
+library("ggdendro")
+library("plot3D")
+library("emdist")
+
+mydendrogramplot2 <- function(outPath, dist, labels,fName){
+
+  # print(labels)
+  if(is.null(labels)){
+    print("no labels specified ...")
+    labels = data.frame(matrix(0, ncol = 2, nrow = nrow(dist)))
+    print(nrow(labels))
+    print(nrow(dist))
+    
+    colnames(labels) = c("name","label")
+    labels[,2] = rep("label_unknown",nrow(dist))
+    labels[,1] = rownames(dist)
+  }
+
+  hc2 = hclust(dist(dist), "ave")
+  dendr2    <- dendro_data(hc2, type="rectangle") # convert for ggplot
+  clust2    <- cutree(hc2,k=2)                    # find 2 clusters
+  clust2.df <- data.frame(label=names(clust2), cluster=factor(labels$label))
+  
+  dendr2[["labels"]] <- merge(dendr2[["labels"]],clust2.df, by="label")
+  
+  p <- ggplot() + geom_segment(data=segment(dendr2), aes(x=x, y=y, xend=xend, yend=yend)) + 
+    geom_text(data=label(dendr2), aes(x, y, label=label, hjust=0, color=cluster), 
+              size=3) +
+    coord_flip() + scale_y_reverse(expand=c(0.2, 0)) + 
+    theme(axis.line.y=element_blank(),
+          axis.ticks.y=element_blank(),
+          axis.text.y=element_blank(),
+          axis.title.y=element_blank(),
+          panel.background=element_rect(fill="white"),
+          panel.grid=element_blank())
+  
+  plot(p)
+  
+  if(fName != ""){
+    print(paste(outPath,"/Dendrogram_", fName, ".pdf",sep=""))
+    ggsave(filename = paste(outPath,"/Dendrogram_", fName, ".pdf",sep=""),height=7, width = 14)
+  }
+
+  
+}
+
+getDendrogramFromBootleNeck <- function(geos, labelFname = "/home/willy/PredictingProteinInteractions/data/labels.txt", outPath = "", fName = ""){
+  geoDistances = as.matrix(dist(x = geos[,-1],upper = TRUE,diag = TRUE, method = "euclidean"))
+  rownames(geoDistances) = geos[,1]
+  colnames(geoDistances) = geos[,1]
+  
+  labels = read.table(labelFname, header = TRUE)
+  
+  num = 1
+  geos[num+6,1]
+  sort(geoDistances[num+6,], decreasing = TRUE)
+  mydendrogramplot2(outPath,geoDistances, labels, fName)
+}
 
 
-functionalInds = which(TR$originalNames %in% c(functionals, "000_Trx"))
-points3d(intermediate_output[functionalInds,], col = "red")
+plotBootleNeck(geos,TR, intermediate_output, onlyGeos = TRUE)
+getDendrogramFromBootleNeck(geos, outPath = outPath, fName = "AutoEncoder")
 
-nonfunctionalInds = c(1:nrow(intermediate_output))[-functionalInds]
-points3d(intermediate_output[nonfunctionalInds,], col = "blue")
 
-functionalInds2 = which(geos[,1] %in% c(functionals, "000_Trx"))
-points3d(geos[functionalInds2, -1], col = "red", size = 10)
-text3d(geos[functionalInds2, -1], texts = geos[functionalInds2, 1])
 
-nonfunctionalInds2 = c(1:nrow(geos))[-functionalInds2]
-points3d(geos[nonfunctionalInds2,-1], col = "blue")  
-text3d(geos[nonfunctionalInds2, -1], texts = geos[nonfunctionalInds2, 1])
 
+# geo2 = read.csv("/home/willy/PredictingProteinInteractions/data/106Test/UltraQuickRepSub/_quickEmd_n_100_m_400_q_20_geo.csv", header = TRUE, row.names = 1)
+# d2 = read.csv("/home/willy/PredictingProteinInteractions/data/106Test/UltraQuickRepSub/_quickEmd_n_100_m_400_q_20_projection.csv", header = TRUE)
 
 
 

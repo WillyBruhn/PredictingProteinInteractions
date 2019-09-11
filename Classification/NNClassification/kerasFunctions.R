@@ -374,13 +374,15 @@ sampleMultipleTimesParallel3  <- function(quantiles,sampleSize, sampleTimes, num
                             
                             ordered = relevantQuantiles[sampled_indices,]
                             
-                            # if(sort == TRUE){
-                            #   print(ordered)
-                            #   ordered = ordered[ do.call(order, as.list(ordered)), ]
-                            # 
-                            #   print("ordered")
-                            #   print(ordered)
-                            # }
+                            if(sort == TRUE){
+                              # print(ordered)
+                              # ordered = ordered[ do.call(order, as.list(ordered)), ]
+                              # 
+                              # print("ordered")
+                              # print(ordered)
+                              
+                              ordered = ordered[order(rowSums(ordered)),]
+                            }
                             
                             c(subClassName_tmp,as.vector(t(ordered)))
                           }))
@@ -393,10 +395,11 @@ sampleMultipleTimesParallel3  <- function(quantiles,sampleSize, sampleTimes, num
 
 
 # 
-# fName = "/home/willy/PredictingProteinInteractions/data/ModelNet10/AllQuantilesDirStandard/All_ind_Distances_nE_1000_nD_100_n_40_m_100_q_1.csv"
+# fName = "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.1_m_1_q_1_muNN_10_alpha_1_betha_1_loc_TRUE.csv"
 # quantiles = read.csv(file =fName, header = TRUE)
-# 
-# sampleMultipleTimesParallel3(quantiles = quantiles[1:200,-2] , sampleSize = 2,sampleTimes = 5,numPermutations = 1, m = 100)
+# quantiles = quantiles[,1:4]
+
+# sampleMultipleTimesParallel3(quantiles = quantiles[1:100,] , sampleSize = 10,sampleTimes = 1,numPermutations = 1, m = 100, sort = TRUE)
 # 
 # 
 # library(rbenchmark)

@@ -61,7 +61,7 @@ if(strsplit(wsPath, "/")[[1]][3] == "sysgen"){
   WS_flag = TRUE
 }
 
-SAVE_EXPERIMENTS = FALSE
+SAVE_EXPERIMENTS = TRUE
 if(WS_flag == TRUE){
   library(reticulate)
   use_python("/home/sysgen/.pyenv/versions/3.6.3/bin/python3.6", required = TRUE)
@@ -1393,16 +1393,37 @@ modelProt_custom <- function(TrainTest, weights, layers = c(10,10), dropOuts = c
   # define the architecture of the model
   model <- keras_model_sequential()
   if(conv == FALSE){
-    model %>%   layer_dense(units = layers[1],input_shape = c(ncol(x_train))) %>% 
-      layer_dropout(rate = dropOuts[1]) %>% 
-      layer_activation("relu")
+    # model %>%   layer_dense(units = layers[1],input_shape = c(ncol(x_train))) %>% 
+    #   layer_dropout(rate = dropOuts[1]) %>% 
+    #   layer_activation("relu")
+    # 
+    # if(length(layers) > 1){
+    #   for(i in 2:length(layers)){
+    #     model %>%   layer_dense(units = layers[i])%>%layer_dropout(rate = dropOuts[i]) %>% layer_activation("relu")
+    #   }
+    # }
+    # model %>% layer_dense(units = numClasses, activation = 'softmax')
     
-    if(length(layers) > 1){
-      for(i in 2:length(layers)){
-        model %>%   layer_dense(units = layers[i])%>%layer_dropout(rate = dropOuts[i]) %>% layer_activation("relu")
-      }
-    }
-    model %>% layer_dense(units = numClasses, activation = 'softmax')
+    
+    model %>%   layer_dense(units = layers[1],input_shape = c(ncol(x_train))) %>% 
+                layer_dropout(rate = dropOuts[1]) %>% 
+                layer_activation("relu") %>%
+                
+                layer_dense(units = layers[2], activation = "relu") %>%
+                layer_dropout(rate = dropOuts[2]) %>% 
+                layer_activation("relu") %>%
+ 
+                layer_dense(units = layers[3], activation = "relu") %>%
+                layer_dropout(rate = dropOuts[3]) %>% 
+                layer_activation("relu") %>%     
+      
+                layer_dense(units = layers[4], activation = "relu") %>%
+                layer_dropout(rate = dropOuts[4]) %>% 
+                layer_activation("relu") %>%
+      
+                layer_dense(units = numClasses, activation = 'softmax')
+    
+    
   }else{
     channels = 6*4
     dropOutsFilters = 0.4
@@ -1958,17 +1979,17 @@ joinStats <- function(path = "/home/willy/PredictingProteinInteractions/Results/
 # Generate the quantiles
 #-------------------------------------------------------------------------------------------------------------
 if(mode == "onlyGenerateModels" || mode == "Booth"){
-  alphas = c(1,2,3)
-  bethas = c(1,2,3)
+  alphas = c(3)
+  bethas = c(3)
   
   alpha_betha_grid = expand.grid(alphas,bethas)
   
-  # nlocals = c(0.2,0.3,0.5,0.8)
-  nlocals = c(0.8)
+  nlocals = c(0.05)
+  # nlocals = c(0.8)
   
   for(i in 1:length(nlocals)) {
     # tmp = getQuantilesAlphaBetha(alpha = alphas[i],betha = bethas[j], n = 0.2, m = 1,q = 1, locale = TRUE, path = path106Experiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 20, recalculate = FALSE,recalculateQuants = TRUE)
-    tmp = getQuantilesAlphaBetha(alpha = 1,betha = 1, n = nlocals[i], m = 1,q = 1, locale = TRUE, path = path106Experiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = TRUE)
+    tmp = getQuantilesAlphaBetha(alpha = 0,betha = 0, n = nlocals[i], m = 1,q = 1, locale = TRUE, path = path106Experiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = FALSE)
     
   }
 }
@@ -2383,20 +2404,55 @@ writeExperimentParametersToFile <- function(pathToStats = "/home/willy/Predictin
 # }
 #-----------------
 
-selectFeatures <- function(q, pos_flag, neg_flag, pos_neg_flag){
+selectFeatures <- function(q, pos_flag, neg_flag, pos_neg_flag, euklid_geo, numOfFeatures = 1){
   #-------------------------------------------------------------------------------------------
   # which features to use
   #-------------------------------------------------------------------------------------------
+  # euklid_geo, geo, euklid, both
+  # numOfFeatures ... number of matrices that are cbinded
+  
   quants = c(1:(q+2))
   # keep the name in any case
   colIndsTokeep = c(1)
-  if(pos_flag) colIndsTokeep = c(colIndsTokeep, quants+1, length(quants)*3+1+quants)
-  if(neg_flag) colIndsTokeep = c(colIndsTokeep, length(quants)*1+1+quants, length(quants)*4+1+quants)
-  if(pos_neg_flag) colIndsTokeep = c(colIndsTokeep, length(quants)*2+1+quants, length(quants)*5+1+quants)
-  colIndsTokeep = sort(colIndsTokeep)
   
+  colIndsTokeep_tmp = c()
+  if(euklid_geo == "both"){
+    if(pos_flag) colIndsTokeep_tmp = c(colIndsTokeep_tmp, quants+1, length(quants)*3+1+quants)
+    if(neg_flag) colIndsTokeep_tmp = c(colIndsTokeep_tmp, length(quants)*1+1+quants, length(quants)*4+1+quants)
+    if(pos_neg_flag) colIndsTokeep_tmp = c(colIndsTokeep_tmp, length(quants)*2+1+quants, length(quants)*5+1+quants)
+  } else if(euklid_geo == "euklid"){
+    if(pos_flag) colIndsTokeep_tmp = c(colIndsTokeep_tmp, length(quants)*3+1+quants)
+    if(neg_flag) colIndsTokeep_tmp = c(colIndsTokeep_tmp, length(quants)*4+1+quants)
+    if(pos_neg_flag) colIndsTokeep_tmp = c(colIndsTokeep_tmp, length(quants)*5+1+quants)
+  } else if(euklid_geo == "geo"){
+    if(pos_flag) colIndsTokeep_tmp = c(colIndsTokeep_tmp, quants+1)
+    if(neg_flag) colIndsTokeep_tmp = c(colIndsTokeep_tmp, length(quants)*1+1+quants)
+    if(pos_neg_flag) colIndsTokeep_tmp = c(colIndsTokeep_tmp, length(quants)*2+1+quants)
+  }
+    
+  for(i in 1:numOfFeatures){
+    shift = (length(quants)*6)*(i-1)
+    # colIndsTokeep_tmp = colIndsTokeep_tmp + shift
+    colIndsTokeep = c(colIndsTokeep, colIndsTokeep_tmp + shift)
+  }
+  
+  colIndsTokeep = sort(colIndsTokeep)
   return(colIndsTokeep)
 }
+
+# selectFeatures(q = 20, pos_flag = TRUE, neg_flag = FALSE, pos_neg_flag = FALSE,euklid_geo = "both", numOfFeatures = 4)
+# 
+# (20+2)*6*4
+
+
+
+# example = read.csv("/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.1_m_1_q_1_muNN_10_alpha_1_betha_1_loc_TRUE.csv", header = TRUE)
+
+# example[1:5,]
+# 
+# ncol(example)
+
+
 
 
 createModelStatistics <- function(model, TrFinal, expDir, foldNum, testNames){
@@ -2517,7 +2573,7 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
                                sampleTimes_test = 10,
                                batch_size = 1024,
                                epochs = 300,
-                               euklid = TRUE,
+                               euklid = "both",
                                q = 1,
                                m = 1000, 
                                numClasses = 2,
@@ -2538,7 +2594,8 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
                                saveExperiment = TRUE,
                                splitPattern = "",
                                useColIndsToKeep = TRUE,
-                               doParallel = TRUE){
+                               doParallel = TRUE,
+                               sort = TRUE){
   
   print("------------------------------------------------------")
   print(paste("Experiment ", ExperimentName))
@@ -2640,7 +2697,7 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
       # which features to use
       #-------------------------------------------------------------------------------------------
       if(useColIndsToKeep == TRUE){
-        colIndsTokeep = selectFeatures(q, pos_flag, neg_flag, pos_neg_flag)
+        colIndsTokeep = selectFeatures(q, pos_flag, neg_flag, pos_neg_flag, euklid, numOfFeatures = length(fNameTrain))
         quantilesTrain = quantilesTrain[,colIndsTokeep]
       }
 
@@ -2677,7 +2734,7 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
       
       classLevels = mapping$name
   
-      TrainTest = getSamplesSurf2(quantilesTrain, sampleSize = sampleSize,sampleTimes = sampleTimes,euklid = euklid, numPermutations = numPermutations, numClasses = numClasses, m = m,reDo = reCalculateTrainTest, splitPattern = splitPattern)
+      TrainTest = getSamplesSurf2(quantilesTrain, sampleSize = sampleSize,sampleTimes = sampleTimes,euklid = euklid, numPermutations = numPermutations, numClasses = numClasses, m = m,reDo = reCalculateTrainTest, splitPattern = splitPattern, sort = sort)
       
       originalNames = getProtNameFromNameWithClassAsNumber(TrainTest$y_original_names)
 
@@ -2774,8 +2831,8 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
         
         # return(TrFinal)
         
-        fac = 1
-        if(euklid) fac=2
+        # fac = 1
+        # if(euklid == "both") fac=2
         # model = modelFUN(TrainTest = TrFinal,sampleSize = sampleSize,sampleTimes = sampleTimes,q = (q+2)*3*fac,epochs = epochs, batch_size = batch_size,weights = weights)
         
         model = modelProt_custom(TrainTest = TrFinal,
@@ -3479,29 +3536,29 @@ if(mode == "onlyExperiments2"){
   
   
   conv = FALSE
-  SAMPLESIZE = 5
-  modelParameters = list("layers" = c(50,3,10), "dropOuts" = c(0.05,0.05,0.05), "metrics" = "accuracy", "optimizerFunName" = "optimizer_adam", "batch_size" = 32, "epochs" = 20)
+  SAMPLESIZE = 10
+  modelParameters = list("layers" = c(100,50,50,30), "dropOuts" = c(0.1,0.1,0.1,0.1), "metrics" = "accuracy", "optimizerFunName" = "optimizer_adam", "batch_size" = 32, "epochs" = 15)
   ProteinsExperimentKfoldCV( sampleSize = SAMPLESIZE,
-                             sampleTimes = 400,
+                             sampleTimes = 100,
                              sampleTimes_test = 10,
                              batch_size = 32,
                              epochs = 30,
-                             euklid = TRUE,
-                             q = 1,
+                             euklid = "both",
+                             potentials = c("pos", "neg", "pos_neg"),
+                             q = 20,
                              m = 1000,
                              numClasses = 2,
-                             fNameTrain = c("/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.1_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
-                                            "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
-                                            "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.5_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
-                                            "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.8_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv"),
-                             ExperimentName = "Test51",
+                             fNameTrain = c("/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.05_m_1_q_20_muNN_10_alpha_0_betha_0_loc_TRUE.csv",
+                                            "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.1_m_1_q_20_muNN_10_alpha_0_betha_0_loc_TRUE.csv",
+                                            "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.8_m_1_q_20_muNN_10_alpha_0_betha_0_loc_TRUE.csv"),
+                                            ExperimentName = "Test81",
                              modelParameters = modelParameters,
                              recalculate = FALSE,
-                             k = 1,
+                             k = 10,
                              onlySummarizeFolds = FALSE,
                              normalizeInputs = TRUE,
                              saveExperiment = TRUE,
-                             useColIndsToKeep = FALSE,
+                             useColIndsToKeep = TRUE,
                              path = NNexperimentsKfoldDir,
                              labels = LABELS)
   
