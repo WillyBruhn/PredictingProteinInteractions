@@ -1984,12 +1984,12 @@ if(mode == "onlyGenerateModels" || mode == "Booth"){
   
   alpha_betha_grid = expand.grid(alphas,bethas)
   
-  nlocals = c(0.05)
+  nlocals = c(0.05,0.1,0.2,0.3,0.5,0.8)
   # nlocals = c(0.8)
   
   for(i in 1:length(nlocals)) {
     # tmp = getQuantilesAlphaBetha(alpha = alphas[i],betha = bethas[j], n = 0.2, m = 1,q = 1, locale = TRUE, path = path106Experiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 20, recalculate = FALSE,recalculateQuants = TRUE)
-    tmp = getQuantilesAlphaBetha(alpha = 0,betha = 0, n = nlocals[i], m = 1,q = 1, locale = TRUE, path = path106Experiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = FALSE)
+    tmp = getQuantilesAlphaBetha(alpha = 0,betha = 0, n = nlocals[i], m = 1,q = 20, locale = TRUE, path = path106Experiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = FALSE)
     
   }
 }
@@ -3535,11 +3535,13 @@ if(mode == "onlyExperiments2"){
   df_summary = getExperimentSummary(expDir = NNexperimentsKfoldDir)
   
   
+  # 0.05,0.1,0.2,0.3,0.5,0.8)
+  
   conv = FALSE
-  SAMPLESIZE = 50
+  SAMPLESIZE = 200
   modelParameters = list("layers" = c(500,100,50,30), "dropOuts" = c(0.2,0.1,0.1,0.1), "metrics" = "accuracy", "optimizerFunName" = "optimizer_adam", "batch_size" = 32, "epochs" = 20)
   ProteinsExperimentKfoldCV( sampleSize = SAMPLESIZE,
-                             sampleTimes = 600,
+                             sampleTimes = 400,
                              sampleTimes_test = 10,
                              batch_size = 32,
                              epochs = 30,
@@ -3548,11 +3550,12 @@ if(mode == "onlyExperiments2"){
                              q = 1,
                              m = 1000,
                              numClasses = 2,
-                             fNameTrain = c("/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.1_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
-                                            "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
-                                            "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.5_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
-                                            "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.8_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv"),
-                                            ExperimentName = "Test84",
+                             fNameTrain = c("/home/sysgen/Documents/LWB/PredictingProteinInteractions//data/106Test/Quantiles//All_n_0.05_m_1_q_1_muNN_10_alpha_1_betha_0_loc_TRUE.csv",
+                                            "/home/sysgen/Documents/LWB/PredictingProteinInteractions//data/106Test/Quantiles//All_n_0.1_m_1_q_1_muNN_10_alpha_3_betha_2_loc_TRUE.csv",
+                                             "/home/sysgen/Documents/LWB/PredictingProteinInteractions//data/106Test/Quantiles//All_n_0.5_m_1_q_1_muNN_10_alpha_2_betha_0_loc_TRUE.csv",
+                                             "/home/sysgen/Documents/LWB/PredictingProteinInteractions//data/106Test/Quantiles//All_n_0.3_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+                                             "/home/sysgen/Documents/LWB/PredictingProteinInteractions//data/106Test/Quantiles//All_n_0.2_m_1_q_1_muNN_10_alpha_3_betha_1_loc_TRUE.csv"),
+                                            ExperimentName = "Test201",
                              modelParameters = modelParameters,
                              recalculate = FALSE,
                              k = 10,

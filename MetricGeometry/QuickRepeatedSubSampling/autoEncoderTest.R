@@ -168,10 +168,10 @@ customEvaluation <- function(X, Xperm){
 
 #--------------------------------------------------
 
-n = 1000
+n = 10
 # quants = 3*6*5
 quants = 1
-features = 5
+features = 3
 blocks = 1
 
 # blocks ... number of points combined
@@ -184,10 +184,10 @@ X = matrix(rnorm(n = n*dim), ncol = dim)
 ncol(X)
 
 library(permute)
-Tr = createPermutations(X, numPermutations = 40, blockSize = features*quants)
+Tr = createPermutations(X, numPermutations = 10, blockSize = features*quants)
 
 
-model = autoEncoderPermutation(Tr$X, Tr$X_perm,unitNums = c(100,100,100,100), dropOuts = c(0.0), encoderDim = 5,epochs = 10)
+model = autoEncoderPermutation(Tr$X, Tr$X_perm,unitNums = c(100,100,100,100), dropOuts = c(0.0), encoderDim = 3,epochs = 10)
 
 
 intermediate_layer_model <- keras_model(inputs = model$input, outputs = get_layer(model, "bottleneck")$output)
@@ -206,5 +206,6 @@ customEvaluation(intermediate_output,intermediate_output_perm)
 
 
 intermediate_output[1:5,]
-
+intermediate_output_perm[1:5,]
 Tr$X[1:5,]
+X_output[1:5,]

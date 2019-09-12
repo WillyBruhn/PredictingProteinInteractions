@@ -9,6 +9,44 @@
 #--------------------------------------------------------------------------------------------------
 library(permute)
 
+wsPath = "/home/willy/PredictingProteinInteractions/setUp/SourceLoader.R"
+wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
+
+# mode = "onlyExperiments2"
+# mode = "onlyGenerateModels"
+
+# mode ="randomSearch"
+
+# mode = "hlat"
+
+# wsPath = as.character(paste(funr::get_script_path(), "/../../setUp/SourceLoader.R", sep = ""))
+
+
+source(wsPath)
+sourceFiles(c("helperFunctions"))
+sourceFiles(c("UltraQuickRepeatedSubSampling"))
+sourceFiles(c("TriangulateIsoSurface"))
+sourceFiles(c("kerasFunctions"))
+
+# .restar
+
+
+# hacky way to check if we are on WS
+WS_flag = FALSE
+if(strsplit(wsPath, "/")[[1]][3] == "sysgen"){
+  WS_flag = TRUE
+}
+
+SAVE_EXPERIMENTS = TRUE
+if(WS_flag == TRUE){
+  library(reticulate)
+  use_python("/home/sysgen/.pyenv/versions/3.6.3/bin/python3.6", required = TRUE)
+  use_virtualenv("/home/sysgen/.pyenv/versions/3.6.3/",required = TRUE)
+  SAVE_EXPERIMENTS = TRUE
+}
+
+
+
 getFunctionalProteins <- function(file = "/home/willy/PredictingProteinInteractions/data/106Test/labels.txt"){
   labels = read.table(file = file, header = TRUE)
   return(as.character(labels$name[which(labels$label == "functional")]))
@@ -112,7 +150,9 @@ autoEncoder  <- function(x_train, epochs = 20, encoderDim = 3, unitNums = c(5,5,
 }
 
 
-outPath = "/home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Test84/"
+# outPath = "/home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Test84/"
+outPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Test201/"
+
 TR_fname = list.files(outPath, pattern = ".Rdata")
 TR = readRDS(paste(outPath,TR_fname, sep = ""))
 TrainTest = TR$TrainTest
@@ -124,7 +164,7 @@ shuf = shuffle(1:nrow(Train_X))
 Train_X = Train_X[shuf,]
 TR$originalNames = TR$originalNames[shuf]
 
-rm()
+
 
 # Train_X = d2[,-c(1,2)]
 # Train_X = apply(Train_X, 2, FUN = function(i) as.numeric(as.character(i)))
@@ -132,7 +172,7 @@ rm()
 
 ncol(Train_X)
 
-model = autoEncoder(Train_X, epochs = 15,encoderDim = 3,dropOuts = c(0.0,0.0), unitNums = c(100,100,50,30),batchSize = 256)
+model = autoEncoder(Train_X, epochs = 15,encoderDim = 100,dropOuts = c(0.0,0.0), unitNums = c(300,300,300,300),batchSize = 256)
 
 
 
@@ -147,7 +187,7 @@ withNames[,1] = TR$originalNames
 geos = getGeos(withNames)
 
 
-library(rgl)
+# library(rgl)
 # 
 # functionals = getFunctionalProteins()
 # functionalInds2 = which(geos[,1] %in% c(functionals, "000_Trx"))
@@ -238,11 +278,19 @@ mydendrogramplot2 <- function(outPath, dist, labels,fName){
 }
 
 getDendrogramFromBootleNeck <- function(geos, labelFname = "/home/willy/PredictingProteinInteractions/data/labels.txt", outPath = "", fName = ""){
-  geoDistances = as.matrix(dist(x = geos[,-1],upper = TRUE,diag = TRUE, method = "euclidean"))
+  geos = geos[order(geos[,1]),]
+  
+  geoDistances = as.matrix(dist(x = geos[,-1],upper = TRUE,diag = TRUE, method = "manhattan"))
   rownames(geoDistances) = geos[,1]
   colnames(geoDistances) = geos[,1]
   
   labels = read.table(labelFname, header = TRUE)
+  
+  labels = labels[which(labels$name %in% geos[,1]),]
+  labels = labels[order(labels$name),]
+  
+  
+  print(labels)
   
   num = 1
   geos[num+6,1]
@@ -251,9 +299,34 @@ getDendrogramFromBootleNeck <- function(geos, labelFname = "/home/willy/Predicti
 }
 
 
-plotBootleNeck(geos,TR, intermediate_output, onlyGeos = TRUE)
-getDendrogramFromBootleNeck(geos, outPath = outPath, fName = "AutoEncoder")
+if(!WS_flag) plotBootleNeck(geos,TR, intermediate_output, onlyGeos = TRUE)
+getDendrogramFromBootleNeck(geos, outPath = outPath, fName = "AutoEncoder", labelFname = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/labels.txt")
 
+
+###############################################################################
+# subset
+subset = read.table("//home/sysgen/Documents/LWB/PredictingProteinInteractions/data/106Test/subsetNames.txt", header = FALSE)
+
+# indices = which(TR$originalNames %in% as.character(subset[,1]))
+# TRSUB = TR
+# TRSUB$TrainTest$X = TR$TrainTest$X[indices,]
+# TRSUB$originalNames = TR$originalNames[indices]
+# TRSUB$TrainTest$y = TR$TrainTest$y[indices,]
+
+indices2 = which(geos[,1] %in% as.character(subset[,1]))
+
+length(which( subset[,1] %in% getFunctionalProteins("/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/labels.txt")))
+length(subset[,1])
+
+
+labels = read.table("/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/labels.txt", header = TRUE)
+labels
+
+
+labels[which(labels$name %in% geos[indices2,1]),]
+
+
+getDendrogramFromBootleNeck(geos[indices2,], outPath = outPath, fName = "AutoEncoderSubset", labelFname = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/labels.txt")
 
 
 
