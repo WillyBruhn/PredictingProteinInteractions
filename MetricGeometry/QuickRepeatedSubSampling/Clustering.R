@@ -7,6 +7,12 @@
 #--------------------------------------------------
 
 #--------------------------------------------------------------------------------------------------
+library(permute)
+
+getFunctionalProteins <- function(file = "/home/willy/PredictingProteinInteractions/data/106Test/labels.txt"){
+  labels = read.table(file = file, header = TRUE)
+  return(as.character(labels$name[which(labels$label == "functional")]))
+}
 
 getGeos <- function(quantiles){
   
@@ -30,7 +36,7 @@ getGeos <- function(quantiles){
 suppressPackageStartupMessages(library(keras))
 
 
-autoEncoder  <- function(x_train, epochs = 20, encoderDim = 3, unitNums = c(5,5,5), dropOuts = c(0.1,0.1,0.1)){
+autoEncoder  <- function(x_train, epochs = 20, encoderDim = 3, unitNums = c(5,5,5), dropOuts = c(0.1,0.1,0.1), batchSize = 30){
   # set model
   model <- keras_model_sequential()
   model %>%
@@ -97,7 +103,7 @@ autoEncoder  <- function(x_train, epochs = 20, encoderDim = 3, unitNums = c(5,5,
   model %>% fit(
     x = x_train, 
     y = x_train,
-    batch_size = 30,
+    batch_size = batchSize,
     epochs = epochs,
     verbose = 1
   )
@@ -106,12 +112,19 @@ autoEncoder  <- function(x_train, epochs = 20, encoderDim = 3, unitNums = c(5,5,
 }
 
 
-outPath = "/home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Test81/"
+outPath = "/home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Test84/"
 TR_fname = list.files(outPath, pattern = ".Rdata")
 TR = readRDS(paste(outPath,TR_fname, sep = ""))
 TrainTest = TR$TrainTest
 Train_X = TrainTest$X
 Train_X = apply(Train_X, 2, FUN = function(i) as.numeric(as.character(i)))
+
+
+shuf = shuffle(1:nrow(Train_X))
+Train_X = Train_X[shuf,]
+TR$originalNames = TR$originalNames[shuf]
+
+rm()
 
 # Train_X = d2[,-c(1,2)]
 # Train_X = apply(Train_X, 2, FUN = function(i) as.numeric(as.character(i)))
@@ -119,7 +132,7 @@ Train_X = apply(Train_X, 2, FUN = function(i) as.numeric(as.character(i)))
 
 ncol(Train_X)
 
-model = autoEncoder(Train_X, epochs = 15,encoderDim = 20,dropOuts = c(0.0,0.0), unitNums = c(100,100,50,30))
+model = autoEncoder(Train_X, epochs = 15,encoderDim = 3,dropOuts = c(0.0,0.0), unitNums = c(100,100,50,30),batchSize = 256)
 
 
 
@@ -155,7 +168,7 @@ library(rgl)
 
 plotBootleNeck <- function(geos, TR, intermediate_output, onlyGeos = FALSE){
   functionals = getFunctionalProteins()
-  functionalInds2 = which(geos[,1] %in% c(functionals, "000_Trx"))
+  functionalInds2 = which(geos[,1] %in% functionals)
   points3d(geos[functionalInds2, -1], col = "red", size = 10)
   text3d(geos[functionalInds2, -1], texts = geos[functionalInds2, 1])
   
@@ -165,7 +178,7 @@ plotBootleNeck <- function(geos, TR, intermediate_output, onlyGeos = FALSE){
   
   if(!onlyGeos){
     #-------------------------------------------------------------------
-    functionalInds = which(TR$originalNames %in% c(functionals, "000_Trx"))
+    functionalInds = which(TR$originalNames %in% functionals)
     points3d(intermediate_output[functionalInds,], col = "red")
     
     nonfunctionalInds = c(1:nrow(intermediate_output))[-functionalInds]
@@ -205,7 +218,7 @@ mydendrogramplot2 <- function(outPath, dist, labels,fName){
   
   p <- ggplot() + geom_segment(data=segment(dendr2), aes(x=x, y=y, xend=xend, yend=yend)) + 
     geom_text(data=label(dendr2), aes(x, y, label=label, hjust=0, color=cluster), 
-              size=3) +
+              size=2) +
     coord_flip() + scale_y_reverse(expand=c(0.2, 0)) + 
     theme(axis.line.y=element_blank(),
           axis.ticks.y=element_blank(),
@@ -218,7 +231,7 @@ mydendrogramplot2 <- function(outPath, dist, labels,fName){
   
   if(fName != ""){
     print(paste(outPath,"/Dendrogram_", fName, ".pdf",sep=""))
-    ggsave(filename = paste(outPath,"/Dendrogram_", fName, ".pdf",sep=""),height=7, width = 14)
+    ggsave(filename = paste(outPath,"/Dendrogram_", fName, ".pdf",sep=""),height=8, width = 5)
   }
 
   

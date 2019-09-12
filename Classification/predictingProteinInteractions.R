@@ -714,7 +714,7 @@ AllvsAll.Cluster <- function(outPath, distance_matrix, fname, plotToFile = TRUE,
 }
 
 
-mydendrogramplot2 <- function(outPath, dist, labels,fName){
+mydendrogramplot2 <- function(outPath, dist, labels,fName, dendroHeight = 8, dendroWidth = 5, dendroLetterSize = 2){
   
   # print(dist)
   
@@ -743,7 +743,7 @@ mydendrogramplot2 <- function(outPath, dist, labels,fName){
   
   p <- ggplot() + geom_segment(data=segment(dendr2), aes(x=x, y=y, xend=xend, yend=yend)) + 
     geom_text(data=label(dendr2), aes(x, y, label=label, hjust=0, color=cluster), 
-              size=3) +
+              size=dendroLetterSize) +
     coord_flip() + scale_y_reverse(expand=c(0.2, 0)) + 
     theme(axis.line.y=element_blank(),
           axis.ticks.y=element_blank(),
@@ -753,7 +753,7 @@ mydendrogramplot2 <- function(outPath, dist, labels,fName){
           panel.grid=element_blank())
   
   print(paste(outPath,"/Dendrogram_", fName, ".pdf",sep=""))
-  ggsave(filename = paste(outPath,"/Dendrogram_", fName, ".pdf",sep=""),height=7, width = 14)
+  ggsave(filename = paste(outPath,"/Dendrogram_", fName, ".pdf",sep=""),height=dendroHeight, width = dendroWidth)
   
 }
 

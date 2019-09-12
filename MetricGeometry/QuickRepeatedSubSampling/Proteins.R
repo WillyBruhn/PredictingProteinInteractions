@@ -3536,22 +3536,23 @@ if(mode == "onlyExperiments2"){
   
   
   conv = FALSE
-  SAMPLESIZE = 10
-  modelParameters = list("layers" = c(100,50,50,30), "dropOuts" = c(0.1,0.1,0.1,0.1), "metrics" = "accuracy", "optimizerFunName" = "optimizer_adam", "batch_size" = 32, "epochs" = 15)
+  SAMPLESIZE = 50
+  modelParameters = list("layers" = c(500,100,50,30), "dropOuts" = c(0.2,0.1,0.1,0.1), "metrics" = "accuracy", "optimizerFunName" = "optimizer_adam", "batch_size" = 32, "epochs" = 20)
   ProteinsExperimentKfoldCV( sampleSize = SAMPLESIZE,
-                             sampleTimes = 100,
+                             sampleTimes = 600,
                              sampleTimes_test = 10,
                              batch_size = 32,
                              epochs = 30,
                              euklid = "both",
                              potentials = c("pos", "neg", "pos_neg"),
-                             q = 20,
+                             q = 1,
                              m = 1000,
                              numClasses = 2,
-                             fNameTrain = c("/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.05_m_1_q_20_muNN_10_alpha_0_betha_0_loc_TRUE.csv",
-                                            "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.1_m_1_q_20_muNN_10_alpha_0_betha_0_loc_TRUE.csv",
-                                            "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.8_m_1_q_20_muNN_10_alpha_0_betha_0_loc_TRUE.csv"),
-                                            ExperimentName = "Test81",
+                             fNameTrain = c("/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.1_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+                                            "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+                                            "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.5_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+                                            "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.8_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv"),
+                                            ExperimentName = "Test84",
                              modelParameters = modelParameters,
                              recalculate = FALSE,
                              k = 10,
