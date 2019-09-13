@@ -2455,10 +2455,20 @@ selectFeatures <- function(q, pos_flag, neg_flag, pos_neg_flag, euklid_geo, numO
 
 
 
-createModelStatistics <- function(model, TrFinal, expDir, foldNum, testNames){
-  predictions <- model %>% predict_classes(TrFinal$x_test)
+createModelStatistics <- function(model, TrFinal, expDir, foldNum, testNames, sequentialModel = FALSE){
   
-  pred = predictions+1
+  pred = c()
+  if(sequentialModel == TRUE){
+    predictions <- model %>% predict_classes(TrFinal$x_test)
+    pred = predictions+1
+  } else {
+    predictions <- model %>% predict(TrFinal$x_test)
+    
+    for(i in 1:nrow(predictions)){
+      pred[i] = which.max(predictions[i,])
+    }
+  }
+
   # print(pred)
   gt = reverseToCategorical(TrFinal$y_test,TrFinal$classLevels)
   y_test_pred = rep("0",length(pred))
@@ -2568,6 +2578,135 @@ getProtNameFromNameWithClassAsNumber <- function(y_original_names){
   return(y_original_names_out)
 }
 
+
+autoEncoder2  <- function(x_train, x_train_permute, epochs = 20, encoderDim = 3, unitNums = c(5,5,5), dropOuts = c(0.1,0.1,0.1), batchSize = 30){
+  # set model
+  model <- keras_model_sequential()
+  model %>%
+    layer_dense(units = unitNums[1], activation = "relu", input_shape = ncol(x_train)) %>%
+    layer_dropout(dropOuts[1]) %>%
+    layer_dense(units = unitNums[2], activation = "relu") %>%
+    layer_dropout(dropOuts[2]) %>%
+    layer_dense(units = unitNums[3], activation = "relu") %>%
+    layer_dropout(dropOuts[3]) %>%
+    layer_dense(units = unitNums[4], activation = "relu") %>%
+    layer_dropout(dropOuts[4]) %>%
+    # layer_dense(units = unitNums[5], activation = "relu") %>%
+    # layer_dropout(dropOuts[5]) %>%
+    
+    layer_dense(units = encoderDim, activation = "relu", name = "bottleneck") %>%
+    
+    # layer_dense(units = unitNums[5], activation = "relu") %>%
+    layer_dense(units = unitNums[4], activation = "relu") %>%
+    layer_dense(units = unitNums[3], activation = "relu") %>%
+    layer_dense(units = unitNums[2], activation = "relu") %>%
+    layer_dense(units = unitNums[1], activation = "relu") %>%
+    layer_dense(units = ncol(x_train))
+  
+  
+  
+  # view model layers
+  summary(model)
+  
+  
+  # compile model
+  model %>% compile(
+    loss = "mean_squared_error", 
+    optimizer = "adam"
+  )
+  
+  # fit model
+  model %>% fit(
+    x = x_train, 
+    y = x_train_permute,
+    batch_size = batchSize,
+    epochs = epochs,
+    verbose = 1
+  )
+  
+  return(model)
+}
+
+
+createPermutations <- function(X, numPermutations = 1, m = 100){
+  #--------------------------------------------------------------------------------
+  # for each row in X choose one element with the same name at random
+  # this way different representations of the same model are recognized as the same.
+  #
+  # m ... number of consecutive rows that are from the same protein
+  #
+  #--------------------------------------------------------------------------------
+  
+  X_perm = matrix(0,ncol = ncol(X), nrow = numPermutations*nrow(X)/m)
+  X_perm_out = matrix(0,ncol = ncol(X), nrow = numPermutations*nrow(X)/m)
+  
+  for(i in 1:nrow(X_perm)){
+    
+    # print(i/numPermutations)
+    
+    start = ceiling(i/numPermutations)
+    
+    start3 = (start-1)*m+1
+    end3 = start3+m-1
+    
+    # print(paste(start3,end3))
+    
+    ind1 = sample(c(start3:end3),1)
+    ind2 = sample(c(start3:end3),1)
+    
+    X_perm[i,] = X[ind1,]
+    X_perm_out[i,] = X[ind2,]
+  }
+  
+  
+  return(list("X_perm" = X_perm, "X_perm_out" = X_perm_out))
+}
+
+model_built_from_pretrained <- function(GR,modelPreTrained, epochs = 30, batch_size = 64, weights, sampleSize = NULL){
+  
+  encoder <- keras_model(inputs = modelPreTrained$input, outputs = get_layer(modelPreTrained, "bottleneck")$output)
+  # encoder <- keras_model_sequential(inputs = modelPreTrained$input, outputs = get_layer(modelPreTrained, "bottleneck")$output)
+  
+  # add our custom layers
+  predictions <- encoder$output %>% 
+    layer_dense(units = 100, activation = 'relu') %>% 
+    layer_dropout(0.2) %>%
+    layer_dense(units = 100, activation = 'relu') %>% 
+    layer_dropout(0.2) %>% 
+    layer_dense(units = 100, activation = 'relu') %>% 
+    layer_dropout(0.2) %>% 
+    layer_dense(units = 100, activation = 'relu') %>% 
+    layer_dropout(0.2) %>% 
+    layer_dense(units = 100, activation = 'relu') %>% 
+    layer_dropout(0.2) %>% 
+    layer_dense(units = 2, activation = 'softmax')
+  
+  # this is the model we will train
+  fullModel <- keras_model(inputs = encoder$input, outputs = predictions)
+  
+  # first: train only the top layers (which were randomly initialized)
+  freeze_weights(encoder)
+  
+  fullModel %>% compile(
+    loss = 'categorical_crossentropy',
+    optimizer = optimizer_rmsprop(),
+    metrics = c('accuracy')
+  )
+  
+  x_train = GR$X_perm
+  y_train = GR$y
+  
+  history <- fullModel %>% fit(
+    x_train, y_train, 
+    epochs = epochs, batch_size = batch_size,
+    validation_split = 0.05)
+  
+  fullModel %>% summary()
+  
+  return(fullModel)
+}
+
+
 ProteinsExperimentKfoldCV <- function(sampleSize = 20,
                                sampleTimes = 10,
                                sampleTimes_test = 10,
@@ -2595,7 +2734,8 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
                                splitPattern = "",
                                useColIndsToKeep = TRUE,
                                doParallel = TRUE,
-                               sort = TRUE){
+                               sort = TRUE,
+                               pre_training = TRUE){
   
   print("------------------------------------------------------")
   print(paste("Experiment ", ExperimentName))
@@ -2802,18 +2942,10 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
           Test_X = sapply(c(1:length(colRanges)), FUN = function(i){ (Test_X[,i]- colMins[i])/colRanges[i]})
           # Test_X = sapply(c(1:length(colRanges)), FUN = function(i){ Test_X[,i]/colRanges[i] })
         }
-
-        
-        shuf = shuffle(1:nrow(Train_X))
-        TrFinal = list("x_train" = Train_X[shuf,], "y_train" = Train_y[shuf,], "x_test" = Test_X, "y_test" = Test_y, "numClasses" = numClasses, "classLevels" = classLevels, "mapping" = mapping)
-        
-        classLabels = reverseToCategorical(oneHot = TrFinal$y_train, mapping$name)
-        
-        # print(mapping)
-        # print(classLabels)
         
         weights = rep(1,length(classLevels))
         
+        classLabels = reverseToCategorical(oneHot = Train_y, mapping$name)
         if(modelParameters$metrics == "accuracy"){
           for(i in 1:length(weights)){
             weights[i] = 1/(length(which(classLabels == classLevels[i]))/length(classLabels))
@@ -2824,28 +2956,62 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
           weights = weights_input * normalize(weights)
         }
 
-
         weights <- split(weights, mapping$name-1)
         print(weights)
-  
         
-        # return(TrFinal)
+        model <- keras_model_sequential()
+        if(pre_training == TRUE){
+          # first build an autoEncoder
+          print("Building the auto-encoder ...")
+          
+          GR = createPermutations(Train_X, numPermutations = sampleTimes, m = sampleTimes)
+          library(permute)
+          shuf = shuffle(1:nrow(GR$X_perm))
+          GR$X_perm = GR$X_perm[shuf,]
+          GR$X_perm_out = GR$X_perm_out[shuf,]
+          GR$originalNames = originalNames[shuf]
+          
+          print(length(shuf))
+          print(nrow(Train_y))
+          GR$y = Train_y[shuf,]
+          
+          modelPreTrained = autoEncoder2(GR$X_perm, GR$X_perm_out, epochs = 15,encoderDim = 100,dropOuts = c(0.0,0.0,0.0,0.0,0.0), unitNums = c(500,300,100,100),batchSize = 256)
+          # model %>% save_model_hdf5(paste(outPath,"autoEncodeModel.h5", sep =""))
+          # 
+          # modelPreTrained <- load_model_hdf5(paste(outPath,"autoEncodeModel.h5", sep =""))
+          # modelPreTrained %>% summary()
+          
+          print("Training the neural-net ...")
+          model = model_built_from_pretrained(GR,modelPreTrained,weights = weights, batch_size = modelParameters$batch_size,epochs = modelParameters$epochs)
+
+          # model %>% save_model_hdf5(paste(expDir,"/my_model.h5", sep = ""))
+          
+        } else {
+          shuf = shuffle(1:nrow(Train_X))
+          TrFinal = list("x_train" = Train_X[shuf,], "y_train" = Train_y[shuf,], "x_test" = Test_X, "y_test" = Test_y, "numClasses" = numClasses, "classLevels" = classLevels, "mapping" = mapping)
+          # classLabels = reverseToCategorical(oneHot = TrFinal$y_train, mapping$name)
+          
+          
+          model = modelProt_custom(TrainTest = TrFinal,
+                                   weights = weights,
+                                   layers = modelParameters$layers,
+                                   dropOuts = modelParameters$dropOuts,
+                                   optimizerFunName = modelParameters$optimizerFunName,
+                                   metrics = modelParameters$metrics,
+                                   batch_size = modelParameters$batch_size,
+                                   epochs = modelParameters$epochs)
+          
+          # model %>% save_model_hdf5(paste(expDir,"/my_model.h5", sep = ""))
+        }
         
-        # fac = 1
-        # if(euklid == "both") fac=2
-        # model = modelFUN(TrainTest = TrFinal,sampleSize = sampleSize,sampleTimes = sampleTimes,q = (q+2)*3*fac,epochs = epochs, batch_size = batch_size,weights = weights)
         
-        model = modelProt_custom(TrainTest = TrFinal,
-                                 weights = weights,
-                                 layers = modelParameters$layers,
-                                 dropOuts = modelParameters$dropOuts,
-                                 optimizerFunName = modelParameters$optimizerFunName,
-                                 metrics = modelParameters$metrics,
-                                 batch_size = modelParameters$batch_size,
-                                 epochs = modelParameters$epochs)
+        # return(model)
+
+        # model %>% save_model_hdf5(paste(expDir,"/my_model.h5", sep = ""))
+        # model <- load_model_hdf5(paste(expDir,"my_model.h5", sep =""))
         
         
-        model %>% save_model_hdf5(paste(expDir,"/my_model.h5", sep = ""))
+        TrFinal = list("x_train" = Train_X, "y_train" = Train_y, "x_test" = Test_X, "y_test" = Test_y, "numClasses" = numClasses, "classLevels" = classLevels, "mapping" = mapping)
         
         createModelStatistics(model, TrFinal, expDir, foldInd, testNames = testNames)
       }
@@ -3538,10 +3704,10 @@ if(mode == "onlyExperiments2"){
   # 0.05,0.1,0.2,0.3,0.5,0.8)
   
   conv = FALSE
-  SAMPLESIZE = 200
+  SAMPLESIZE = 100
   modelParameters = list("layers" = c(500,100,50,30), "dropOuts" = c(0.2,0.1,0.1,0.1), "metrics" = "accuracy", "optimizerFunName" = "optimizer_adam", "batch_size" = 32, "epochs" = 20)
   ProteinsExperimentKfoldCV( sampleSize = SAMPLESIZE,
-                             sampleTimes = 400,
+                             sampleTimes = 100,
                              sampleTimes_test = 10,
                              batch_size = 32,
                              epochs = 30,
@@ -3550,12 +3716,10 @@ if(mode == "onlyExperiments2"){
                              q = 1,
                              m = 1000,
                              numClasses = 2,
-                             fNameTrain = c("/home/sysgen/Documents/LWB/PredictingProteinInteractions//data/106Test/Quantiles//All_n_0.05_m_1_q_1_muNN_10_alpha_1_betha_0_loc_TRUE.csv",
-                                            "/home/sysgen/Documents/LWB/PredictingProteinInteractions//data/106Test/Quantiles//All_n_0.1_m_1_q_1_muNN_10_alpha_3_betha_2_loc_TRUE.csv",
-                                             "/home/sysgen/Documents/LWB/PredictingProteinInteractions//data/106Test/Quantiles//All_n_0.5_m_1_q_1_muNN_10_alpha_2_betha_0_loc_TRUE.csv",
-                                             "/home/sysgen/Documents/LWB/PredictingProteinInteractions//data/106Test/Quantiles//All_n_0.3_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
-                                             "/home/sysgen/Documents/LWB/PredictingProteinInteractions//data/106Test/Quantiles//All_n_0.2_m_1_q_1_muNN_10_alpha_3_betha_1_loc_TRUE.csv"),
-                                            ExperimentName = "Test201",
+                             fNameTrain = c("/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.1_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+                                            "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+                                            "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.05_m_1_q_1_muNN_10_alpha_0_betha_0_loc_TRUE.csv"),
+                                            ExperimentName = "Test89",
                              modelParameters = modelParameters,
                              recalculate = FALSE,
                              k = 10,
@@ -3564,8 +3728,9 @@ if(mode == "onlyExperiments2"){
                              saveExperiment = TRUE,
                              useColIndsToKeep = TRUE,
                              path = NNexperimentsKfoldDir,
-                             labels = LABELS)
-  
+                             labels = LABELS,
+                             pre_training = TRUE)
+
   
   df_summary = getExperimentSummary(expDir = NNexperimentsKfoldDir)
 }
