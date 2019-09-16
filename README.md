@@ -333,9 +333,7 @@ Contains the images that were produced in the thesis with the implementations.
 Contains the tables that were produced in the thesis with the implementations.
 
 # TODO
-## Thesis
-* We/I
-* Math-chapter
+
 
 ## Research
 * active center

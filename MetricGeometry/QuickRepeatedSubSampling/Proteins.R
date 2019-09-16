@@ -3133,7 +3133,8 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
     
     print(ExperimentFile)
 
-    df = data.frame(matrix(0,ncol = 2, nrow = 17 + 2*length(modelParameters$layers)))
+    lastInd = 18
+    df = data.frame(matrix(0,ncol = 2, nrow = lastInd+1 + 2*length(modelParameters$layers)))
     colnames(df) = c("parameter","value")
     df[1,] = c("sampleSize", sampleSize)
     df[2,] = c("sampleTimes", sampleTimes)
@@ -3151,18 +3152,20 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
     df[14,] = c("ExperimentName", ExperimentName)
     df[15,] = c("modelName", "customModel")
     df[16,] = c("k", k)
+    df[17,] = c("pre_training", pre_training)
+    df[18,] = c("fps", fps)
     
     
     for(i in 1:length(fNameTrain)){
-      df[16+i,] = c(paste("Ft",i, sep ="_"), fNameTrain[i])
+      df[lastInd+i,] = c(paste("Ft",i, sep ="_"), fNameTrain[i])
     }
     
     for(i in 1:length(modelParameters$layers)){
-      df[16+i + length(fNameTrain),] = c(paste("L",i, sep ="_"), modelParameters$layers[i])
+      df[lastInd+i + length(fNameTrain),] = c(paste("L",i, sep ="_"), modelParameters$layers[i])
     }
     
     for(i in 1:length(modelParameters$dropOuts)){
-      df[16+i+ length(modelParameters$layers) + length(fNameTrain),] = c(paste("d",i, sep ="_"), modelParameters$dropOuts[i])
+      df[lastInd+i+ length(modelParameters$layers) + length(fNameTrain),] = c(paste("d",i, sep ="_"), modelParameters$dropOuts[i])
     }
     
 
@@ -4093,10 +4096,10 @@ if(mode == "onlyExperiments2"){
 
   
   conv = FALSE
-  SAMPLESIZE = 100
+  SAMPLESIZE = 20
   modelParameters = list("layers" = c(500,100,50,30), "dropOuts" = c(0.2,0.1,0.1,0.1), "metrics" = "accuracy", "optimizerFunName" = "optimizer_adam", "batch_size" = 32, "epochs" = 20)
   ProteinsExperimentKfoldCV( sampleSize = SAMPLESIZE,
-                             sampleTimes = 50,
+                             sampleTimes = 200,
                              sampleTimes_test = 10,
                              batch_size = 32,
                              epochs = 30,
@@ -4110,7 +4113,7 @@ if(mode == "onlyExperiments2"){
                                               "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.05_m_1_q_1_muNN_10_alpha_0_betha_0_loc_TRUE.csv",
                                               "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.5_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
                                               "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.8_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv"),
-                                            ExperimentName = "Test108",
+                                            ExperimentName = "Test109",
                              modelParameters = modelParameters,
                              recalculate = FALSE,
                              k = 10,
