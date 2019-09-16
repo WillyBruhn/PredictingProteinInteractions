@@ -375,11 +375,7 @@ sampleMultipleTimesParallel3  <- function(quantiles,sampleSize, sampleTimes, num
                             ordered = relevantQuantiles[sampled_indices,]
                             
                             if(sort == TRUE){
-                              # print(ordered)
-                              # ordered = ordered[ do.call(order, as.list(ordered)), ]
-                              # 
-                              # print("ordered")
-                              # print(ordered)
+
                               
                               ordered = ordered[order(rowSums(ordered)),]
                             }
@@ -444,6 +440,13 @@ sampleMultipleTimesParallel3  <- function(quantiles,sampleSize, sampleTimes, num
 # sampleMultipleTimes(quantiles = quantiles[1:2,], sampleSize = 2,sampleTimes = 1,numPermutations = 1)
 # 
 # quantiles[1:2,]
+
+
+
+
+
+
+
 
 
 sampleMultipleTimesMoments  <- function(quantiles,sampleSize, sampleTimes){

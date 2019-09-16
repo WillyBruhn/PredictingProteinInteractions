@@ -253,7 +253,6 @@ downsampleMemoliMethod <- function(model_rgl,points, edges, graph, n_s_euclidean
   library(rdist)
   
   print("step 1: euclidean fps ...")
-  
   sampled_indices = myFarthestPointSampling(points, k = n_s_euclidean)
   
   if(plot) plotDownsampledPoints(model_rgl,points,sampled_indices, plotModel = FALSE)

@@ -168,15 +168,9 @@ autoEncoder2  <- function(x_train, x_train_permute, epochs = 20, encoderDim = 3,
     layer_dropout(dropOuts[2]) %>%
     layer_dense(units = unitNums[3], activation = "relu") %>%
     layer_dropout(dropOuts[3]) %>%
-    layer_dense(units = unitNums[4], activation = "relu") %>%
-    layer_dropout(dropOuts[4]) %>%
-    # layer_dense(units = unitNums[5], activation = "relu") %>%
-    # layer_dropout(dropOuts[5]) %>%
     
     layer_dense(units = encoderDim, activation = "relu", name = "bottleneck") %>%
     
-    # layer_dense(units = unitNums[5], activation = "relu") %>%
-    layer_dense(units = unitNums[4], activation = "relu") %>%
     layer_dense(units = unitNums[3], activation = "relu") %>%
     layer_dense(units = unitNums[2], activation = "relu") %>%
     layer_dense(units = unitNums[1], activation = "relu") %>%
@@ -221,7 +215,7 @@ createPermutations <- function(X, numPermutations = 1, m = 100){
 
   for(i in 1:nrow(X_perm)){
     
-    print(i/numPermutations)
+    print(i/nrow(X_perm))
     
     start = ceiling(i/numPermutations)
 
@@ -241,18 +235,90 @@ createPermutations <- function(X, numPermutations = 1, m = 100){
   return(list("X_perm" = X_perm, "X_perm_out" = X_perm_out))
 }
 
+
+createPermutations2 <- function(X, names, y, numPermutations = 1, m = 100){
+  #--------------------------------------------------------------------------------
+  # for each row in X choose one element with the same name at random
+  # this way different representations of the same model are recognized as the same.
+  #
+  # m ... number of consecutive rows that are from the same protein
+  #
+  #--------------------------------------------------------------------------------
+  
+  X_perm = matrix(0,ncol = ncol(X), nrow = numPermutations*nrow(X)/m)
+  X_perm_out = matrix(0,ncol = ncol(X), nrow = numPermutations*nrow(X)/m)
+  
+  inds_perm = rep(0,numPermutations*nrow(X)/m)
+  inds_perm_out = rep(0,numPermutations*nrow(X)/m)
+  
+  names_perm = rep(0,numPermutations*nrow(X)/m)
+  y_perm = matrix(0,nrow = numPermutations*nrow(X)/m, ncol = ncol(y))
+  
+  for(i in 1:(nrow(X)/m)){
+    
+    # print(i/nrow(X)*m)
+    
+    start = ceiling(i/m)
+    
+    start3 = (i-1)*m+1
+    end3 = start3+m-1
+    
+    inds = c(start3:end3)[sample(c(1:m),numPermutations, replace = TRUE)]
+    
+    # print(paste(start3,end3))
+
+    inds2 = c(inds)[shuffle(numPermutations)]
+
+    # 
+    # print(inds)
+    # print(inds2)
+    
+    startInd = (i-1)*numPermutations+1
+    endInd = startInd + numPermutations-1
+
+    X_perm[startInd:endInd,] = X[inds,]
+    X_perm_out[startInd:endInd,] = X[inds2,]
+    
+    names_perm[startInd:endInd] = names[inds]
+    y_perm[startInd:endInd,] = y[inds,]
+  }
+  
+  # X_perm = X[inds_perm,] 
+  # X_perm_out = X[inds_perm_out,] 
+  
+  return(list("X_perm" = X_perm, "X_perm_out" = X_perm_out, "originalNames" = names_perm, "y" = y_perm))
+}
+
+
+# mat = matrix(c(1:15), ncol = 3)
+# mat[c(1,2,1),]
+
+# shuffle(c(100),)
+
 # n = 106
 # m = 100
-# colN = 1000
+# colN = 100
 # 
 # X = matrix(rnorm(colN*n*m),ncol = colN, nrow = n*m)
 # 
-# GR = createPermutations(X,numPermutations = 100,m = m)
+# GR = createPermutations2(X,numPermutations = 10,m = m)
+# 
+# nrow(X)
+# nrow(GR$X_perm)
+
+# n = 10
+# m = 2
+# X = matrix(c(1:100),ncol = 1, nrow = n*m)
+# GR = createPermutations2(X,names = c(1:n*m), y = matrix(rep(0,2*n*m), ncol = 2), numPermutations = 1,m = m)
+# 
+# GR$X_perm_out
+
+
 
 #----------------------------------------------------------------------------------------------------------------
 
 
-outPath = "/home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Test87/"
+outPath = "/home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Test104/"
 # outPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Test201/"
 
 TR_fname = list.files(outPath, pattern = ".Rdata")
@@ -269,19 +335,29 @@ Train_X = sapply(c(1:length(colRanges)), FUN = function(i){ (Train_X[,i]- colMin
 
 nrow(Train_X)
 
-
-GR = createPermutations(Train_X, numPermutations = 100, m = 100)
+GR = createPermutations2(Train_X, names = TR$originalNames, y = TR$TrainTest$y, numPermutations = 400, m = 100)
 
 GR$X_perm[1:10,1:10]
 GR$X_perm_out[1:5,1:10]
+
+
+
+Train_X[1:10,1:10]
+
+
+
+length(which(is.na(GR$X_perm) == TRUE))
+length(which(is.na(GR$X_perm_out) == TRUE))
+
+106*50
 
 
 library(permute)
 shuf = shuffle(1:nrow(GR$X_perm))
 GR$X_perm = GR$X_perm[shuf,]
 GR$X_perm_out = GR$X_perm_out[shuf,]
-GR$originalNames = TR$originalNames[shuf]
-GR$y = TR$TrainTest$y[shuf,]
+GR$originalNames = GR$originalNames[shuf]
+GR$y = GR$y[shuf,]
 
 
 
@@ -290,7 +366,7 @@ ncol(Train_X)
 
 gc()
 
-model = autoEncoder2(GR$X_perm, GR$X_perm_out, epochs = 15,encoderDim = 3,dropOuts = c(0.0,0.0,0.0,0.0,0.0), unitNums = c(500,300,100,100),batchSize = 256)
+model = autoEncoder2(GR$X_perm, GR$X_perm_out, epochs = 15,encoderDim = 3,dropOuts = c(0.0,0.0,0.0,0.0,0.0), unitNums = c(100,100,100),batchSize = 64*4)
 model %>% save_model_hdf5(paste(outPath,"autoEncodeModel.h5", sep =""))
 
 modelPreTrained <- load_model_hdf5(paste(outPath,"autoEncodeModel.h5", sep =""))
