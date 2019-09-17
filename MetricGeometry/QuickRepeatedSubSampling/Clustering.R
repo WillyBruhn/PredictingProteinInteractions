@@ -236,6 +236,7 @@ createPermutations <- function(X, numPermutations = 1, m = 100){
 }
 
 
+
 createPermutations2 <- function(X, names, y, numPermutations = 1, m = 100){
   #--------------------------------------------------------------------------------
   # for each row in X choose one element with the same name at random
@@ -266,16 +267,16 @@ createPermutations2 <- function(X, names, y, numPermutations = 1, m = 100){
     inds = c(start3:end3)[sample(c(1:m),numPermutations, replace = TRUE)]
     
     # print(paste(start3,end3))
-
+    
     inds2 = c(inds)[shuffle(numPermutations)]
-
+    
     # 
     # print(inds)
     # print(inds2)
     
     startInd = (i-1)*numPermutations+1
     endInd = startInd + numPermutations-1
-
+    
     X_perm[startInd:endInd,] = X[inds,]
     X_perm_out[startInd:endInd,] = X[inds2,]
     
@@ -318,7 +319,7 @@ createPermutations2 <- function(X, names, y, numPermutations = 1, m = 100){
 #----------------------------------------------------------------------------------------------------------------
 
 
-outPath = "/home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Test104/"
+outPath = "/home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Test112/"
 # outPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Test201/"
 
 TR_fname = list.files(outPath, pattern = ".Rdata")
@@ -333,9 +334,10 @@ colRanges = colMaxs - colMins
 Train_X = sapply(c(1:length(colRanges)), FUN = function(i){ (Train_X[,i]- colMins[i])/colRanges[i]})
 
 
-nrow(Train_X)
+nrow(Train_X)/50
+# ncol(Train_X)
 
-GR = createPermutations2(Train_X, names = TR$originalNames, y = TR$TrainTest$y, numPermutations = 400, m = 100)
+GR = createPermutations2(Train_X, names = TR$originalNames, y = TR$TrainTest$y, numPermutations = 400, m = 50)
 
 GR$X_perm[1:10,1:10]
 GR$X_perm_out[1:5,1:10]
@@ -366,7 +368,7 @@ ncol(Train_X)
 
 gc()
 
-model = autoEncoder2(GR$X_perm, GR$X_perm_out, epochs = 15,encoderDim = 3,dropOuts = c(0.0,0.0,0.0,0.0,0.0), unitNums = c(100,100,100),batchSize = 64*4)
+model = autoEncoder2(GR$X_perm, GR$X_perm_out, epochs = 15,encoderDim = 100,dropOuts = c(0.0,0.0,0.0,0.0,0.0), unitNums = c(100,100,100),batchSize = 64*8)
 model %>% save_model_hdf5(paste(outPath,"autoEncodeModel.h5", sep =""))
 
 modelPreTrained <- load_model_hdf5(paste(outPath,"autoEncodeModel.h5", sep =""))
@@ -376,50 +378,50 @@ mod <- load_model_hdf5("/home/willy/PredictingProteinInteractions/data/106Test/N
 mod %>% summary()
 
 
-model_built_from_pretrained <- function(GR, epochs = 30, batch_size = 64, weights, sampleSize = NULL){
- 
-  encoder <- keras_model(inputs = modelPreTrained$input, outputs = get_layer(modelPreTrained, "bottleneck")$output)
-  
-  # add our custom layers
-  predictions <- encoder$output %>% 
-    layer_dense(units = 100, activation = 'relu') %>% 
-    layer_dropout(0.2) %>%
-    layer_dense(units = 100, activation = 'relu') %>% 
-    layer_dropout(0.2) %>% 
-    layer_dense(units = 100, activation = 'relu') %>% 
-    layer_dropout(0.2) %>% 
-    layer_dense(units = 100, activation = 'relu') %>% 
-    layer_dropout(0.2) %>% 
-    layer_dense(units = 100, activation = 'relu') %>% 
-    layer_dropout(0.2) %>% 
-    layer_dense(units = 2, activation = 'softmax')
-  
-  # this is the model we will train
-  fullModel <- keras_model(inputs = encoder$input, outputs = predictions)
-  
-  # first: train only the top layers (which were randomly initialized)
-  freeze_weights(encoder)
-  
-  fullModel %>% compile(
-    loss = 'categorical_crossentropy',
-    optimizer = optimizer_rmsprop(),
-    metrics = c('accuracy')
-  )
-  
-  x_train = GR$X_perm
-  y_train = GR$y
-  
-  history <- fullModel %>% fit(
-    x_train, y_train, 
-    epochs = epochs, batch_size = batch_size,
-    validation_split = 0.05)
-   
-  return(fullModel)
-}
+# model_built_from_pretrained <- function(GR, epochs = 30, batch_size = 64, weights, sampleSize = NULL){
+#  
+#   encoder <- keras_model(inputs = modelPreTrained$input, outputs = get_layer(modelPreTrained, "bottleneck")$output)
+#   
+#   # add our custom layers
+#   predictions <- encoder$output %>% 
+#     layer_dense(units = 100, activation = 'relu') %>% 
+#     layer_dropout(0.2) %>%
+#     layer_dense(units = 100, activation = 'relu') %>% 
+#     layer_dropout(0.2) %>% 
+#     layer_dense(units = 100, activation = 'relu') %>% 
+#     layer_dropout(0.2) %>% 
+#     layer_dense(units = 100, activation = 'relu') %>% 
+#     layer_dropout(0.2) %>% 
+#     layer_dense(units = 100, activation = 'relu') %>% 
+#     layer_dropout(0.2) %>% 
+#     layer_dense(units = 2, activation = 'softmax')
+#   
+#   # this is the model we will train
+#   fullModel <- keras_model(inputs = encoder$input, outputs = predictions)
+#   
+#   # first: train only the top layers (which were randomly initialized)
+#   freeze_weights(encoder)
+#   
+#   fullModel %>% compile(
+#     loss = 'categorical_crossentropy',
+#     optimizer = optimizer_rmsprop(),
+#     metrics = c('accuracy')
+#   )
+#   
+#   x_train = GR$X_perm
+#   y_train = GR$y
+#   
+#   history <- fullModel %>% fit(
+#     x_train, y_train, 
+#     epochs = epochs, batch_size = batch_size,
+#     validation_split = 0.05)
+#    
+#   return(fullModel)
+# }
 
 
 
-model_built_from_pretrained(GR,weights = list("1" = 6, "0" = 1))
+# model_built_from_pretrained(GR,weights = list("1" = 6, "0" = 1))
 
 
 # clustering with the bootleneck
