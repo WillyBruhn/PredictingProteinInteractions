@@ -168,9 +168,11 @@ autoEncoder2  <- function(x_train, x_train_permute, epochs = 20, encoderDim = 3,
     layer_dropout(dropOuts[2]) %>%
     layer_dense(units = unitNums[3], activation = "relu") %>%
     layer_dropout(dropOuts[3]) %>%
+
     
     layer_dense(units = encoderDim, activation = "relu", name = "bottleneck") %>%
     
+
     layer_dense(units = unitNums[3], activation = "relu") %>%
     layer_dense(units = unitNums[2], activation = "relu") %>%
     layer_dense(units = unitNums[1], activation = "relu") %>%
@@ -319,7 +321,9 @@ createPermutations2 <- function(X, names, y, numPermutations = 1, m = 100){
 #----------------------------------------------------------------------------------------------------------------
 
 
-outPath = "/home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Test112/"
+outPath = "/home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Test118/"
+# outPath = "/home/willy/PredictingProteinInteractions/data/120Experiment/NNexperimentsKfoldCV/Test101/"
+
 # outPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Test201/"
 
 TR_fname = list.files(outPath, pattern = ".Rdata")
@@ -337,7 +341,9 @@ Train_X = sapply(c(1:length(colRanges)), FUN = function(i){ (Train_X[,i]- colMin
 nrow(Train_X)/50
 # ncol(Train_X)
 
-GR = createPermutations2(Train_X, names = TR$originalNames, y = TR$TrainTest$y, numPermutations = 400, m = 50)
+gc()
+
+GR = createPermutations2(Train_X, names = TR$originalNames, y = TR$TrainTest$y, numPermutations = 200, m = 50)
 
 GR$X_perm[1:10,1:10]
 GR$X_perm_out[1:5,1:10]
@@ -368,7 +374,7 @@ ncol(Train_X)
 
 gc()
 
-model = autoEncoder2(GR$X_perm, GR$X_perm_out, epochs = 15,encoderDim = 100,dropOuts = c(0.0,0.0,0.0,0.0,0.0), unitNums = c(100,100,100),batchSize = 64*8)
+model = autoEncoder2(GR$X_perm, GR$X_perm_out, epochs = 20,encoderDim = 100,dropOuts = c(0.2,0.2,0.2), unitNums = c(100,100,100),batchSize = 64*16)
 model %>% save_model_hdf5(paste(outPath,"autoEncodeModel.h5", sep =""))
 
 modelPreTrained <- load_model_hdf5(paste(outPath,"autoEncodeModel.h5", sep =""))
@@ -378,55 +384,11 @@ mod <- load_model_hdf5("/home/willy/PredictingProteinInteractions/data/106Test/N
 mod %>% summary()
 
 
-# model_built_from_pretrained <- function(GR, epochs = 30, batch_size = 64, weights, sampleSize = NULL){
-#  
-#   encoder <- keras_model(inputs = modelPreTrained$input, outputs = get_layer(modelPreTrained, "bottleneck")$output)
-#   
-#   # add our custom layers
-#   predictions <- encoder$output %>% 
-#     layer_dense(units = 100, activation = 'relu') %>% 
-#     layer_dropout(0.2) %>%
-#     layer_dense(units = 100, activation = 'relu') %>% 
-#     layer_dropout(0.2) %>% 
-#     layer_dense(units = 100, activation = 'relu') %>% 
-#     layer_dropout(0.2) %>% 
-#     layer_dense(units = 100, activation = 'relu') %>% 
-#     layer_dropout(0.2) %>% 
-#     layer_dense(units = 100, activation = 'relu') %>% 
-#     layer_dropout(0.2) %>% 
-#     layer_dense(units = 2, activation = 'softmax')
-#   
-#   # this is the model we will train
-#   fullModel <- keras_model(inputs = encoder$input, outputs = predictions)
-#   
-#   # first: train only the top layers (which were randomly initialized)
-#   freeze_weights(encoder)
-#   
-#   fullModel %>% compile(
-#     loss = 'categorical_crossentropy',
-#     optimizer = optimizer_rmsprop(),
-#     metrics = c('accuracy')
-#   )
-#   
-#   x_train = GR$X_perm
-#   y_train = GR$y
-#   
-#   history <- fullModel %>% fit(
-#     x_train, y_train, 
-#     epochs = epochs, batch_size = batch_size,
-#     validation_split = 0.05)
-#    
-#   return(fullModel)
-# }
-
-
-
-# model_built_from_pretrained(GR,weights = list("1" = 6, "0" = 1))
-
-
-# clustering with the bootleneck
+# clustering with the bottleneck
 intermediate_layer_model <- keras_model(inputs = model$input, outputs = get_layer(model, "bottleneck")$output)
 intermediate_output <- predict(intermediate_layer_model, GR$X_perm)
+
+length(which(colSums(intermediate_output) == 0))
 
 withNames = data.frame(matrix(0, ncol = ncol(intermediate_output)+1, nrow = nrow(intermediate_output)))
 withNames[,-1] = intermediate_output
@@ -455,28 +417,70 @@ geos = getGeos(withNames)
 # points3d(intermediate_output[nonfunctionalInds,], col = "blue")
 # #-------------------------------------------------------------------
 
-plotBootleNeck <- function(geos, TR, intermediate_output, onlyGeos = FALSE){
+plotBootleNeck <- function(geos, TR, intermediate_output, onlyGeos = FALSE, withNames = TRUE){
+  
   functionals = getFunctionalProteins()
   functionalInds2 = which(geos[,1] %in% functionals)
-  points3d(geos[functionalInds2, -1], col = "red", size = 15)
-  text3d(geos[functionalInds2, -1], texts = geos[functionalInds2, 1])
-  
   nonfunctionalInds2 = c(1:nrow(geos))[-functionalInds2]
-  points3d(geos[nonfunctionalInds2,-1], col = "blue", size = 5)  
-  text3d(geos[nonfunctionalInds2, -1], texts = geos[nonfunctionalInds2, 1])
   
-  if(!onlyGeos){
-    #-------------------------------------------------------------------
-    functionalInds = which(TR$originalNames %in% functionals)
-    points3d(intermediate_output[functionalInds,], col = "red")
+  
+  if(ncol(geos) == 3){
+    plot(geos[,-1], col = "white")
     
-    nonfunctionalInds = c(1:nrow(intermediate_output))[-functionalInds]
-    points3d(intermediate_output[nonfunctionalInds,], col = "blue")
-    #-------------------------------------------------------------------
+    if(!onlyGeos){
+      #-------------------------------------------------------------------
+      functionalInds = which(TR$originalNames %in% functionals)
+      nonfunctionalInds = c(1:nrow(intermediate_output))[-functionalInds]
+      
+      
+      points(intermediate_output[nonfunctionalInds,], col = "blue", pch = 19, cex = 0.5)
+
+      points(intermediate_output[functionalInds,], col = "red", pch = 19, cex = 0.5)
+      
+
+      #-------------------------------------------------------------------
+    }
+    
+
+    points(geos[nonfunctionalInds2,-1], col = "blue", cex = 1, pch = 19)
+    points(geos[functionalInds2, -1], col = "red",cex = 1, pch = 19)
+    
+    
+    if(withNames == TRUE){
+      text(geos[nonfunctionalInds2, -1], labels = geos[nonfunctionalInds2, 1], adj = c(0,1))
+      text(geos[functionalInds2, -1], labels = geos[functionalInds2, 1], adj = c(0,1))
+
+    }
+
+
+    
+  } else{
+    
+    points3d(geos[,-1], size = 1)
+    
+    points3d(geos[nonfunctionalInds2,-1], col = "blue", size = 5)  
+    text3d(geos[nonfunctionalInds2, -1], texts = geos[nonfunctionalInds2, 1])
+    
+    points3d(geos[functionalInds2, -1], col = "red", size = 15)
+    text3d(geos[functionalInds2, -1], texts = geos[functionalInds2, 1])
+    
+    
+    
+    if(!onlyGeos){
+      #-------------------------------------------------------------------
+      functionalInds = which(TR$originalNames %in% functionals)
+      points3d(intermediate_output[functionalInds,], col = "red")
+      
+      nonfunctionalInds = c(1:nrow(intermediate_output))[-functionalInds]
+      points3d(intermediate_output[nonfunctionalInds,], col = "blue")
+      #-------------------------------------------------------------------
+    }
   }
+
 
 }
 
+# citation("ggdendro")
 library("cluster")
 library("tcltk")
 library("ggplot2")
@@ -549,8 +553,12 @@ getDendrogramFromBootleNeck <- function(geos, labelFname = "/home/willy/Predicti
 
 library(rgl)
 
-if(!WS_flag) plotBootleNeck(geos,TR, intermediate_output, onlyGeos = FALSE)
+
+
+if(!WS_flag) plotBootleNeck(geos,TR, intermediate_output, onlyGeos = FALSE, withNames = FALSE)
 # getDendrogramFromBootleNeck(geos, outPath = outPath, fName = "AutoEncoder", labelFname = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/labels.txt")
+
+# getDendrogramFromBootleNeck(geos, outPath = outPath, fName = "AutoEncoder", labelFname = "/home/willy/PredictingProteinInteractions/data/120Experiment/labels120.txt")
 getDendrogramFromBootleNeck(geos, outPath = outPath, fName = "AutoEncoder")
 
 

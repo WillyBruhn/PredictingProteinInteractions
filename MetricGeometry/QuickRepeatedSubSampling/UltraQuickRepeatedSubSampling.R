@@ -643,7 +643,7 @@ getManhattanProjection <- function(all_protein_F_approximations){
 }
 
 
-quickRepSampling <- function(OutputPath, distance_path, fName, pos = TRUE, n = 100, m = 22, q = 21, plot = FALSE, functionals = NULL, functionalMainTarget = "000_Trx", distance_method = "emd"){
+quickRepSampling <- function(OutputPath, distance_path, fName, pos = TRUE, n = 100, m = 22, q = 21, plot = FALSE, functionals = NULL, functionalMainTarget = "000_Trx", distance_method = "emd", recalculate = FALSE, plotRoc = FALSE){
   # actually q should be capable to be larger than n
   #
   #-------------------------------------------------------
@@ -656,7 +656,7 @@ quickRepSampling <- function(OutputPath, distance_path, fName, pos = TRUE, n = 1
   fName_final_projection = paste(distance_path,"/",fName, "_projection.csv",sep ="")
   fName_final_geometricCenters = paste(distance_path,"/",fName, "_geometricCenters.csv",sep ="")
   
-  if(!file.exists(fName_final) || !file.exists(fName_final_projection)){
+  if(!file.exists(fName_final) || !file.exists(fName_final_projection) || recalculate == TRUE){
     print(paste("Creating ",fName_final))
     if(!dir.exists(distance_path)){
       dir.create(distance_path)
@@ -718,10 +718,13 @@ quickRepSampling <- function(OutputPath, distance_path, fName, pos = TRUE, n = 1
 
     }
 
-    fName_final_projection_pseudoRoc = paste(distance_path,"/",fName, "_pseudoRoc.pdf",sep ="")
-    pdf(fName_final_projection_pseudoRoc)
-    plotPseudoRoc(geoDistances = protein_distances,ind = which(rownames(protein_distances) == functionalMainTarget),functionals = functionals)
-    dev.off()
+    if(plotRoc == TRUE){
+      fName_final_projection_pseudoRoc = paste(distance_path,"/",fName, "_pseudoRoc.pdf",sep ="")
+      pdf(fName_final_projection_pseudoRoc)
+      plotPseudoRoc(geoDistances = protein_distances,ind = which(rownames(protein_distances) == functionalMainTarget),functionals = functionals)
+      dev.off()
+    }
+
   } 
   
   

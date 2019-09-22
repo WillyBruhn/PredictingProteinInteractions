@@ -8,10 +8,9 @@ s1 = "/home/willy/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubS
 source(s1)
 
 s2 = "/home/willy/PredictingProteinInteractions/Classification/NNClassification/optimizeDifferentModels/BoostedKNN.R"
- 
+source(s2) 
 
 getCorrelationsOfModels <- function(models){
-  
   
   mat = matrix(0,nrow = length(models), ncol = length(models))
 
@@ -36,11 +35,23 @@ getCorrelationsOfModels <- function(models){
 # readDistanceMatrix1
 # readDistanceMatrix2
 
-emdRef = readDistanceMatrix2(file = "/home/willy/Schreibtisch/106Test/CompareProteinsOutput/ListofEMD_positive_100.csv")
-emdQuick1 = readDistanceMatrix1("/home/willy/Schreibtisch/106Test/UltraQuickRepSubSamp/run1_quickEmd_n_10_m_100_q_2_geo.csv")
-emdQuick2 = readDistanceMatrix1("/home/willy/Schreibtisch/106Test/UltraQuickRepSubSamp/run2_quickEmd_n_10_m_100_q_2_geo.csv")
-emdQuick3 = readDistanceMatrix1("/home/willy/Schreibtisch/106Test/UltraQuickRepSubSamp/run1_quickEmd_n_100_m_100_q_99_geo.csv")
-emdQuick4 = readDistanceMatrix1("/home/willy/Schreibtisch/106Test/UltraQuickRepSubSamp/run1_quickEmd_n_100_m_100_q_2_geo.csv")
+library(ape)
+
+emdRef = readDistanceMatrix2(file = "/home/willy/PredictingProteinInteractions/data/106Test/CompareProteinsOutput/ListofEMD_positive_100.csv")
+emdQuick1 = readDistanceMatrix1("/home/willy/PredictingProteinInteractions/data/106Test/UltraQuickRepSub/_pos_quickEmd_n_100_m_500_q_20_geo.csv")
+emdQuick2 = readDistanceMatrix1("/home/willy/PredictingProteinInteractions/data/106Test/UltraQuickRepSub/_neg_quickEmd_n_10_m_10_q_10_geo.csv")
+# emdQuick3 = readDistanceMatrix1("/home/willy/Schreibtisch/106Test/UltraQuickRepSubSamp/run1_quickEmd_n_100_m_100_q_99_geo.csv")
+# emdQuick4 = readDistanceMatrix1("/home/willy/Schreibtisch/106Test/UltraQuickRepSubSamp/run1_quickEmd_n_100_m_100_q_2_geo.csv")
+
+
+mantel.test(emdRef, emdQuick1[-106,-106],graph = TRUE,nperm = 10000)
+mantel.test(emdRef, emdQuick2[-106,-106], nperm = 10000)
+
+library(permute)
+mantel.test(emdQuick2[-106,-106], emdQuick2[-106,-106], nperm = 10000)
+
+
+
 
 models = list()
 models[[1]] = list("name" = "CompareProteins", "distances" = emdRef)
@@ -53,7 +64,31 @@ corMat = getCorrelationsOfModels(models)
 
 library(xtable)
 corMatLatex = xtable(corMat, caption = "Correlation of different methods",label = "correlationCompareProteins")
-print.xtable(corMatLatex, type="latex", file="/home/willy/PredictingProteinInteractions/Results/QuickRepSampling/Correlation1.tex")
+print.xtable(corMatLatex, type="latex", file="/home/willy/PredictingProteinInteractions/Results/QuickRepSampling/Correlation2.tex")
+
+
+
+
+library("cluster")
+library("tcltk")
+library("ggplot2")
+library("ggdendro")
+library("plot3D")
+library("emdist")
+
+labs = read.table(getPath("106ExperimentLabels"),header = TRUE)
+labs = labs[-106,]
+
+mydendrogramplot2(outPath = "/home/willy/PredictingProteinInteractions/Results/QuickRepSampling/EmdVsGeo/",
+                  dist = emdRef,
+                  labels = labs,
+                  fName = "EmdMethod")
+
+labs = read.table(getPath("106ExperimentLabels"),header = TRUE)
+mydendrogramplot2(outPath = "/home/willy/PredictingProteinInteractions/Results/QuickRepSampling/EmdVsGeo/",
+                  dist = emdQuick1,
+                  labels = labs,
+                  fName = "GeoMethod")
 
 #------------------------------------------------------------------------
 # pretty plot of 2 distributions

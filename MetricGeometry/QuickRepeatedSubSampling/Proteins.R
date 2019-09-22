@@ -852,8 +852,8 @@ get_quantiles_all_proteins <- function(model_vec, path, n, m ,q, recalculate = F
 }
 
 
-# models_small = getAllProteinModels(path = path106Experiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE, alpha = 3,betha = 3)
-# quantiles2 = get_quantiles_all_proteins(model_vec = models_small, path = path106Experiment, n = 0.2, m = 1, q = 1, recalculate = TRUE,locale = TRUE)
+# models_small = getAllProteinModels(path = getPath("106Experiment"), n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE, alpha = 3,betha = 3)
+# quantiles2 = get_quantiles_all_proteins(model_vec = models_small, path = getPath("106Experiment"), n = 0.2, m = 1, q = 1, recalculate = FALSE,locale = TRUE)
 # 
 # quantiles2
 
@@ -1018,6 +1018,9 @@ getACtiveCenterAndAtomCoords <- function(path, protName){
 
 
 sampleMultipleTimesFps  <- function(model_vec, quantiles, sampleSize, sampleTimes, m = 100, fps = FALSE){
+  # m number of points per model
+  #----------------------------------------------
+  
   # name in first column
   quants = ncol(quantiles)-1
 
@@ -1034,17 +1037,14 @@ sampleMultipleTimesFps  <- function(model_vec, quantiles, sampleSize, sampleTime
     startInd = (k-1)*m +1
     endInd = startInd + m -1
 
-    # first put all together. Then leave out points as augmentation.
-    # calculate ordering
-    rS = rowSums(relevantQuantiles[startInd:endInd,])
-    ordering = order(rS)
-
-    # return(ordering)
-
     sampled_indices = matrix(0, nrow = sampleTimes, ncol = sampleSize)
     if(fps == TRUE){
+      # indices of the rows of which we will take the fps-sequences
       rowinds = sample(c(1:m), sampleTimes, replace = FALSE)
+      # print(rowinds)
       sampled_indices = model_vec[[k]]$fps_sequences[rowinds,c(1:sampleSize)]
+      
+      # print(sampled_indices)
     } else {
       for(i in 1:sampleTimes){
         sampled_indices[i,] = sample(c(1:m), sampleSize, replace = FALSE)
@@ -1052,48 +1052,23 @@ sampleMultipleTimesFps  <- function(model_vec, quantiles, sampleSize, sampleTime
     }
 
     for(i in 1:sampleTimes){
-      selections = rep(0,ncol(sampled_indices))
-      for(j in 1:ncol(sampled_indices)){
-        selections[j] = which(ordering == sampled_indices[i,j])
-      }
 
-
-      # print(sampled_indices[i,])
-
-      sampled_indices2 = sampled_indices[i,order(selections)]
-
-      # print("---------")
-      # print(sampled_indices2)
-      # print(selections)
-
-      augmented = relevantQuantiles[sampled_indices2,]
+      
+      relevantQuantilesRows = relevantQuantiles[startInd:endInd,]
+      
+      augmented = relevantQuantilesRows[sampled_indices[i,],]
 
       rsControl = rowSums(augmented)
       orderingControl = order(rsControl)
 
       augmented = augmented[orderingControl,]
 
-      # if(TRUE){
-      #   rsControl = rowSums(augmented)
-      #
-      #   # if(!all.equal(order(rsControl),c(1:sampleSize))) return(FALSE)
-      #   orderingControl = order(rsControl)
-      #
-      #   print(orderingControl)
-      #   for(u in 1:sampleSize){
-      #     if(orderingControl[u] != u){
-      #       print("ERROR: sorting did not work!")
-      #       print(orderingControl)
-      #       print(sampled_indices2)
-      #       return(FALSE)
-      #     }
-      #   }
-      #
-      # }
 
       startInd2 = (k-1)*sampleTimes+i
+      
+      augmentedFinal = matrix(as.matrix(augmented), nrow = 1)
 
-      MatOut[startInd2,-1] = c(as.vector(t(augmented)))
+      MatOut[startInd2,-1] = augmentedFinal
       # MatOut[startInd2,-1] = matrix(augmented,nrow = 1)
       MatOut[startInd2,1] = as.character(subClassNames_train[k])
     }
@@ -1105,12 +1080,46 @@ sampleMultipleTimesFps  <- function(model_vec, quantiles, sampleSize, sampleTime
   return(MatOut)
 }
 
-# mods = getAllProteinModels(path = path106Experiment,n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000,measureNearestNeighbors = 10,alpha = 0,betha = 0,recalculate = FALSE)
-# quantiles2 = get_quantiles_all_proteins(model_vec = mods, path = path106Experiment, n = 0.1, m = 1000, q = 1, recalculate = FALSE, locale = TRUE)
-
-## "reading active center ..."
+# mods = getAllProteinModels(path = getPath("106Experiment"),n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000,measureNearestNeighbors = 10,alpha = 0,betha = 0,recalculate = FALSE)
+# quantiles2 = get_quantiles_all_proteins(model_vec = mods, path = getPath("106Experiment"), n = 0.1, m = 1000, q = 1, recalculate = FALSE, locale = TRUE)
 # 
-# MatOut = sampleMultipleTimesFps(model_vec = mods,quantiles = quantiles2,sampleSize = 100,sampleTimes = 10,m = 1000,fps = TRUE)
+# ## "reading active center ..."
+# #
+
+# sS = 100
+# MatOut = sampleMultipleTimesFps(model_vec = mods,quantiles = quantiles2,sampleSize = sS,sampleTimes = 10,m = 1000,fps = TRUE)
+# 
+# # [,1] [,2] [,3] [,4]
+# # [1,]  674  513  200  106
+# # [2,]  286  835  748  634
+# 
+# MatOut[nrow(MatOut), ]
+# 
+# rowInds = mods[[106]]$fps_sequences[455,1:sS]
+# 
+# start = 1000*106-1000+1
+# subQs = quantiles2[start-1 +rowInds,-1]
+# rs = rowSums(subQs)
+# ordering = order(rs)
+# 
+# augmented = subQs[ordering,]
+# 
+# augmentedFinal = matrix(as.matrix(augmented), nrow = 1)
+# 
+# 
+# MatOutWithoutName = MatOut[nrow(MatOut), -1]
+# 
+# augmentedFinal
+# 
+# su = 0
+# for(i in 1:ncol(augmentedFinal)){
+#   su = su + abs(augmentedFinal[1,i] - MatOutWithoutName[1,i])
+# }
+# 
+# su
+# 
+# 
+
 # 
 # 
 # MatOut[1:100,1:5]
@@ -3177,7 +3186,6 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
     print(expDir)
     write.table(df, paste(expDir,"/Call.txt", sep =""), row.names = FALSE)
     
-        
     if(!onlySummarizeFolds){
       print("Setting up model ...")
     
@@ -3190,7 +3198,6 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
     if(!file.exists(ExperimentFile) || recalculate){
       print(paste("reading in ...", fNameTrain[1]))
       quantilesTrain = read.csv(file =fNameTrain[1], header = TRUE)
-      
       
       # fNameTrain is a vector of files that need to be combined
       if(length(fNameTrain) > 1){
@@ -3216,7 +3223,7 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
         colIndsTokeep = selectFeatures(q, pos_flag, neg_flag, pos_neg_flag, euklid, numOfFeatures = length(fNameTrain))
         quantilesTrain = quantilesTrain[,colIndsTokeep]
       }
-
+      
       #-------------------------------------------------------------------------------------------
       # classlabels
       #-------------------------------------------------------------------------------------------
@@ -3250,24 +3257,24 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
       
       classLevels = mapping$name
       
-      print("Hu")
-      
-      model_vec = getAllProteinModels(path = pathToModels,
-                                     n_s_euclidean = n_s_euclidean,
-                                     n_s_dijkstra = n_s_dijkstra,
-                                     stitchNum = stitchNum,
-                                     measureNearestNeighbors = 10,
-                                     alpha = 0,
-                                     betha = 0,
-                                     onlyTheseIndices = NULL,
-                                     recalculate = FALSE)
-        
-        # print(model_vec)
-
       TrainTest = c()
       if(sampleFunction == 2){
         TrainTest = getSamplesSurf2(quantilesTrain, sampleSize = sampleSize,sampleTimes = sampleTimes,euklid = euklid, numPermutations = 1, numClasses = numClasses, m = m,reDo = reCalculateTrainTest, splitPattern = splitPattern, sort = TRUE)
       } else if(sampleFunction == 3){
+        model_vec = c()
+        if(fps == TRUE){
+          print(paste("reading models from ", pathToModels, sep = ""))
+          model_vec = getAllProteinModels(path = pathToModels,
+                                          n_s_euclidean = n_s_euclidean,
+                                          n_s_dijkstra = n_s_dijkstra,
+                                          stitchNum = stitchNum,
+                                          measureNearestNeighbors = 10,
+                                          alpha = 0,
+                                          betha = 0,
+                                          onlyTheseIndices = NULL,
+                                          recalculate = FALSE)
+        }
+        
         TrainTest = getSamplesSurf3(quantiles = quantilesTrain, model_vec = model_vec,sampleSize = sampleSize, sampleTimes = sampleTimes, numClasses = numClasses, m = m, splitPattern = splitPattern, fps = fps)
       }
 
@@ -3368,7 +3375,7 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
           GR$originalNames = GR$originalNames[shuf]
           GR$y = GR$y[shuf,]
           
-          modelPreTrained = autoEncoder2(GR$X_perm, GR$X_perm_out, epochs = 6,encoderDim = 100,dropOuts = c(0.0,0.0,0.0,0.0,0.0), unitNums = c(500,300,100,100),batchSize = 64*numPermutations/100)
+          modelPreTrained = autoEncoder2(GR$X_perm, GR$X_perm_out, epochs = 15,encoderDim = 100,dropOuts = c(0.0,0.0,0.0,0.0,0.0), unitNums = c(50,50,50,50),batchSize = modelParameters$batch_size*numPermutations)
           # model %>% save_model_hdf5(paste(outPath,"autoEncodeModel.h5", sep =""))
           # 
           # modelPreTrained <- load_model_hdf5(paste(outPath,"autoEncodeModel.h5", sep =""))
@@ -4105,10 +4112,10 @@ if(mode == "onlyExperiments2"){
 
   
   conv = FALSE
-  SAMPLESIZE = 100
-  modelParameters = list("layers" = c(500,100,50,30), "dropOuts" = c(0.2,0.1,0.1,0.1), "metrics" = "accuracy", "optimizerFunName" = "optimizer_adam", "batch_size" = 64, "epochs" = 20)
+  SAMPLESIZE = 20
+  modelParameters = list("layers" = c(100,100,100,50,30), "dropOuts" = c(0.2,0.2,0.2,0.2,0.2), "metrics" = "accuracy", "optimizerFunName" = "optimizer_adam", "batch_size" = 16, "epochs" = 20)
   ProteinsExperimentKfoldCV( sampleSize = SAMPLESIZE,
-                             sampleTimes = 50,
+                             sampleTimes = 100,
                              sampleTimes_test = 10,
                              batch_size = 32,
                              epochs = 30,
@@ -4117,12 +4124,12 @@ if(mode == "onlyExperiments2"){
                              q = 1,
                              m = 1000,
                              numClasses = 2,
-                             fNameTrain = c(  "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.05_m_1_q_1_muNN_10_alpha_1_betha_1_loc_TRUE.csv",
-                                              "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.1_m_1_q_1_muNN_10_alpha_1_betha_1_loc_TRUE.csv",
-                                              "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_1_betha_1_loc_TRUE.csv",
+                             fNameTrain = c(  "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.05_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+                                              "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.1_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+                                              "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
                                               "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.5_m_1_q_1_muNN_10_alpha_1_betha_1_loc_TRUE.csv",
                                               "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.8_m_1_q_1_muNN_10_alpha_1_betha_1_loc_TRUE.csv"),
-                                            ExperimentName = "Test116",
+                                            ExperimentName = "Test120",
                              modelParameters = modelParameters,
                              recalculate = FALSE,
                              k = 10,
@@ -4131,11 +4138,11 @@ if(mode == "onlyExperiments2"){
                              saveExperiment = TRUE,
                              useColIndsToKeep = TRUE,
                              path = NNexperimentsKfoldDir,
-                             labels = LABELS,
+                             labels = getPath("106ExperimentLabels"),
                              pre_training = TRUE,
-                             numPermutations = 200,
-                             fps = FALSE,
-                             sampleFunction = 2
+                             numPermutations = 400,
+                             fps = TRUE,
+                             sampleFunction = 3
                              )
 
   
@@ -4152,25 +4159,32 @@ if(mode == "onlyExperiments3"){
   df_summary = getExperimentSummary(expDir = NNexperimentsKfoldDir)
   
   
+  # "/home/willy/PredictingProteinInteractions/data/120Experiment/Quantiles/All_n_0.1_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+  # "/home/willy/PredictingProteinInteractions/data/120Experiment/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+  # "/home/willy/PredictingProteinInteractions/data/120Experiment/Quantiles/All_n_0.05_m_1_q_1_muNN_10_alpha_0_betha_0_loc_TRUE.csv",
+  # "/home/willy/PredictingProteinInteractions/data/120Experiment/Quantiles/All_n_0.5_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+  # "/home/willy/PredictingProteinInteractions/data/120Experiment/Quantiles/All_n_0.8_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv"
+  
+  
   conv = FALSE
-  SAMPLESIZE = 100
+  SAMPLESIZE = 20
   modelParameters = list("layers" = c(500,100,50,30), "dropOuts" = c(0.2,0.1,0.1,0.1), "metrics" = "accuracy", "optimizerFunName" = "optimizer_adam", "batch_size" = 32, "epochs" = 20)
   ProteinsExperimentKfoldCV( sampleSize = SAMPLESIZE,
-                             sampleTimes = 50,
+                             sampleTimes = 400,
                              sampleTimes_test = 10,
                              batch_size = 32,
                              epochs = 30,
                              euklid = "both",
-                             potentials = c("pos"),
+                             potentials = c("pos", "neg", "pos_neg"),
                              q = 1,
                              m = 1000,
                              numClasses = 2,
-                             fNameTrain = c(  "/home/willy/PredictingProteinInteractions/data/120Experiment/Quantiles/All_n_0.1_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
-                                              "/home/willy/PredictingProteinInteractions/data/120Experiment/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
-                                              "/home/willy/PredictingProteinInteractions/data/120Experiment/Quantiles/All_n_0.05_m_1_q_1_muNN_10_alpha_0_betha_0_loc_TRUE.csv",
-                                              "/home/willy/PredictingProteinInteractions/data/120Experiment/Quantiles/All_n_0.5_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
-                                              "/home/willy/PredictingProteinInteractions/data/120Experiment/Quantiles/All_n_0.8_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv"),
-                             ExperimentName = "Test15",
+                             fNameTrain = c(    "/home/willy/PredictingProteinInteractions/data/120Experiment/Quantiles/All_n_0.1_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+                                                "/home/willy/PredictingProteinInteractions/data/120Experiment/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+                                                "/home/willy/PredictingProteinInteractions/data/120Experiment/Quantiles/All_n_0.05_m_1_q_1_muNN_10_alpha_0_betha_0_loc_TRUE.csv",
+                                                "/home/willy/PredictingProteinInteractions/data/120Experiment/Quantiles/All_n_0.5_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+                                                "/home/willy/PredictingProteinInteractions/data/120Experiment/Quantiles/All_n_0.8_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv"),
+                             ExperimentName = "Test102",
                              modelParameters = modelParameters,
                              recalculate = FALSE,
                              k = 10,
@@ -4179,8 +4193,8 @@ if(mode == "onlyExperiments3"){
                              saveExperiment = TRUE,
                              useColIndsToKeep = TRUE,
                              path = NNexperimentsKfoldDir,
-                             labels = LABELS,
-                             pre_training = TRUE,
+                             labels = getPath("120ExperimentLabels"),
+                             pre_training = FALSE,
                              numPermutations = 200,
                              fps = FALSE,
                              sampleFunction = 2

@@ -222,6 +222,7 @@ paths = addSource(paths, "106Experiment", "/data/106Test/Output/")
 paths = addSource(paths, "pdbDownloaderExperiment", "/data/pdbDownloaderExperiment/Output/")
 paths = addSource(paths, "animals", "/home/willy/PredictingProteinInteractions/data/animals/models/")
 paths = addSource(paths, "106ExperimentLabels", "./data/106Test/labels.txt")
+paths = addSource(paths, "120ExperimentLabels", "./data/120Experiment/labels120.txt")
 
 write.table(paths, paste(PredictingProteinInteractionsFolder, "setUp/Paths.txt", sep = ""), row.names = FALSE)
 

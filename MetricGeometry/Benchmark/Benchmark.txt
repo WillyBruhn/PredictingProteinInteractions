@@ -1,0 +1,3 @@
+"test" "replications" "elapsed" "relative" "user.self" "sys.self"
+"quickRepSampling_n_100_m_22_q_2_emd" 1 31.4390000000003 4.918 30.727 0.913
+"quickRepSampling_n_100_m_22_q_2_geo" 1 6.39199999999983 1 6.24699999999999 0.210999999999999

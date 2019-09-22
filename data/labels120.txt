@@ -116,3 +116,6 @@
 "1fg4" "NotGlutathionineBinding"
 "3s9f" "NotGlutathionineBinding"
 "1o73" "NotGlutathionineBinding"
+"2cq9" "NotGlutathionineBinding"
+"4km8" "NotGlutathionineBinding"
+"4tve_d2" "NotGlutathionineBinding"
