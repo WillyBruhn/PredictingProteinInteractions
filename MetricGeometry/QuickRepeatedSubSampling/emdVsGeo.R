@@ -231,7 +231,7 @@ library(rgl)
 labels = read.table("/home/willy/PredictingProteinInteractions/data/106Test/labels.txt", header = TRUE)
 
 geos = read.csv(file = "/home/willy/PredictingProteinInteractions/data/106Test/UltraQuickRepSub/_pos_quickEmd_n_500_m_100_q_1_geometricCenters.csv", header = TRUE)
-
+geos = read.csv(file = "/home/willy/PredictingProteinInteractions/data/106Test/UltraQuickRepSub/_pos_quickEmd_n_100_m_500_q_1_geometricCenters.csv", header = TRUE)
 
 functionals = as.character(labels$name[which(labels$label == "functional")])
 

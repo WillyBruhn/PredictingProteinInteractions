@@ -1,0 +1,94 @@
+%% Creator: Inkscape inkscape 0.92.3, www.inkscape.org
+%% PDF/EPS/PS + LaTeX output extension by Johan Engelen, 2010
+%% Accompanies image file 'Overview.pdf' (pdf, eps, ps)
+%%
+%% To include the image in your LaTeX document, write
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics{<filename>.pdf}
+%% To scale the image, write
+%%   \def\svgwidth{<desired width>}
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics[width=<desired width>]{<filename>.pdf}
+%%
+%% Images with a different path to the parent latex file can
+%% be accessed with the `import' package (which may need to be
+%% installed) using
+%%   \usepackage{import}
+%% in the preamble, and then including the image with
+%%   \import{<path to file>}{<filename>.pdf_tex}
+%% Alternatively, one can specify
+%%   \graphicspath{{<path to file>/}}
+%% 
+%% For more information, please see info/svg-inkscape on CTAN:
+%%   http://tug.ctan.org/tex-archive/info/svg-inkscape
+%%
+\begingroup%
+  \makeatletter%
+  \providecommand\color[2][]{%
+    \errmessage{(Inkscape) Color is used for the text in Inkscape, but the package 'color.sty' is not loaded}%
+    \renewcommand\color[2][]{}%
+  }%
+  \providecommand\transparent[1]{%
+    \errmessage{(Inkscape) Transparency is used (non-zero) for the text in Inkscape, but the package 'transparent.sty' is not loaded}%
+    \renewcommand\transparent[1]{}%
+  }%
+  \providecommand\rotatebox[2]{#2}%
+  \newcommand*\fsize{\dimexpr\f@size pt\relax}%
+  \newcommand*\lineheight[1]{\fontsize{\fsize}{#1\fsize}\selectfont}%
+  \ifx\svgwidth\undefined%
+    \setlength{\unitlength}{402.70863056bp}%
+    \ifx\svgscale\undefined%
+      \relax%
+    \else%
+      \setlength{\unitlength}{\unitlength * \real{\svgscale}}%
+    \fi%
+  \else%
+    \setlength{\unitlength}{\svgwidth}%
+  \fi%
+  \global\let\svgwidth\undefined%
+  \global\let\svgscale\undefined%
+  \makeatother%
+  \begin{picture}(1,0.52663434)%
+    \lineheight{1}%
+    \setlength\tabcolsep{0pt}%
+    \put(0,0){\includegraphics[width=\unitlength,page=1]{Overview.pdf}}%
+    \put(0.34121967,0.37202741){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}PredictingProteinInteractions.R\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=2]{Overview.pdf}}%
+    \put(0.55260078,0.2242682){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}UltraQuickRepeatedSubSampling.R\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=3]{Overview.pdf}}%
+    \put(0.13497952,0.23702362){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}MutComp\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=4]{Overview.pdf}}%
+    \put(0.38885607,0.23087387){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Proteins.R\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=5]{Overview.pdf}}%
+    \put(0.34723362,0.46551544){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}PredictingProteinInteractions\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=6]{Overview.pdf}}%
+    \put(0.16317726,0.29877345){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Preprocessing\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=7]{Overview.pdf}}%
+    \put(0.38938959,0.29775495){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Prediction\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=8]{Overview.pdf}}%
+    \put(0.04082219,0.18988192){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}VMD\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=9]{Overview.pdf}}%
+    \put(0.11233986,0.1759819){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}CenterSelect\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=10]{Overview.pdf}}%
+    \put(0.65337347,0.29880255){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Clustering\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=11]{Overview.pdf}}%
+    \put(0.85767363,0.22415181){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Clustering.R\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=12]{Overview.pdf}}%
+    \put(0.38616919,0.16674755){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Neural Net\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=13]{Overview.pdf}}%
+    \put(0.85728563,0.15567022){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Autoencoder\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=14]{Overview.pdf}}%
+    \put(0.61819178,0.15456443){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Distance-matrix\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=15]{Overview.pdf}}%
+    \put(0.23096043,0.09957547){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Create Features\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=16]{Overview.pdf}}%
+    \put(0.42390196,0.10441574){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Create Model\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=17]{Overview.pdf}}%
+    \put(0.53507298,0.04623549){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Predict\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=18]{Overview.pdf}}%
+    \put(0.37615885,0.0454401){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Evaluate\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=19]{Overview.pdf}}%
+  \end{picture}%
+\endgroup%

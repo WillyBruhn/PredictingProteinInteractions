@@ -4,27 +4,27 @@
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="description" content="None">
         
         
-        <link rel="shortcut icon" href="./img/favicon.ico">
-        <title>PredictingProteinInteractions</title>
-        <link href="./css/bootstrap-custom.min.css" rel="stylesheet">
-        <link href="./css/font-awesome-4.5.0.css" rel="stylesheet">
-        <link href="./css/base.css" rel="stylesheet">
-        <link rel="stylesheet" href="./css/highlight.css">
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Index pre 25.10 - PredictingProteinInteractions</title>
+        <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../css/font-awesome-4.5.0.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="../css/highlight.css">
         <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
         <!--[if lt IE 9]>
             <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
             <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
         <![endif]-->
 	
-	<script src="./js/jquery-1.10.2.min.js"></script>
-        <script src="./js/bootstrap-3.0.3.min.js"></script>
-        <script src="./js/highlight.pack.js"></script> 
+	<script src="../js/jquery-1.10.2.min.js"></script>
+        <script src="../js/bootstrap-3.0.3.min.js"></script>
+        <script src="../js/highlight.pack.js"></script> 
     </head>
 
-    <body class="homepage">
+    <body>
 
         <div class="navbar navbar-default navbar-fixed-top" role="navigation">
     <div class="container">
@@ -38,21 +38,21 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href=".">PredictingProteinInteractions</a>
+            <a class="navbar-brand" href="..">PredictingProteinInteractions</a>
         </div>
 
         <!-- Expanded navigation -->
         <div class="navbar-collapse collapse">
                 <!-- Main navigation -->
                 <ul class="nav navbar-nav">
+                    <li >
+                        <a href="..">Home</a>
+                    </li>
+                    <li >
+                        <a href="../about/">About</a>
+                    </li>
                     <li class="active">
-                        <a href=".">Home</a>
-                    </li>
-                    <li >
-                        <a href="about/">About</a>
-                    </li>
-                    <li >
-                        <a href="index_pre_25.10/">Index pre 25.10</a>
+                        <a href="./">Index pre 25.10</a>
                     </li>
                 </ul>
 
@@ -62,13 +62,13 @@
                         <i class="fa fa-search"></i> Search
                     </a>
                 </li>
-                    <li class="disabled">
-                        <a rel="next" >
+                    <li >
+                        <a rel="next" href="../about/">
                             <i class="fa fa-arrow-left"></i> Previous
                         </a>
                     </li>
-                    <li >
-                        <a rel="prev" href="about/">
+                    <li class="disabled">
+                        <a rel="prev" >
                             Next <i class="fa fa-arrow-right"></i>
                         </a>
                     </li>
@@ -81,8 +81,8 @@
                 <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
         <li class="main active"><a href="#predicting-protein-interactions">Predicting Protein Interactions</a></li>
-            <li><a href="#quickstart">QuickStart</a></li>
             <li><a href="#folder-hierarchy">Folder Hierarchy</a></li>
+            <li><a href="#quickstart">QuickStart</a></li>
             <li><a href="#1-classification">1. Classification</a></li>
             <li><a href="#2-data">2. data</a></li>
             <li><a href="#3-metric-geometry">3. Metric Geometry</a></li>
@@ -97,22 +97,9 @@
                 <div class="col-md-9" role="main">
 
 <h1 id="predicting-protein-interactions">Predicting Protein Interactions</h1>
-<p>Predict protein-interactions from raw pdb(protein-databank)-files. In order to view this documentation on your local machine type:</p>
-<pre><code>./docs/createDoc.sh
-</code></pre>
-
-<p>This requires <em>mkdocs</em> to be installed.</p>
-<h2 id="quickstart">QuickStart</h2>
-<p>Before you can run this example make sure that all dependencies are installed. A script that trys to do that can be found in <em>setUp/setUp.sh</em>. Install all dependencies by typing:</p>
-<pre><code>./setUp.sh
-</code></pre>
-
-<p>The folder <em>QuickStart</em> contains a fully setup example that demonstrates what this implementation can do.
-In <em>ModelTrain/pdb/</em> pdb-files are stored to train a model. The file <em>ModelTrain/labels.txt</em> contains the labels of the proteins (in this case <em>functional</em> and <em>not_functional</em>, you can specify any label however). In <em>Test/pdb/</em> the pdb-files are stored that predictions should be made for. To build the model type:</p>
-<pre><code>../Classification/./predictingProteinInteractions.R
-</code></pre>
-
-<p><img alt="Screenshot" src="./docs/Diagram.png" /></p>
+<p>Predict protein-protein-interactions from raw pdb(protein-databank)-files. Find the thesis in <strong>Masterthesis.pdf</strong>. </p>
+<p>This document gives instructions on how to recreate the data that was used in the thesis. As a first step it only serves as a documentation for me personally. The idea is however to transfer this data directly to the CD that has to be submitted with the thesis. 
+(Willy Bruhn, 13.4.2019)</p>
 <h2 id="folder-hierarchy">Folder Hierarchy</h2>
 <pre><code>├── Classification
 │   ├── CaretClassification
@@ -257,6 +244,50 @@ In <em>ModelTrain/pdb/</em> pdb-files are stored to train a model. The file <em>
 
 </code></pre>
 
+<h2 id="quickstart">QuickStart</h2>
+<p>Before you can run this example make sure that all dependencies are installed. A script that trys to do that can be found in <em>setUp/setUp.sh</em>. Install all dependencies by typing:</p>
+<pre><code>./setUp.sh
+</code></pre>
+
+<p>The folder <em>QuickStart</em> contains a fully setup example that demonstrates what this implementation can do.
+In <em>ModelTrain/pdb/</em> pdb-files are stored to train a model. The file <em>ModelTrain/labels.txt</em> contains the labels of the proteins (in this case <em>functional</em> and <em>not_functional</em>, you can specify any label however). In <em>Test/pdb/</em> the pdb-files are stored that predictions should be made for. To build the model type:</p>
+<pre><code>../Classification/./predictingProteinInteractions.R
+</code></pre>
+
+<p>After the script is executed you should have an optimized model in <em>ModelTrain/bestModel/bestModel.RData</em>. This file is in a binary-format and can only be read with the R-function <em>readDs</em>. Additionally the computed distances are stored in <em>ModelTrain/RepeatedSubSampling/</em>.
+Now make predictions:</p>
+<pre><code>../Classification/./predictingProteinInteractions.R --mode Predict --pdb_folder &lt;path/To/QuickStart&gt;/Test/pdb/ --MutCompOutPut &lt;path/To/QuickStart&gt;/Test/Proteins/
+</code></pre>
+
+<p>The predictions are now stored in <em>Predictions/predictions.txt</em>. The prediction-file has three columns:
+the name of the protein, probability for <em>functional</em> probability for <em>not_functional</em>.
+The output might look like this:</p>
+<table>
+<thead>
+<tr>
+<th>"ind"</th>
+<th>"functional"</th>
+<th>"not_functional"</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"013"</td>
+<td>0.554907677356657</td>
+<td>0.445092322643343</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
 <h2 id="1-classification">1. Classification</h2>
 <p>Contains one script that does a classification given one distance-matrix and labels and other parameters for the model.</p>
 <pre><code>Input:
@@ -493,9 +524,9 @@ If you want to use a different parameter-file just pass it as an argument to the
             <hr>
             <p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</p>
         </footer>
-        <script>var base_url = '.';</script>
-        <script data-main="./mkdocs/js/search.js" src="./mkdocs/js/require.js"></script>
-        <script src="./js/base.js"></script><div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+        <script>var base_url = '..';</script>
+        <script data-main="../mkdocs/js/search.js" src="../mkdocs/js/require.js"></script>
+        <script src="../js/base.js"></script><div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -522,8 +553,3 @@ If you want to use a different parameter-file just pass it as an argument to the
 
     </body>
 </html>
-
-<!--
-MkDocs version : 0.16.3
-Build Date UTC : 2019-10-27 17:21:55
--->

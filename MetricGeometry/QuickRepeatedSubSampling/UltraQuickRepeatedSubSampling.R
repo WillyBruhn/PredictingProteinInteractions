@@ -105,6 +105,7 @@ approximateCDF <- function(F_, q, type = 1){
   
   # print(knots)
   
+  ?quantile
   
   quants = quantile(F_, probs = seq(0,1,1/(q+1)), type = 1)
   # points(x = quants, y = rep(0,length(quants)), col = "red")

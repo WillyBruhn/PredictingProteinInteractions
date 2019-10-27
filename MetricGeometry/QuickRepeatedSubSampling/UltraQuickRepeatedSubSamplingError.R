@@ -40,8 +40,8 @@ library(ape)
 emdRef = readDistanceMatrix2(file = "/home/willy/PredictingProteinInteractions/data/106Test/CompareProteinsOutput/ListofEMD_positive_100.csv")
 emdQuick1 = readDistanceMatrix1("/home/willy/PredictingProteinInteractions/data/106Test/UltraQuickRepSub/_pos_quickEmd_n_100_m_500_q_20_geo.csv")
 emdQuick2 = readDistanceMatrix1("/home/willy/PredictingProteinInteractions/data/106Test/UltraQuickRepSub/_neg_quickEmd_n_10_m_10_q_10_geo.csv")
-# emdQuick3 = readDistanceMatrix1("/home/willy/Schreibtisch/106Test/UltraQuickRepSubSamp/run1_quickEmd_n_100_m_100_q_99_geo.csv")
-# emdQuick4 = readDistanceMatrix1("/home/willy/Schreibtisch/106Test/UltraQuickRepSubSamp/run1_quickEmd_n_100_m_100_q_2_geo.csv")
+emdQuick3 = readDistanceMatrix1("/home/willy/PredictingProteinInteractions/data/106Test/UltraQuickRepSub/quickRepSampling_n_100_m_500_q_1_geo_geo.csv")
+emdQuick4 = readDistanceMatrix1("/home/willy/PredictingProteinInteractions/data/106Test/UltraQuickRepSub/quickRepSampling_n_100_m_22_q_1_geo_geo.csv")
 
 
 mantel.test(emdRef, emdQuick1[-106,-106],graph = TRUE,nperm = 10000)
@@ -90,6 +90,19 @@ mydendrogramplot2(outPath = "/home/willy/PredictingProteinInteractions/Results/Q
                   labels = labs,
                   fName = "GeoMethod")
 
+
+labs = read.table(getPath("106ExperimentLabels"),header = TRUE)
+mydendrogramplot2(outPath = "/home/willy/PredictingProteinInteractions/Results/QuickRepSampling/EmdVsGeo/",
+                  dist = emdQuick4,
+                  labels = labs,
+                  fName = "GeoMethod_n_100_m_22_q_1")
+
+
+labs = read.table(getPath("106ExperimentLabels"),header = TRUE)
+mydendrogramplot2(outPath = "/home/willy/PredictingProteinInteractions/Results/QuickRepSampling/EmdVsGeo/",
+                  dist = emdQuick3,
+                  labels = labs,
+                  fName = "GeoMethod_n_100_m_500_q_1")
 #------------------------------------------------------------------------
 # pretty plot of 2 distributions
 OutputPath = "/home/willy/Schreibtisch/106Test/Output/"

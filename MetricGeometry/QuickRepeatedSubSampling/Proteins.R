@@ -1,22 +1,32 @@
 #!/usr/bin/Rscript
 
-#---------------------------------------------------------------------
-# Willy Bruhn, 4.8.19
+#----------------------------------------------------------------------------------
+# Willy Bruhn, 25.10.19
 #
-# Process models of proteins.
+# Given the positive and negative potential of the proteins and the active center
+# calculate multiple features. These features are the quantiles of the approximation
+# of the DE (Distribution of Eccentricities). The features are then used to train
+# a neural net.
 #
-#---------------------------------------------------------------------
-
+# There are two options:
+# 1 training a neural net and evaluating with k-fold-Cross-Validation. Additionally this 
+#   model can be exported.
+# 2 using a pre-trained model to make predictions on new data.
+#
+# If you only want to generate the features run with
+# onlyGenerateModels = TRUE
+#
+# Requirements:
+# - In the protein-folder the .obj-file has to be present which is delivered by MutComp.
+# If the measure should be updated with the information about the active center, then
+# the file "active_center.pts" has to be present which is delivered by selectCenter.R.
+#
+#----------------------------------------------------------------------------------
 wsPath = "/home/willy/PredictingProteinInteractions/setUp/SourceLoader.R"
 # wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
 
-mode = "onlyExperiments2"
-# mode = "onlyGenerateModels"
-
-# mode ="randomSearch"
-
-# mode = "hlat"
-
+# mode = "onlyExperiments2"
+# # mode = "onlyGenerateModels
 
 wsPath = as.character(paste(funr::get_script_path(), "/../../setUp/SourceLoader.R", sep = ""))
 
@@ -32,17 +42,8 @@ pathpdbDownloaderExperiment = getPath("pdbDownloaderExperiment")
 
 # pathToExperiment = pathpdbDownloaderExperiment
 pathToExperiment = path106Experiment
-# pathToExperiment = path120Experiment
 
-# LABELS = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/labels.txt"
-# LABELS = "/home/willy/PredictingProteinInteractions/data/labels120.txt"
-# LABELS = "/home/willy/PredictingProteinInteractions/data/pdbDownloaderExperiment/labels.txt"
-# LABELS = "/home/willy/PredictingProteinInteractions/data/labels.txt"
-# LABELS = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/labels.txt"
 LABELS = getPath("106ExperimentLabels")
-
-# LABELS = getPath("120ExperimentLabels")
-
 NUMCLASSES = 2
 
 path2Manifold = getPath("Manifold")
@@ -78,20 +79,75 @@ library(doParallel)
 # registerDoParallel(detectCores()/2)
 
 numCores = 1
-args = commandArgs(trailingOnly=TRUE)
-if(length(args) > 0){
-  numCores = as.numeric(args[1])
-}
-
-print(paste("Using ", numCores, " numCores", sep =""))
-
-registerDoParallel(numCores)
+# args = commandArgs(trailingOnly=TRUE)
+# if(length(args) > 0){
+#   numCores = as.numeric(args[1])
+# }
 
 # install.packages("e1071")
 library(e1071)
 
 print("done loading ...")
 
+
+#----------------------------------------------------------------------------------
+# interpreting input parameters
+library(getopt)
+options(warn=-1)
+#----------------------------------------------------------------------------------
+# Input
+# get options, using the spec as defined by the enclosed list.
+# we read the options from the default: commandArgs(TRUE).
+spec = matrix(c(
+  'verbose', 'v', 2, "integer",
+  'help'   , 'h', 0, "logical",
+  'mode', 'm', 2, "character",
+  'onlyGenerateModels'  , 'o', 2, "integer",
+  'numClasses', 'n', 2, "integer",
+  'pathToExperiment', 'p',2, "character",
+  'labels'  , 'l', 2, "character",
+  'folds'  , 'f', 2, "integer",
+  'cores', 'c', 2, "integer"
+), byrow=TRUE, ncol=4)
+opt = getopt(spec)
+
+
+# if help was asked for print a friendly message 
+# and exit with a non-zero error code
+if ( !is.null(opt$help) ) {
+  cat(getopt(spec, usage=TRUE))
+  q(status=1)
+}
+
+# mode = "onlyExperiments2"
+# mode = "onlyGenerateModels
+if ( is.null(opt$onlyGenerateModels    ) ) { opt$onlyGenerateModels    = 0     }
+if ( is.null(opt$mode    ) ) { opt$mode    = "training"     }
+if(is.null(opt$labels)) {opt$labels    = getPath("106ExperimentLabels")}
+if(is.null(opt$numClasses)) {opt$numClasses    = 2}
+if(is.null(opt$folds)) {opt$folds    = 10}
+if(is.null(opt$pathToExperiment)){opt$pathToExperiment = getPath("106Experiment")}
+if ( is.null(opt$cores) ) { 
+  opt$cores = Sys.getenv('LSB_MAX_NUM_PROCESSORS')
+  if ( is.null(opt$cores) || opt$cores == "") opt$cores = 1
+}
+if ( is.null(opt$verbose ) ) { opt$verbose = FALSE }
+
+mode = opt$mode
+LABELS = opt$labels
+numCores = opt$cores
+NUMCLASSES = opt$numClasses
+pathToExperiment = opt$pathToExperiment
+numFolds = opt$folds
+mode = opt$mode
+
+print(opt)
+
+print(paste("Using ", numCores, " cores", sep =""))
+registerDoParallel(numCores)
+
+quit()
+#----------------------------------------------------------------------------------
 
 # install.packages("keras")
 
