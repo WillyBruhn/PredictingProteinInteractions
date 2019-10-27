@@ -1,46 +1,12 @@
 # Predicting Protein Interactions
-Predict protein-protein-interactions from raw pdb(protein-databank)-files. Find the thesis in **Masterthesis.pdf**. 
-
-This document gives instructions on how to recreate the data that was used in the thesis. As a first step it only serves as a documentation for me personally. The idea is however to transfer this data directly to the CD that has to be submitted with the thesis. 
-(Willy Bruhn, 13.4.2019)
-
-
-## Folder Hierarchy
+Predict protein-interactions from raw pdb(protein-databank)-files. In order to view this documentation on your local machine type:
+ 
 ```
-├── Classification
-├── data
-│   ├── 106Redoxins
-│   │   ├── Input
-│   │   ├── Labels
-│   │   └── Output
-│   └── animals
-├── docs
-├── MetricGeometry
-│   ├── ComparingProteins
-│   │   ├── EMDandClustering
-│   │   └── LowerBounds
-│   ├── Downsampling2Step
-│   └── RepeatedSubsampling
-│       └── FirstLowerBoundRelationOfPosAndNeg
-├── PCL
-├── PreProcessingProteins
-│   └── MutComp
-│       ├── APBS
-│       ├── deprecated
-│       ├── ExampleHierarchy
-│       ├── GUI
-│       ├── ImageCreator
-│       ├── ImageSimilarity
-│       ├── MovieCreator
-│       ├── mutationTest
-│       ├── Output
-│       ├── TclScripts
-│       └── Tests
-└── Results
-    ├── Images
-    ├── Scripts
-    └── Tables
+./docs/createDoc.sh
 ```
+
+This requires *mkdocs* to be installed.
+
 
 ## QuickStart
 Before you can run this example make sure that all dependencies are installed. A script that trys to do that can be found in *setUp/setUp.sh*. Install all dependencies by typing:
@@ -54,23 +20,156 @@ In *ModelTrain/pdb/* pdb-files are stored to train a model. The file *ModelTrain
 ../Classification/./predictingProteinInteractions.R
 ```
 
-After the script is executed you should have an optimized model in *ModelTrain/bestModel/bestModel.RData*. This file is in a binary-format and can only be read with the R-function *readDs*. Additionally the computed distances are stored in *ModelTrain/RepeatedSubSampling/*.
-Now make predictions:
+
+![Screenshot](docs/Diagram.png)
+
+
+
+
+## Folder Hierarchy
+```
+├── Classification
+│   ├── CaretClassification
+│   ├── NNClassification
+│   │   ├── additionalScripts
+│   │   └── optimizeDifferentModels
+│   ├── predictingProteinInteractionsSettings
+│   └── tfClassification
+├── data
+│   ├── 106Test
+│   │   ├── CompareProteinsOutput
+│   │   ├── Input
+│   │   ├── NNexperiments
+│   │   ├── NNexperimentsKfoldCV
+│   │   ├── Output
+│   │   ├── QuantileDistances
+│   │   ├── Quantiles
+│   │   ├── RepSubOutput
+│   │   └── UltraQuickRepSub
+│   ├── 120Experiment
+│   │   ├── Input
+│   │   ├── NNexperimentsKfoldCV
+│   │   ├── NNexperimentsKfoldCV (copy)
+│   │   ├── Output
+│   │   ├── Quantiles
+│   │   └── UltraQuickRepSub
+│   ├── animals
+│   │   ├── Evaluation
+│   │   ├── Evaluation (copy)
+│   │   └── models
+│   ├── __MACOSX
+│   │   └── ModelNet10
+│   ├── MNist
+│   ├── ModelNet10
+│   │   ├── AllQuantilesDir
+│   │   ├── AllQuantilesDirStandard
+│   │   ├── __MACOSX
+│   │   └── ModelNet10
+│   ├── nonRigidWorld
+│   │   └── nonrigid3d
+│   ├── ObjectNet3D_cads
+│   │   └── ObjectNet3D
+│   ├── old
+│   │   ├── 106Redoxins
+│   │   ├── 106RedoxinsWithAddionalPDBS_1
+│   │   ├── additionalPDBS_1
+│   │   └── animals
+│   ├── pdbDownloaderExperiment
+│   │   ├── Input
+│   │   ├── merged
+│   │   ├── NNexperimentsKfoldCV
+│   │   ├── Output
+│   │   ├── Quantiles
+│   │   └── QuickRep
+│   └── psb_db0-3
+│       └── benchmark
+├── docs
+├── Manifold
+│   ├── 3rd
+│   │   ├── Eigen
+│   │   ├── glm
+│   │   ├── igl
+│   │   └── unsupported
+│   ├── build
+│   │   └── CMakeFiles
+│   ├── examples
+│   └── src
+├── MetricGeometry
+│   ├── Benchmark
+│   │   └── QuickRep
+│   ├── ComparingProteins
+│   │   ├── EMDandClustering
+│   │   └── LowerBounds
+│   ├── Downsampling2Step
+│   ├── QuickRepeatedSubSampling
+│   └── RepeatedSubsampling
+│       └── FirstLowerBoundRelationOfPosAndNeg
+├── PCL
+│   ├── IsoSurfSimilarity
+│   │   ├── Debug
+│   │   ├── Release
+│   │   └── src
+│   └── ptsToPcd
+├── pdbDownloader
+│   ├── Drugs
+│   ├── merged
+│   ├── P03372_pdbs
+│   ├── P06401_pdbs
+│   ├── P10275_pdbs
+│   └── P11511_pdbs
+├── PreProcessingProteins
+│   ├── centerSelect
+│   │   ├── AA_utility
+│   │   ├── Ars
+│   │   ├── example
+│   │   ├── exampleImages
+│   │   ├── experimental
+│   │   ├── parameters
+│   │   └── Redox
+│   └── MutComp
+│       ├── APBS
+│       ├── deprecated
+│       ├── ExampleHierarchy
+│       ├── GUI
+│       ├── ImageCreator
+│       ├── ImageSimilarity
+│       ├── MovieCreator
+│       ├── mutationTest
+│       ├── Output
+│       ├── TclScripts
+│       └── Tests
+├── QuickStart
+│   ├── ModelTrain
+│   │   ├── bestModel
+│   │   ├── pdb
+│   │   ├── Proteins
+│   │   └── RepeatedSubSampling
+│   ├── Predictions
+│   │   ├── distances
+│   │   └── proteins
+│   └── Test
+│       ├── pdb
+│       └── Proteins
+├── Results
+│   ├── Examples
+│   │   └── MeasureCouplings
+│   ├── Images
+│   │   ├── activeCenter
+│   │   ├── animalModels
+│   │   ├── FinalModel
+│   │   ├── longRange
+│   │   └── protMeasureProjection
+│   ├── QuickRepSampling
+│   │   ├── 2dPlots
+│   │   ├── EmdVsGeo
+│   │   └── Examples
+│   ├── Scripts
+│   ├── Tables
+│   ├── TablesProt
+│   └── TablesProtStatKFoldCV
+└── setUp
 
 ```
-../Classification/./predictingProteinInteractions.R --mode Predict --pdb_folder <path/To/QuickStart>/Test/pdb/ --MutCompOutPut <path/To/QuickStart>/Test/Proteins/
-```
-
-The predictions are now stored in *Predictions/predictions.txt*. The prediction-file has three columns:
-the name of the protein, probability for *functional* probability for *not_functional*.
-The output might look like this:
-
-| "ind" | "functional"      | "not_functional"  |
-|-------|-------------------|-------------------|
-| "013" | 0.554907677356657 | 0.445092322643343 |
-|       |                   |                   |
-|       |                   |                   |
-
 
 
 
@@ -333,7 +432,9 @@ Contains the images that were produced in the thesis with the implementations.
 Contains the tables that were produced in the thesis with the implementations.
 
 # TODO
-
+## Thesis
+* We/I
+* Math-chapter
 
 ## Research
 * active center
