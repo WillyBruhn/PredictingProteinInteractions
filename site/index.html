@@ -129,14 +129,78 @@ If you want to use a different parameter-file just pass it as an argument to the
 <h3 id="centerselect">centerSelect</h3>
 <p>(<a href="https://github.com/WillyBruhn/centerSelect">centerSelect</a>). </p>
 <h2 id="3-prediction">3. Prediction</h2>
+<p>Based on the approximation of the DE multiple features are calculated. Then data-augmentation is performed. 
+Then a neural net is trained. The neural net can then be used to predict if two given proteins react with each other.</p>
+<h3 id="proteinsr">Proteins.R</h3>
+<p>Given the positive and negative potential of the proteins and the active center
+calculate multiple features. These features are the quantiles of the approximation
+of the DE (Distribution of Eccentricities). The features are then used to train
+a neural net.</p>
+<p>There are two options:</p>
+<ol>
+<li>training a neural net and evaluating with k-fold-Cross-Validation. Additionally this model can be exported.</li>
+<li>using a pre-trained model to make predictions on new data.</li>
+</ol>
+<p>If you only want to generate the features (e.g. in case you want to call Clusterin.R afterwards) run with
+onlyGenerateModels = TRUE</p>
+<h4 id="requirements">Requirements:</h4>
+<ul>
+<li>In the protein-folder the .obj-file has to be present which is delivered by MutComp.</li>
+<li>If the measure should be updated with the information about the active center, then
+the file "active_center.pts" has to be present which is delivered by selectCenter.R.</li>
+</ul>
+<h4 id="usage">Usage</h4>
+<pre><code>  pathToExperiment    ... path to the folder that contains all the folders of all proteins. (Output-folder of MutComp).
+
+  onlyGenerateModels  ... 1: only generate the features of the models. Else the features are generated and then the neural-net
+                             is trained.
+
+  mode                ... predict/evaluate. Either make predictions on new data or perform k-fold-cv to evaluate a model.
+
+  parametersFile      ... contains the parameters need for the features and the neural net. Separated by ; the arguments
+                          are inserted row-wise. If no parametersFile is specified then the default-parameters are used..
+
+  outPutFolder        ... name of the folder in which all output is saved. The folder is placed in
+                          &lt;pathToExperiment&gt;/NNexperimentsKfoldCV/. So &lt;outPutFolder&gt; is no full path!
+</code></pre>
+
+<p>Most of the ~50 parameters are specified in an additional parametersFile. Note that when executing this script the 
+parameters specified on the commmand-line have higher priority and overwrite the parameters in the parameters-file.</p>
+<h4 id="parameters-related-to-the-features">Parameters related to the features</h4>
+<pre><code>  a1,a2,a3,a4,a5      ... specifies how important the active site is. a1, b1, n1 together form the parameters for one
+                          feature. Set to -1 if you want to use fewer features.
+
+  b1,b2,b3,b4,b5      ... specifies how important the boarder region is. a1, b1, n1 together form the parameters for one
+                          feature. Set to -1 if you want to use fewer features.
+
+  mNearestNeighbors   ... how many points in close proximity to the boarder-area are considered.
+
+  n1,n2,n3,n4,n5      ... in (0,1). Specifies how local the feature is. a1, b1, n1 together form the parameters for one
+                          feature. Set to -1 if you want to use fewer features.
+
+  recalculateModel    ... specifies if the preprocessing should be recalculated. If set to 0, if the file allready exists
+                          it is not recalculated.
+
+  recalculateQuants   ... specifies if the quantiles should be recalculated. If set to 0 then if the file allready exists
+                          it is not recalculated.
+
+  n_s_euclidean       ... number of points to select with the euclidean fps (farthest-point-sampling-procedure).
+
+  n_s_dijkstra        ... number of points to select with the geodesic fps (farthest-point-sampling-procedure).
+
+  stitchNum           ... number of points that are created from Manifold.
+</code></pre>
+
+<h4 id="parameters-related-to-the-neural-net">Parameters related to the neural net</h4>
 <h2 id="4-clustering">4. Clustering</h2>
-<p>Create clusterings like this one from the 106-Redoxin-data-set:</p>
+<p>Create dendrograms like this one from the 106-Redoxin-data-set:</p>
 <p><img alt="Diagram1" src="./docs/ClusteringExample.png" /></p>
-<h3 id="ultraquickrepeatedsubsampling">UltraQuickRepeatedSubSampling</h3>
+<h3 id="ultraquickrepeatedsubsamplingr">UltraQuickRepeatedSubSampling.R</h3>
+<p>Calculate all pairwise distances between the proteins. From this distance-matrix build an agglomerative bottom-up clustering.</p>
 <p>Calculate the repeatedSubSampling fast. The points are only sampled m times once for each protein. Then the distributions are calculated. Then from these distributions the quantile-
 approximation is calculated. The DE is then calculated with the manhattan distance between
 the quantiles.</p>
-<h4 id="usage">Usage</h4>
+<h4 id="usage_1">Usage</h4>
 <pre><code>  ProteinsPath        ... path to all proteins as produced by MutComp
 
   distance_name       ... folder in which all distance-matrices will be stored
@@ -170,7 +234,7 @@ the quantiles.</p>
 bottle-neck-layer is extracted and used to extract a condensed representation of
 the proteins. With these condensed representations then an agglomerative, bottom-up
 clustering is performed. With this clustering then a dendrogram is obtained.</p>
-<h4 id="usage_1">Usage</h4>
+<h4 id="usage_2">Usage</h4>
 <pre><code>  inputPath           ... path to a file with a .Rdata-extension that stores the feature-matrix for
                           all proteins. Can be obtained by running Proteins.R.
 
@@ -230,5 +294,5 @@ clustering is performed. With this clustering then a dendrogram is obtained.</p>
 
 <!--
 MkDocs version : 0.16.3
-Build Date UTC : 2019-10-28 09:20:16
+Build Date UTC : 2019-10-28 17:38:07
 -->

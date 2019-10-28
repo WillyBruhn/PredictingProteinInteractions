@@ -7,21 +7,83 @@
 # calculate multiple features. These features are the quantiles of the approximation
 # of the DE (Distribution of Eccentricities). The features are then used to train
 # a neural net.
-#
+# 
 # There are two options:
-# 1 training a neural net and evaluating with k-fold-Cross-Validation. Additionally this 
+# 1 training a neural net and evaluating with k-fold-Cross-Validation. Additionally this
 #   model can be exported.
 # 2 using a pre-trained model to make predictions on new data.
-#
+# 
 # If you only want to generate the features run with
 # onlyGenerateModels = TRUE
-#
+# 
 # Requirements:
 # - In the protein-folder the .obj-file has to be present which is delivered by MutComp.
 # If the measure should be updated with the information about the active center, then
 # the file "active_center.pts" has to be present which is delivered by selectCenter.R.
 #
-#----------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------
+#
+# pathToExperiment    ... path to the folder that contains all the folders of all proteins. (Output-folder of MutComp).
+# 
+# onlyGenerateModels  ... 1: only generate the features of the models. Else the features are generated and then the neural-net
+#                            is trained.
+# 
+# mode                ... predict/evaluate. Either make predictions on new data or perform k-fold-cv to evaluate a model.
+# 
+# parametersFile      ... contains the parameters need for the features and the neural net. Separated by "," the arguments
+#                         are inserted row-wise. If no parametersFile is specified then the default-parameters are used.
+# 
+# outPutFolder        ... name of the folder in which all output is saved. The folder is placed in
+#                         <pathToExperiment>/NNexperimentsKfoldCV/. So <outPutFolder> is no full path!
+#
+#   #----------------------------------------------------------------------------------------------------------------------
+#   # Feature-specific
+#   # These arguments need to be set in the parametersFile. 
+#   #----------------------------------------------------------------------------------------------------------------------
+# 
+#   a1,a2,a3,a4,a5      ... specifies how important the active site is. a1, b1, n1 together form the parameters for one
+#                           feature. Set to -1 if you want to use fewer features.
+# 
+#   b1,b2,b3,b4,b5      ... specifies how important the boarder region is. a1, b1, n1 together form the parameters for one
+#                           feature. Set to -1 if you want to use fewer features.
+# 
+#   mNearestNeighbors   ... how many points in close proximity to the boarder-area are considered.
+# 
+#   n1,n2,n3,n4,n5      ... in (0,1). Specifies how local the feature is. a1, b1, n1 together form the parameters for one
+#                           feature. Set to -1 if you want to use fewer features.
+# 
+#   recalculateModel    ... specifies if the preprocessing should be recalculated. If set to 0, if the file allready exists
+#                           it is not recalculated.
+# 
+#   recalculateQuants   ... specifies if the quantiles should be recalculated. If set to 0 then if the file allready exists
+#                           it is not recalculated.
+# 
+#   n_s_euclidean       ... number of points to select with the euclidean fps (farthest-point-sampling-procedure).
+# 
+#   n_s_dijkstra        ... number of points to select with the geodesic fps (farthest-point-sampling-procedure).
+# 
+#   stitchNum           ... number of points that are created from Manifold.
+#
+#   #----------------------------------------------------------------------------------------------------------------------   
+#
+#
+#   numPermutations     ... number of permutations that are created for each representation. For
+#                           each protein m rows from the feature-matrix are combined. The order of
+#                           this m rows is randomly permutated and numPermutations different
+#                           representations are created.
+# 
+#   m                   ... number of rows from the feature-matrix that are combined for each protein-model.
+# 
+#   epochs              ... number of epochs to train the autoencoder.
+# 
+#   batchSize           ... size of a batch. Relevant for the training.
+# 
+#   l1,l2,l3            ... specifies the encoder-dimensions, that is the size of each layer in the network.
+#                           The autoencoder in this implementation has 3 layers.
+# 
+#   d1,d2,d3            ... in [0,1) specifies the dropout-rates.
+#
+#------------------------------------------------------------------------------------------------------------------------------------
 wsPath = "/home/willy/PredictingProteinInteractions/setUp/SourceLoader.R"
 # wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
 
@@ -95,22 +157,17 @@ print("done loading ...")
 library(getopt)
 options(warn=-1)
 #----------------------------------------------------------------------------------
-# Input
-# get options, using the spec as defined by the enclosed list.
-# we read the options from the default: commandArgs(TRUE).
+
 spec = matrix(c(
   'verbose', 'v', 2, "integer",
   'help'   , 'h', 0, "logical",
-  'mode', 'm', 2, "character",
+  'pathToExperiment', 'p', 2, "character",
   'onlyGenerateModels'  , 'o', 2, "integer",
-  'numClasses', 'n', 2, "integer",
-  'pathToExperiment', 'p',2, "character",
-  'labels'  , 'l', 2, "character",
-  'folds'  , 'f', 2, "integer",
-  'cores', 'c', 2, "integer"
+  'parametersFile', 'r', 2, "character",
+  'mode', 'm', 2, "character",
+  'outPutFolder', 'a', 2, "character"
 ), byrow=TRUE, ncol=4)
 opt = getopt(spec)
-
 
 # if help was asked for print a friendly message 
 # and exit with a non-zero error code
@@ -121,32 +178,156 @@ if ( !is.null(opt$help) ) {
 
 # mode = "onlyExperiments2"
 # mode = "onlyGenerateModels
-if ( is.null(opt$onlyGenerateModels    ) ) { opt$onlyGenerateModels    = 0     }
-if ( is.null(opt$mode    ) ) { opt$mode    = "training"     }
-if(is.null(opt$labels)) {opt$labels    = getPath("106ExperimentLabels")}
-if(is.null(opt$numClasses)) {opt$numClasses    = 2}
-if(is.null(opt$folds)) {opt$folds    = 10}
-if(is.null(opt$pathToExperiment)){opt$pathToExperiment = getPath("106Experiment")}
-if ( is.null(opt$cores) ) { 
-  opt$cores = Sys.getenv('LSB_MAX_NUM_PROCESSORS')
-  if ( is.null(opt$cores) || opt$cores == "") opt$cores = 1
+
+if ( is.null(opt$pathToExperiment    ) ) { opt$pathToExperiment = getPath("106Experiment") }
+p = opt$pathToExperiment
+s = strsplit(p, "/")[[1]]
+NNExperimentFolder = paste(paste(s[1:length(s)-1], collapse = "/"), "/", sep = "")
+
+if ( is.null(opt$outPutFolder    ) ) { 
+  opt$outPutFolder = "Dummy"
 }
-if ( is.null(opt$verbose ) ) { opt$verbose = FALSE }
+if ( is.null(opt$onlyGenerateModels    ) ) { opt$onlyGenerateModels    = 0     }
+if ( is.null(opt$mode    ) ) { opt$mode    = "evaluation"   }
+if ( is.null(opt$parametersFile    ) ) {
+  opt$parametersFile = paste(NNExperimentFolder, "/NNexperimentsKfoldCV/",opt$outPutFolder, "/parameters.csv", sep = "")
+}
 
-mode = opt$mode
-LABELS = opt$labels
-numCores = opt$cores
-NUMCLASSES = opt$numClasses
-pathToExperiment = opt$pathToExperiment
-numFolds = opt$folds
-mode = opt$mode
+# 
+# if(is.null(opt$labels)) {opt$labels    = getPath("106ExperimentLabels")}
+# if(is.null(opt$numClasses)) {opt$numClasses    = 2}
+# if(is.null(opt$folds)) {opt$folds    = 10}
+# if ( is.null(opt$cores) ) { 
+#   opt$cores = Sys.getenv('LSB_MAX_NUM_PROCESSORS')
+#   if ( is.null(opt$cores) || opt$cores == "") opt$cores = 1
+# }
+# if ( is.null(opt$verbose ) ) { opt$verbose = FALSE }
+# 
+# mode = opt$mode
+# LABELS = opt$labels
+# numCores = opt$cores
+# NUMCLASSES = opt$numClasses
+# pathToExperiment = opt$pathToExperiment
+# numFolds = opt$folds
+# mode = opt$mode
+# 
 
-print(opt)
+initializeParameters <- function(){
+  featureParameters = list()
+  
+  featureParameters$a1 = 1
+  featureParameters$a2 = 1
+  featureParameters$a3 = 1 
+  featureParameters$a4 = 1 
+  featureParameters$a5 = 1 
+  
+  featureParameters$b1 = 1
+  featureParameters$b2 = 1
+  featureParameters$b3 = 1 
+  featureParameters$b4 = 1 
+  featureParameters$b5 = 1 
+  
+  featureParameters$n1 = 0.1
+  featureParameters$n2 = 0.2
+  featureParameters$n3 = 0.3 
+  featureParameters$n4 = 0.5 
+  featureParameters$n5 = 0.8
+  featureParameters$mNearestNeighbor = 10
+  
+  featureParameters$pathToExperiment = getPath("106Experiment")
+  featureParameters$n_s_euclidean = 1000
+  featureParameters$n_s_dijkstra = 1000
+  featureParameters$stitchNum = 2000
+  
+  featureParameters$recalculateModel = 0
+  featureParameters$recalculateQuants = 0
+  
+  featureParameters$sampleSize = 20
+  featureParameters$l1 = 100
+  featureParameters$l2 = 100
+  featureParameters$l3 = 100
+  featureParameters$l4 = 50
+  featureParameters$l5 = 30
+  
+  featureParameters$d1 = 0.2
+  featureParameters$d2 = 0.2
+  featureParameters$d3 = 0.2
+  featureParameters$d4 = 0.2
+  featureParameters$d5 = 0.2
+  
+  featureParameters$epochs = 20
+  featureParameters$batchSize = 16
+  
+  featureParameters$experimentName = "Test130"
+  featureParameters$recalculateNN = 0
+  featureParameters$kFolds = 10
+  featureParameters$numPermutations = 400
+  
+  featureParameters$numCores = 1
+  return(featureParameters)
+}
 
-print(paste("Using ", numCores, " cores", sep =""))
-registerDoParallel(numCores)
+writeParameters <- function(parameters,parametersFile,EXPERIMENTFOLDER){
+  my_mat <- do.call(rbind, parameters)
+  my_df <- data.frame(id = names(parameters), my_mat)
+  colnames(my_df) = c("parameter","value")
+  
+  p2 = paste(EXPERIMENTFOLDER, "/parameters.csv", sep = "")
+  
+  print(paste("writing parameters to ", parametersFile,  " and ", p2, sep = ""))
+  write.csv(my_df, parametersFile, row.names=F)
+  write.csv(my_df, p2, row.names=F)
+}
 
-quit()
+readParameters <- function(parametersFile){
+  # returns a list
+  print(paste("reading parameters from ", parametersFile))
+  
+  parameters = read.csv(parametersFile)
+  
+  l = as.list(parameters$value)
+  l = setNames(l, parameters$parameter)
+  
+  return(l)
+}
+
+parameters = initializeParameters()
+
+p1 = paste(NNExperimentFolder, "/NNexperimentsKfoldCV/", sep = "")
+EXPERIMENTFOLDER = paste(p1,"/",opt$outPutFolder, sep = "")
+if(!file.exists(opt$parametersFile)){
+  print(paste(opt$parametersFile, " does not exist yet. Creating new one ..."))
+  
+  parameters$experimentName = opt$outPutFolder
+  parameters$pathToExperiment = opt$pathToExperiment
+  parameters$mode = opt$mode
+  
+  if(!dir.exists(p1)){
+    print(paste("creating ", p1, sep = ""))
+    dir.create(p1)
+  }
+  
+  if(!dir.exists(EXPERIMENTFOLDER)){
+    print(paste("creating ", EXPERIMENTFOLDER, sep = ""))
+    dir.create(EXPERIMENTFOLDER)
+  }
+  
+  writeParameters(parameters, opt$parametersFile, EXPERIMENTFOLDER)
+}
+
+# in case the file exists allready, take the old parameters and overwrite the ones specified on the commandline
+# the data-frame has to be converted back into a list
+parameters = readParameters(opt$parametersFile)
+parameters$experimentName = opt$outPutFolder
+parameters$pathToExperiment = opt$pathToExperiment
+parameters$mode = opt$mode
+
+print(parameters)
+
+
+print(paste("Using ", parameters$numCores, " cores", sep =""))
+registerDoParallel(parameters$numCores)
+
 #----------------------------------------------------------------------------------
 
 # install.packages("keras")
@@ -2354,22 +2535,41 @@ joinStats <- function(path = "/home/willy/PredictingProteinInteractions/Results/
 #-------------------------------------------------------------------------------------------------------------
 # Generate the quantiles
 #-------------------------------------------------------------------------------------------------------------
-if(mode == "onlyGenerateModels" || mode == "Booth"){
-  alphas = c(1)
-  bethas = c(3)
+convertToNumeric <- function(l){
+  return(as.numeric(as.character(l)))
+}
+
+# onlyGenerateModels in any case create the models
+if(TRUE){
+  print("Creating features. This might take a while ...")
   
-  alpha_betha_grid = expand.grid(alphas,bethas)
+  # alpha beta n
+  mat = matrix(c(convertToNumeric(parameters$a1), convertToNumeric(parameters$b1), convertToNumeric(parameters$n1),
+           convertToNumeric(parameters$a2), convertToNumeric(parameters$b2), convertToNumeric(parameters$n2),
+           convertToNumeric(parameters$a3), convertToNumeric(parameters$b3), convertToNumeric(parameters$n3),
+           convertToNumeric(parameters$a4), convertToNumeric(parameters$b4), convertToNumeric(parameters$n4),
+           convertToNumeric(parameters$a5), convertToNumeric(parameters$b5), convertToNumeric(parameters$n5)), ncol = 3, byrow = TRUE)
   
-  nlocals = c(0.05,0.1,0.2,0.5,0.8)
-  # nlocals = c(0.8)
-  
-  for(alpha in alphas) {
-    for(i in 1:length(nlocals)) {
-      # tmp = getQuantilesAlphaBetha(alpha = alphas[i],betha = bethas[j], n = 0.2, m = 1,q = 1, locale = TRUE, path = path106Experiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 20, recalculate = FALSE,recalculateQuants = TRUE)
-      tmp = getQuantilesAlphaBetha(alpha = alpha,betha = alpha, n = nlocals[i], m = 1,q = 1, locale = TRUE, path = pathToExperiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 10, recalculate = FALSE,recalculateQuants = FALSE)
+  for(i in 1:nrow(mat)){
+    
+    if(mat[i,1] != -1 && mat[i,2] != -1 && mat[i,3] != -1){
+    tmp = getQuantilesAlphaBetha(alpha = mat[i,1],
+                                 betha = mat[i,2],
+                                 n = mat[i,3],
+                                 m = 1,
+                                 q = 1,
+                                 locale = TRUE,
+                                 path = parameters$pathToExperiment,
+                                 n_s_euclidean = parameters$n_s_euclidean,
+                                 n_s_dijkstra = parameters$n_s_dijkstra,
+                                 stitchNum = parameters$stitchNum,
+                                 measureNearestNeighbors = parameters$mNearestNeighbor,
+                                 recalculate = parameters$recalculateModel,
+                                 recalculateQuants = parameters$recalculateQuants)
     }
   }
 }
+
 
 # tmp = getQuantilesAlphaBetha(alpha = 0,betha = 0, n = 1, m = 1,q = 1, locale = FALSE, path = path106Experiment, n_s_euclidean = 1000,n_s_dijkstra = 1000,stitchNum = 2000, measureNearestNeighbors = 20, recalculate = FALSE,recalculateQuants = TRUE)
 # 
