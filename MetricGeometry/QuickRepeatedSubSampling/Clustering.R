@@ -1,23 +1,39 @@
 #!/usr/bin/Rscript
-#--------------------------------------------------
+#-----------------------------------------------------------------------------------------------------
 # Willy Bruhn
 # 22.8.19
+#-----------------------------------------------------------------------------------------------------
+# Train an auto-encoder that reduces the number of features of the proteins. Then the
+# bottle-neck-layer is extracted and used to extract a condensed representation of
+# the proteins. With these condensed representations then an agglomerative, bottom-up
+# clustering is performed. With this clustering then a dendrogram is obtained.
+# 
+#   inputPath           ... path to a file with a .Rdata-extension that stores the feature-matrix for
+#                           all proteins. Can be obtained by running Proteins.R.
+# 
+#   dendrogramName      ... name of the dendrogram-file. Without the (.pdf)-extension and prefix Dendrogram.
+# 
+#   numPermutations     ... number of permutations that are created for each representation. For
+#                           each protein m rows from the feature-matrix are combined. The order of
+#                           this m rows is randomly permutated and numPermutations different
+#                           representations are created.
+# 
+#   m                   ... number of rows from the feature-matrix that are combined for each protein-model.
+# 
+#   epochs              ... number of epochs to train the autoencoder.
+# 
+#   batchSize           ... size of a batch. Relevant for the training.
+# 
+#   l1,l2,l3            ... specifies the encoder-dimensions, that is the size of each layer in the network.
+#                           The autoencoder in this implementation has 3 layers.
+# 
+#   d1,d2,d3            ... in [0,1) specifies the dropout-rates.
 #
-#
-#--------------------------------------------------
-
-#--------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------
 library(permute)
 
 wsPath = "/home/willy/PredictingProteinInteractions/setUp/SourceLoader.R"
 # wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
-
-# mode = "onlyExperiments2"
-# mode = "onlyGenerateModels"
-
-# mode ="randomSearch"
-
-# mode = "hlat"
 
 wsPath = as.character(paste(funr::get_script_path(), "/../../setUp/SourceLoader.R", sep = ""))
 
@@ -27,9 +43,6 @@ sourceFiles(c("helperFunctions"))
 sourceFiles(c("UltraQuickRepeatedSubSampling"))
 sourceFiles(c("TriangulateIsoSurface"))
 sourceFiles(c("kerasFunctions"))
-
-# .restar
-
 
 # hacky way to check if we are on WS
 WS_flag = FALSE
@@ -45,7 +58,69 @@ if(WS_flag == TRUE){
   SAVE_EXPERIMENTS = TRUE
 }
 
+#-----------------------------------------------------------------------------------------------------
+# User-input
+#-----------------------------------------------------------------------------------------------------
+library(getopt)
+options(warn=-1)
+#----------------------------------------------------------------------------------
+# Input
+# get options, using the spec as defined by the enclosed list.
+# we read the options from the default: commandArgs(TRUE).
+spec = matrix(c(
+  'verbose', 'v', 2, "integer",
+  'help'   , 'h', 0, "logical",
+  'inputPath'  , 'i', 2, "character",
+  'numPermutations'   , 'p', 2, "integer",
+  'm'   , 'm', 2, "integer",
+  'epochs'   , 'e', 2, "integer",
+  'batchSize'   , 's', 2, "integer",
+  
+  'l1'   , 'a', 2, "integer",
+  'l2'   , 'b', 2, "integer",
+  'l3'   , 'c', 2, "integer",
+  
+  'd1'   , 'd', 2, "integer",
+  'd2'   , 'f', 2, "integer",
+  'd3'   , 'g', 2, "integer",
+  
+  'dendrogramName', 'q', 2, "character"
+), byrow=TRUE, ncol=4)
+opt = getopt(spec)
 
+
+# if help was asked for print a friendly message 
+# and exit with a non-zero error code
+if ( !is.null(opt$help) ) {
+  cat(getopt(spec, usage=TRUE))
+  q(status=1)
+}
+
+# set some reasonable defaults for the options that are needed,
+# but were not specified.
+if ( is.null(opt$inputPath    ) ) { opt$inputPath    = "/home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Test118/"}
+if ( is.null(opt$numPermutations   ) ) { opt$numPermutations    = 200  }
+if ( is.null(opt$m    ) ) { opt$m    = 50  }
+
+if ( is.null(opt$epochs    ) ) { opt$epochs    = 20  }
+if ( is.null(opt$batchSize    ) ) { opt$batchSize    = 1024  }
+if ( is.null(opt$l1    ) ) { opt$l1    = 100  }
+if ( is.null(opt$l2    ) ) { opt$l2    = 100  }
+if ( is.null(opt$l3    ) ) { opt$l3    = 100  }
+
+if ( is.null(opt$d1    ) ) { opt$d1    = 0.2  }
+if ( is.null(opt$d2    ) ) { opt$d2    = 0.2  }
+if ( is.null(opt$d3    ) ) { opt$d3    = 0.2  }
+
+if ( is.null(opt$dendrogramName    ) ) { opt$dendrogramName    = "Autoencoder"  }
+
+if ( is.null(opt$verbose ) ) { opt$verbose = FALSE }
+
+print("--------------------------------------------------------------------------")
+print("Using the following parameters")
+print(opt)
+print("--------------------------------------------------------------------------")
+#-----------------------------------------------------------------------------------------------------
 
 getFunctionalProteins <- function(file = "/home/willy/PredictingProteinInteractions/data/106Test/labels.txt"){
   labels = read.table(file = file, header = TRUE)
@@ -69,10 +144,6 @@ getGeos <- function(quantiles){
   }
   return(geos)
 }
-
-
-
-
 
 autoEncoder  <- function(x_train, epochs = 20, encoderDim = 3, unitNums = c(5,5,5), dropOuts = c(0.1,0.1,0.1), batchSize = 30){
   # set model
@@ -202,7 +273,6 @@ autoEncoder2  <- function(x_train, x_train_permute, epochs = 20, encoderDim = 3,
   return(model)
 }
 
-
 createPermutations <- function(X, numPermutations = 1, m = 100){
   #--------------------------------------------------------------------------------
   # for each row in X choose one element with the same name at random
@@ -236,8 +306,6 @@ createPermutations <- function(X, numPermutations = 1, m = 100){
   
   return(list("X_perm" = X_perm, "X_perm_out" = X_perm_out))
 }
-
-
 
 createPermutations2 <- function(X, names, y, numPermutations = 1, m = 100){
   #--------------------------------------------------------------------------------
@@ -292,7 +360,7 @@ createPermutations2 <- function(X, names, y, numPermutations = 1, m = 100){
   return(list("X_perm" = X_perm, "X_perm_out" = X_perm_out, "originalNames" = names_perm, "y" = y_perm))
 }
 
-
+#--------------------------------------------------------------------------
 # mat = matrix(c(1:15), ncol = 3)
 # mat[c(1,2,1),]
 
@@ -320,14 +388,15 @@ createPermutations2 <- function(X, names, y, numPermutations = 1, m = 100){
 
 #----------------------------------------------------------------------------------------------------------------
 
+# inputPath = "/home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Test118/"
+# inputPath = "/home/willy/PredictingProteinInteractions/data/120Experiment/NNexperimentsKfoldCV/Test101/"
+# inputPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Test201/"
+inputPath = opt$inputPath
 
-outPath = "/home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Test118/"
-# outPath = "/home/willy/PredictingProteinInteractions/data/120Experiment/NNexperimentsKfoldCV/Test101/"
+print(paste("reading from ", inputPath, "..."))
 
-# outPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Test201/"
-
-TR_fname = list.files(outPath, pattern = ".Rdata")
-TR = readRDS(paste(outPath,TR_fname, sep = ""))
+TR_fname = list.files(inputPath, pattern = ".Rdata")
+TR = readRDS(paste(inputPath,TR_fname, sep = ""))
 TrainTest = TR$TrainTest
 Train_X = TrainTest$X
 Train_X = apply(Train_X, 2, FUN = function(i) as.numeric(as.character(i)))
@@ -337,28 +406,12 @@ colMaxs = apply(Train_X,2,max)
 colRanges = colMaxs - colMins
 Train_X = sapply(c(1:length(colRanges)), FUN = function(i){ (Train_X[,i]- colMins[i])/colRanges[i]})
 
-
-nrow(Train_X)/50
-# ncol(Train_X)
-
+# clear memory inbetween
 gc()
 
-GR = createPermutations2(Train_X, names = TR$originalNames, y = TR$TrainTest$y, numPermutations = 200, m = 50)
 
-GR$X_perm[1:10,1:10]
-GR$X_perm_out[1:5,1:10]
-
-
-
-Train_X[1:10,1:10]
-
-
-
-length(which(is.na(GR$X_perm) == TRUE))
-length(which(is.na(GR$X_perm_out) == TRUE))
-
-106*50
-
+print("creating representations ...")
+GR = createPermutations2(Train_X, names = TR$originalNames, y = TR$TrainTest$y, numPermutations = opt$numPermutations, m = opt$m)
 
 library(permute)
 shuf = shuffle(1:nrow(GR$X_perm))
@@ -367,21 +420,19 @@ GR$X_perm_out = GR$X_perm_out[shuf,]
 GR$originalNames = GR$originalNames[shuf]
 GR$y = GR$y[shuf,]
 
-
-
 suppressPackageStartupMessages(library(keras))
 ncol(Train_X)
 
 gc()
 
-model = autoEncoder2(GR$X_perm, GR$X_perm_out, epochs = 20,encoderDim = 100,dropOuts = c(0.2,0.2,0.2), unitNums = c(100,100,100),batchSize = 64*16)
-model %>% save_model_hdf5(paste(outPath,"autoEncodeModel.h5", sep =""))
+model = autoEncoder2(GR$X_perm, GR$X_perm_out, epochs = opt$epochs,encoderDim = 100,dropOuts = c(opt$d1,opt$d2,opt$d3), unitNums = c(opt$l1,opt$l2,opt$l2),batchSize = opt$batchSize)
+# model %>% save_model_hdf5(paste(outPath,"autoEncodeModel.h5", sep =""))
 
-modelPreTrained <- load_model_hdf5(paste(outPath,"autoEncodeModel.h5", sep =""))
-modelPreTrained %>% summary()
+# modelPreTrained <- load_model_hdf5(paste(outPath,"autoEncodeModel.h5", sep =""))
+# modelPreTrained %>% summary()
 
-mod <- load_model_hdf5("/home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Test88/my_model.h5")
-mod %>% summary()
+# mod <- load_model_hdf5("/home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Test88/my_model.h5")
+# mod %>% summary()
 
 
 # clustering with the bottleneck
@@ -485,7 +536,7 @@ library("cluster")
 library("tcltk")
 library("ggplot2")
 library("ggdendro")
-library("plot3D")
+if(!WS_flag) library("plot3D")
 library("emdist")
 
 mydendrogramplot2 <- function(outPath, dist, labels,fName){
@@ -551,15 +602,12 @@ getDendrogramFromBootleNeck <- function(geos, labelFname = "/home/willy/Predicti
   mydendrogramplot2(outPath,geoDistances, labels, fName)
 }
 
-library(rgl)
-
-
-
+if(!WS_flag) library(rgl)
 if(!WS_flag) plotBootleNeck(geos,TR, intermediate_output, onlyGeos = FALSE, withNames = FALSE)
 # getDendrogramFromBootleNeck(geos, outPath = outPath, fName = "AutoEncoder", labelFname = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/data/labels.txt")
 
 # getDendrogramFromBootleNeck(geos, outPath = outPath, fName = "AutoEncoder", labelFname = "/home/willy/PredictingProteinInteractions/data/120Experiment/labels120.txt")
-getDendrogramFromBootleNeck(geos, outPath = outPath, fName = "AutoEncoder")
+getDendrogramFromBootleNeck(geos, outPath = opt$inputPath, fName = opt$dendrogramName)
 
 
 # ###############################################################################

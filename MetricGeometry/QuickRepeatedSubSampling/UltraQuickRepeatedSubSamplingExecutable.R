@@ -1,9 +1,13 @@
 #!/usr/bin/Rscript
 #---------------------------------------------------------------------------------
-# Calculate the repeatedSubSampling Fast. The points are only sampled m times once for each 
-# protein. Then the Distributions are calculated. These distributions are then sampled from.
 # Willy Bruhn 15.7.2019
+# Calculate the repeatedSubSampling fast. The points are only sampled m times once for each 
+# protein. Then the distributions are calculated. Then from these distributions the quantile-
+# approximation is calculated. The DE is then calculated with the manhattan distance between
+# the quantiles.
 # 
+#---------------------------------------------------------------------------------
+#
 #   ProteinsPath        ... path to all proteins as produced by MutComp
 #
 #   distance_name       ... folder in which all distance-matrices will be stored
