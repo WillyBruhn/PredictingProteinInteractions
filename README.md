@@ -36,7 +36,7 @@ The standard path to the parameters-file is (for the use on the WS):
 ```
 <pathToMutComp>./process.sh
 ```
-where *<pathToMutComp>* is the path to the script.
+where **pathToMutComp** is the path to the script.
 If you want to use a different parameter-file just pass it as an argument to the script
 ```
 <pathToMutComp>./process.sh <path/to/a/different/parametersfile>
@@ -46,7 +46,7 @@ On my machine this call becomes:
 /home/willy/PredictingProteinInteractions/PreProcessingProteins/MutComp/./process.sh /home/willy/PredictingProteinInteractions/PreProcessingProteins/MutComp/GUI/Parameters/parametersForThesis.txt
 ```
 
-I strongly recommmend placing the parametersFile for each data-set in the same folder. 
+I strongly recommmend placing the **parametersFile** for each data-set in the same folder. 
 
 
 ### centerSelect
@@ -93,8 +93,8 @@ the file "active_center.pts" has to be present which is delivered by selectCente
                           <pathToExperiment>/NNexperimentsKfoldCV/. So <outPutFolder> is no full path!
 ```
 
-Most of the ~50 parameters are specified in an additional parametersFile. Note that when executing this script the 
-parameters specified on the commmand-line have higher priority and overwrite the parameters in the parameters-file.
+Most of the ~50 parameters are specified in an additional **parameters-file**. Note that when executing this script the 
+parameters specified on the commmand-line have higher priority and overwrite the parameters in the **parameters-file**.
 
 
 #### Parameters related to the features
@@ -123,6 +123,59 @@ parameters specified on the commmand-line have higher priority and overwrite the
   stitchNum           ... number of points that are created from Manifold.
 ```
 #### Parameters related to the neural net
+
+
+#### Exemplary Parameters-File
+An exemplary parameters-file is shown below. The parameters for both the features and the 
+neural net are stored in this file. The columns are ","-separated.
+
+| parameter         | value                                                           |
+|-------------------|-----------------------------------------------------------------|
+| a1                | 1                                                               |
+| a2                | 1                                                               |
+| a3                | 1                                                               |
+| a4                | 1                                                               |
+| a5                | 1                                                               |
+| b1                | 1                                                               |
+| b2                | 1                                                               |
+| b3                | 1                                                               |
+| b4                | 1                                                               |
+| b5                | 1                                                               |
+| n1                | 0.1                                                             |
+| n2                | 0.2                                                             |
+| n3                | 0.3                                                             |
+| n4                | 0.5                                                             |
+| n5                | 0.8                                                             |
+| mNearestNeighbor  | 10                                                              |
+| pathToExperiment  | /home/willy/PredictingProteinInteractions//data/106Test/Output/ |
+| n_s_euclidean     | 1000                                                            |
+| n_s_dijkstra      | 1000                                                            |
+| stitchNum         | 2000                                                            |
+| recalculateModel  | 0                                                               |
+| recalculateQuants | 0                                                               |
+| sampleSize        | 20                                                              |
+| l1                | 100                                                             |
+| l2                | 100                                                             |
+| l3                | 100                                                             |
+| l4                | 50                                                              |
+| l5                | 30                                                              |
+| d1                | 0.2                                                             |
+| d2                | 0.2                                                             |
+| d3                | 0.2                                                             |
+| d4                | 0.2                                                             |
+| d5                | 0.2                                                             |
+| epochs            | 20                                                              |
+| batchSize         | 16                                                              |
+| experimentName    | Dummy                                                           |
+| recalculateNN     | 0                                                               |
+| kFolds            | 10                                                              |
+| numPermutations   | 400                                                             |
+| numCores          | 4                                                               |
+| mode              | evaluation                                                      |
+
+#### Output
+For each fold three files are created: **accuracy.txt**, **f1_score.txt**, **confMat.txt** storing the accuracy, the F1-score and the confusion-matrix. Additionaly three such files with tex-extensions are created which are obtained by averaging over the folds. 
+
 
 ## 4. Clustering
 Create dendrograms like this one from the 106-Redoxin-data-set:

@@ -116,7 +116,7 @@ This diagram illustrates the different functionallities of this software-tool an
 <pre><code>&lt;pathToMutComp&gt;./process.sh
 </code></pre>
 
-<p>where <em><pathToMutComp></em> is the path to the script.
+<p>where <strong>pathToMutComp</strong> is the path to the script.
 If you want to use a different parameter-file just pass it as an argument to the script</p>
 <pre><code>&lt;pathToMutComp&gt;./process.sh &lt;path/to/a/different/parametersfile&gt;
 </code></pre>
@@ -125,7 +125,7 @@ If you want to use a different parameter-file just pass it as an argument to the
 <pre><code>/home/willy/PredictingProteinInteractions/PreProcessingProteins/MutComp/./process.sh /home/willy/PredictingProteinInteractions/PreProcessingProteins/MutComp/GUI/Parameters/parametersForThesis.txt
 </code></pre>
 
-<p>I strongly recommmend placing the parametersFile for each data-set in the same folder. </p>
+<p>I strongly recommmend placing the <strong>parametersFile</strong> for each data-set in the same folder. </p>
 <h3 id="centerselect">centerSelect</h3>
 <p>(<a href="https://github.com/WillyBruhn/centerSelect">centerSelect</a>). </p>
 <h2 id="3-prediction">3. Prediction</h2>
@@ -164,8 +164,8 @@ the file "active_center.pts" has to be present which is delivered by selectCente
                           &lt;pathToExperiment&gt;/NNexperimentsKfoldCV/. So &lt;outPutFolder&gt; is no full path!
 </code></pre>
 
-<p>Most of the ~50 parameters are specified in an additional parametersFile. Note that when executing this script the 
-parameters specified on the commmand-line have higher priority and overwrite the parameters in the parameters-file.</p>
+<p>Most of the ~50 parameters are specified in an additional <strong>parameters-file</strong>. Note that when executing this script the 
+parameters specified on the commmand-line have higher priority and overwrite the parameters in the <strong>parameters-file</strong>.</p>
 <h4 id="parameters-related-to-the-features">Parameters related to the features</h4>
 <pre><code>  a1,a2,a3,a4,a5      ... specifies how important the active site is. a1, b1, n1 together form the parameters for one
                           feature. Set to -1 if you want to use fewer features.
@@ -192,6 +192,185 @@ parameters specified on the commmand-line have higher priority and overwrite the
 </code></pre>
 
 <h4 id="parameters-related-to-the-neural-net">Parameters related to the neural net</h4>
+<h4 id="exemplary-parameters-file">Exemplary Parameters-File</h4>
+<p>An exemplary parameters-file is shown below. The parameters for both the features and the 
+neural net are stored in this file. The columns are ","-separated.</p>
+<table>
+<thead>
+<tr>
+<th>parameter</th>
+<th>value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>a2</td>
+<td>1</td>
+</tr>
+<tr>
+<td>a3</td>
+<td>1</td>
+</tr>
+<tr>
+<td>a4</td>
+<td>1</td>
+</tr>
+<tr>
+<td>a5</td>
+<td>1</td>
+</tr>
+<tr>
+<td>b1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>b2</td>
+<td>1</td>
+</tr>
+<tr>
+<td>b3</td>
+<td>1</td>
+</tr>
+<tr>
+<td>b4</td>
+<td>1</td>
+</tr>
+<tr>
+<td>b5</td>
+<td>1</td>
+</tr>
+<tr>
+<td>n1</td>
+<td>0.1</td>
+</tr>
+<tr>
+<td>n2</td>
+<td>0.2</td>
+</tr>
+<tr>
+<td>n3</td>
+<td>0.3</td>
+</tr>
+<tr>
+<td>n4</td>
+<td>0.5</td>
+</tr>
+<tr>
+<td>n5</td>
+<td>0.8</td>
+</tr>
+<tr>
+<td>mNearestNeighbor</td>
+<td>10</td>
+</tr>
+<tr>
+<td>pathToExperiment</td>
+<td>/home/willy/PredictingProteinInteractions//data/106Test/Output/</td>
+</tr>
+<tr>
+<td>n_s_euclidean</td>
+<td>1000</td>
+</tr>
+<tr>
+<td>n_s_dijkstra</td>
+<td>1000</td>
+</tr>
+<tr>
+<td>stitchNum</td>
+<td>2000</td>
+</tr>
+<tr>
+<td>recalculateModel</td>
+<td>0</td>
+</tr>
+<tr>
+<td>recalculateQuants</td>
+<td>0</td>
+</tr>
+<tr>
+<td>sampleSize</td>
+<td>20</td>
+</tr>
+<tr>
+<td>l1</td>
+<td>100</td>
+</tr>
+<tr>
+<td>l2</td>
+<td>100</td>
+</tr>
+<tr>
+<td>l3</td>
+<td>100</td>
+</tr>
+<tr>
+<td>l4</td>
+<td>50</td>
+</tr>
+<tr>
+<td>l5</td>
+<td>30</td>
+</tr>
+<tr>
+<td>d1</td>
+<td>0.2</td>
+</tr>
+<tr>
+<td>d2</td>
+<td>0.2</td>
+</tr>
+<tr>
+<td>d3</td>
+<td>0.2</td>
+</tr>
+<tr>
+<td>d4</td>
+<td>0.2</td>
+</tr>
+<tr>
+<td>d5</td>
+<td>0.2</td>
+</tr>
+<tr>
+<td>epochs</td>
+<td>20</td>
+</tr>
+<tr>
+<td>batchSize</td>
+<td>16</td>
+</tr>
+<tr>
+<td>experimentName</td>
+<td>Dummy</td>
+</tr>
+<tr>
+<td>recalculateNN</td>
+<td>0</td>
+</tr>
+<tr>
+<td>kFolds</td>
+<td>10</td>
+</tr>
+<tr>
+<td>numPermutations</td>
+<td>400</td>
+</tr>
+<tr>
+<td>numCores</td>
+<td>4</td>
+</tr>
+<tr>
+<td>mode</td>
+<td>evaluation</td>
+</tr>
+</tbody>
+</table>
+<h4 id="output">Output</h4>
+<p>For each fold three files are created: <strong>accuracy.txt</strong>, <strong>f1_score.txt</strong>, <strong>confMat.txt</strong> storing the accuracy, the F1-score and the confusion-matrix. Additionaly three such files with tex-extensions are created which are obtained by averaging over the folds. </p>
 <h2 id="4-clustering">4. Clustering</h2>
 <p>Create dendrograms like this one from the 106-Redoxin-data-set:</p>
 <p><img alt="Diagram1" src="./docs/ClusteringExample.png" /></p>
@@ -294,5 +473,5 @@ clustering is performed. With this clustering then a dendrogram is obtained.</p>
 
 <!--
 MkDocs version : 0.16.3
-Build Date UTC : 2019-10-30 12:31:34
+Build Date UTC : 2019-10-30 17:14:22
 -->
