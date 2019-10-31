@@ -155,7 +155,7 @@ the file "active_center.pts" has to be present which is delivered by selectCente
   onlyGenerateModels  ... 1: only generate the features of the models. Else the features are generated and then the neural-net
                              is trained.
 
-  mode                ... predict/evaluate. Either make predictions on new data or perform k-fold-cv to evaluate a model.
+  mode                ... prediction/evaluation. Either make predictions on new data or perform k-fold-cv to evaluate a model.
 
   parametersFile      ... contains the parameters need for the features and the neural net. Separated by ; the arguments
                           are inserted row-wise. If no parametersFile is specified then the default-parameters are used..
@@ -371,6 +371,20 @@ neural net are stored in this file. The columns are ","-separated.</p>
 </table>
 <h4 id="output">Output</h4>
 <p>For each fold three files are created: <strong>accuracy.txt</strong>, <strong>f1_score.txt</strong>, <strong>confMat.txt</strong> storing the accuracy, the F1-score and the confusion-matrix. Additionaly three such files with tex-extensions are created which are obtained by averaging over the folds. </p>
+<h4 id="creating-a-classifier-and-evaluating-it">Creating a classifier and evaluating it</h4>
+<p>If mode is set to "evaluation" then the necessary features are generated as specified in <strong>parametersFile</strong>. 
+Then with k-fold cross-validation a neural net is trained. For each fold the accuracy, F1-score and confusion-matrix is saved.
+In case of k == 1 additionally the finall trained model is exported. This model can then be used for prediction of new data.</p>
+<p>An exemplary confusion-matrix (with k == 1) looks like this:
+|                 | functional | not_functional |
+|-----------------|------------|----------------|
+| functional      | 0.90000000 | 0.02865169     |
+| not_functional  | 0.10000000 | 0.97134831     |</p>
+<p>Keep in mind that with lower k, that means a lower number of different folds, the reliabilty of the evaluation of the model for new unseen data shrinks. 
+With k == 1, the evaluation is only a training-error and hence does not show how well the model will perform on unseen data.</p>
+<h4 id="predicting-new-data">Predicting new data</h4>
+<p>If mode is set to "predict" then a previously trained neural net is read in and a folder containing new data has to be specified.
+For the proteins in that new folder predictions are made with the neural net.</p>
 <h2 id="4-clustering">4. Clustering</h2>
 <p>Create dendrograms like this one from the 106-Redoxin-data-set:</p>
 <p><img alt="Diagram1" src="./docs/ClusteringExample.png" /></p>
@@ -473,5 +487,5 @@ clustering is performed. With this clustering then a dendrogram is obtained.</p>
 
 <!--
 MkDocs version : 0.16.3
-Build Date UTC : 2019-10-30 17:14:22
+Build Date UTC : 2019-10-31 19:10:50
 -->

@@ -28,13 +28,16 @@
 # onlyGenerateModels  ... 1: only generate the features of the models. Else the features are generated and then the neural-net
 #                            is trained.
 # 
-# mode                ... predict/evaluate. Either make predictions on new data or perform k-fold-cv to evaluate a model.
+# mode                ... prediction/evaluation. Either make predictions on new data or perform k-fold-cv to evaluate a model.
 # 
 # parametersFile      ... contains the parameters need for the features and the neural net. Separated by "," the arguments
 #                         are inserted row-wise. If no parametersFile is specified then the default-parameters are used.
 # 
 # outPutFolder        ... name of the folder in which all output is saved. The folder is placed in
 #                         <pathToExperiment>/NNexperimentsKfoldCV/. So <outPutFolder> is no full path!
+#
+# nnModelFolder       ... if mode == prediction, you need to specify the folder in which the model and the parameters of the model
+#                         are stored. nnModelFolder is the path to that folder.
 #
 #   #----------------------------------------------------------------------------------------------------------------------
 #   # Feature-specific
@@ -84,6 +87,9 @@
 #   d1,d2,d3            ... in [0,1) specifies the dropout-rates.
 #
 #------------------------------------------------------------------------------------------------------------------------------------
+
+
+
 wsPath = "/home/willy/PredictingProteinInteractions/setUp/SourceLoader.R"
 # wsPath = "/home/sysgen/Documents/LWB/PredictingProteinInteractions/setUp/SourceLoader.R"
 
@@ -151,66 +157,19 @@ library(e1071)
 
 print("done loading ...")
 
-
-#----------------------------------------------------------------------------------
-# interpreting input parameters
-library(getopt)
-options(warn=-1)
-#----------------------------------------------------------------------------------
-
-spec = matrix(c(
-  'verbose', 'v', 2, "integer",
-  'help'   , 'h', 0, "logical",
-  'pathToExperiment', 'p', 2, "character",
-  'onlyGenerateModels'  , 'o', 2, "integer",
-  'parametersFile', 'r', 2, "character",
-  'mode', 'm', 2, "character",
-  'outPutFolder', 'a', 2, "character"
-), byrow=TRUE, ncol=4)
-opt = getopt(spec)
-
-# if help was asked for print a friendly message 
-# and exit with a non-zero error code
-if ( !is.null(opt$help) ) {
-  cat(getopt(spec, usage=TRUE))
-  q(status=1)
+readParameters <- function(parametersFile){
+  # returns a list
+  print(paste("reading parameters from ", parametersFile))
+  
+  parameters = read.csv(parametersFile)
+  
+  l = as.list(as.character(parameters$value))
+  l = setNames(l, as.character(parameters$parameter))
+  
+  print(l)
+  
+  return(l)
 }
-
-# mode = "onlyExperiments2"
-# mode = "onlyGenerateModels
-
-if ( is.null(opt$pathToExperiment    ) ) { opt$pathToExperiment = getPath("106Experiment") }
-p = opt$pathToExperiment
-s = strsplit(p, "/")[[1]]
-NNExperimentFolder = paste(paste(s[1:length(s)-1], collapse = "/"), "/", sep = "")
-
-if ( is.null(opt$outPutFolder    ) ) { 
-  opt$outPutFolder = "Dummy"
-}
-if ( is.null(opt$onlyGenerateModels    ) ) { opt$onlyGenerateModels    = 0     }
-if ( is.null(opt$mode    ) ) { opt$mode    = "evaluation"   }
-if ( is.null(opt$parametersFile    ) ) {
-  opt$parametersFile = paste(NNExperimentFolder, "/NNexperimentsKfoldCV/",opt$outPutFolder, "/parameters.csv", sep = "")
-}
-
-# 
-# if(is.null(opt$labels)) {opt$labels    = getPath("106ExperimentLabels")}
-# if(is.null(opt$numClasses)) {opt$numClasses    = 2}
-# if(is.null(opt$folds)) {opt$folds    = 10}
-# if ( is.null(opt$cores) ) { 
-#   opt$cores = Sys.getenv('LSB_MAX_NUM_PROCESSORS')
-#   if ( is.null(opt$cores) || opt$cores == "") opt$cores = 1
-# }
-# if ( is.null(opt$verbose ) ) { opt$verbose = FALSE }
-# 
-# mode = opt$mode
-# LABELS = opt$labels
-# numCores = opt$cores
-# NUMCLASSES = opt$numClasses
-# pathToExperiment = opt$pathToExperiment
-# numFolds = opt$folds
-# mode = opt$mode
-# 
 
 initializeParameters <- function(){
   featureParameters = list()
@@ -269,40 +228,149 @@ initializeParameters <- function(){
   featureParameters$recalculateNN = 1
   featureParameters$labelsPath = getPath("106ExperimentLabels")
   
+  featureParameters$nnModelName = paste(EXPERIMENTFOLDER,"/nnModel.h5", sep ="")
+  
   featureParameters$numCores = 1
   return(featureParameters)
 }
 
-writeParameters <- function(parameters,parametersFile,EXPERIMENTFOLDER){
+writeParameters <- function(parameters,parametersFile){
   my_mat <- do.call(rbind, parameters)
   my_df <- data.frame(id = names(parameters), my_mat)
   colnames(my_df) = c("parameter","value")
   
-  p2 = paste(EXPERIMENTFOLDER, "/parameters.csv", sep = "")
-  
-  print(paste("writing parameters to ", parametersFile,  " and ", p2, sep = ""))
+  print(paste("writing parameters to ", parametersFile))
+  # write.csv(my_df, parametersFile, row.names=F)
   write.csv(my_df, parametersFile, row.names=F)
-  write.csv(my_df, p2, row.names=F)
 }
 
-readParameters <- function(parametersFile){
-  # returns a list
-  print(paste("reading parameters from ", parametersFile))
-  
-  parameters = read.csv(parametersFile)
-  
-  l = as.list(parameters$value)
-  l = setNames(l, parameters$parameter)
-  
-  return(l)
+
+#----------------------------------------------------------------------------------
+# interpreting input parameters
+library(getopt)
+options(warn=-1)
+#----------------------------------------------------------------------------------
+
+spec = matrix(c(
+  'verbose', 'v', 2, "integer",
+  'help'   , 'h', 0, "logical",
+  'pathToExperiment', 'p', 2, "character",
+  'onlyGenerateModels'  , 'o', 2, "integer",
+  'parametersFile', 'r', 2, "character",
+  'mode', 'm', 2, "character",
+  'outPutFolder', 'a', 2, "character",
+  'nnModelFolder', 'f', 2, "character"
+), byrow=TRUE, ncol=4)
+opt = getopt(spec)
+
+# if help was asked for print a friendly message 
+# and exit with a non-zero error code
+if ( !is.null(opt$help) ) {
+  cat(getopt(spec, usage=TRUE))
+  q(status=1)
 }
+
+# mode = "onlyExperiments2"
+# mode = "onlyGenerateModels
+
+if ( is.null(opt$pathToExperiment    ) ) { opt$pathToExperiment = getPath("106Experiment") }
+p = opt$pathToExperiment
+s = strsplit(p, "/")[[1]]
+NNExperimentFolder = paste(paste(s[1:length(s)-1], collapse = "/"), "/", sep = "")
+
+if ( is.null(opt$outPutFolder    ) ) { 
+  opt$outPutFolder = "Dummy"
+}
+
+p1 = paste(NNExperimentFolder, "/NNexperimentsKfoldCV/", sep = "")
+if(!dir.exists(p1)) dir.create(p1)
+
+EXPERIMENTFOLDER = paste(p1,"/",opt$outPutFolder, sep = "")
+if(!dir.exists(EXPERIMENTFOLDER)) dir.create(EXPERIMENTFOLDER)
+
+parametersFileInFolder = paste(EXPERIMENTFOLDER, "/parameters.csv", sep = "")
+
+if ( is.null(opt$onlyGenerateModels    ) ) { opt$onlyGenerateModels    = 0     }
+if ( is.null(opt$mode    ) ) { opt$mode    = "evaluation"   }
+if ( is.null(opt$parametersFile    ) ) {
+  opt$parametersFile = paste(NNExperimentFolder, "/NNexperimentsKfoldCV/",opt$outPutFolder, "/parameters.csv", sep = "")
+}
+
+if(opt$mode == "prediction"){
+  if ( is.null(opt$nnModelFolder)) { 
+    print("ERROR: mode == prediction --> you have to specify the folder in which the pre-trained model is (--nnModelFolder)! Exiting ...")
+    quit()
+  }
+  if(!dir.exists(opt$nnModelFolder)){
+    print(paste("ERROR: Can't find ", opt$nnModelFolder, " (--nnModelFolder) Exiting ...", sep = ""))
+    quit()
+  }
+  
+  print(paste("Copying parameters and using model from ", opt$nnModelFolder, sep =""))
+  
+  parametersFromModel = paste(opt$nnModelFolder, "/parameters.csv", sep ="")
+  if(!file.exists(parametersFromModel)){
+    print(paste("ERROR: parameters-file missing in ", opt$nnModelFolder, sep = ""))
+  } else {
+    file.copy(from = parametersFromModel, to = parametersFileInFolder,overwrite = TRUE)
+  }
+  
+  # extract the nnModelName and copy that aswell
+  parameters = readParameters(parametersFileInFolder)
+  
+  nnModelOrig = as.character(parameters$nnModelName)
+  
+  vec = strsplit(nnModelOrig,split = "/")[[1]][]
+  nnModelOrigName = vec[length(vec)]
+  print(nnModelOrigName)
+  
+  nnModelNew = paste(EXPERIMENTFOLDER,"/", nnModelOrigName, sep = "")
+
+  if(!file.exists(nnModelOrig)){
+    print(paste("ERROR: nnModel missing in ", opt$nnModelFolder, sep = ""))
+  } else {
+    file.copy(from = nnModelOrig, to = nnModelNew,overwrite = TRUE)
+  }
+  
+  parameters$nnModelName = nnModelNew
+  parameters$recalculateNN = 0
+  parameters$recalculateQuants = 1
+  
+  writeParameters(parameters = parameters, parametersFileInFolder)
+  
+  
+}
+
+# 
+# if(is.null(opt$labels)) {opt$labels    = getPath("106ExperimentLabels")}
+# if(is.null(opt$numClasses)) {opt$numClasses    = 2}
+# if(is.null(opt$folds)) {opt$folds    = 10}
+# if ( is.null(opt$cores) ) { 
+#   opt$cores = Sys.getenv('LSB_MAX_NUM_PROCESSORS')
+#   if ( is.null(opt$cores) || opt$cores == "") opt$cores = 1
+# }
+# if ( is.null(opt$verbose ) ) { opt$verbose = FALSE }
+# 
+# mode = opt$mode
+# LABELS = opt$labels
+# numCores = opt$cores
+# NUMCLASSES = opt$numClasses
+# pathToExperiment = opt$pathToExperiment
+# numFolds = opt$folds
+# mode = opt$mode
+# 
 
 parameters = initializeParameters()
 
-p1 = paste(NNExperimentFolder, "/NNexperimentsKfoldCV/", sep = "")
-EXPERIMENTFOLDER = paste(p1,"/",opt$outPutFolder, sep = "")
-if(!file.exists(opt$parametersFile)){
-  print(paste(opt$parametersFile, " does not exist yet. Creating new one ..."))
+if(!file.exists(parametersFileInFolder)){
+  print(paste(parametersFileInFolder, " does not exist yet. Creating new one ..."))
+  
+  if(file.exists(opt$parametersFile)){
+    print(paste("Taking the values from ", opt$parametersFile, sep =""))
+    parameters = readParameters(opt$parametersFile)
+  }
+  
+  print(parameters)
   
   parameters$experimentName = opt$outPutFolder
   parameters$pathToExperiment = opt$pathToExperiment
@@ -318,7 +386,7 @@ if(!file.exists(opt$parametersFile)){
     dir.create(EXPERIMENTFOLDER)
   }
   
-  writeParameters(parameters, opt$parametersFile, EXPERIMENTFOLDER)
+  writeParameters(parameters, parametersFileInFolder)
 }
 
 # in case the file exists allready, take the old parameters and overwrite the ones specified on the commandline
@@ -328,7 +396,9 @@ parameters$experimentName = opt$outPutFolder
 parameters$pathToExperiment = opt$pathToExperiment
 parameters$mode = opt$mode
 
+writeParameters(parameters, parametersFileInFolder)
 print(parameters)
+
 
 
 print(paste("Using ", parameters$numCores, " cores", sep =""))
@@ -3040,7 +3110,7 @@ selectFeatures <- function(q, pos_flag, neg_flag, pos_neg_flag, euklid_geo, numO
 
 
 
-createModelStatistics <- function(model, TrFinal, expDir, foldNum, testNames, sequentialModel = FALSE){
+createModelStatistics <- function(model, TrFinal, expDir, foldNum, testNames, sequentialModel = FALSE, originalNames = ""){
   
   pred = c()
   if(sequentialModel == TRUE){
@@ -3053,15 +3123,43 @@ createModelStatistics <- function(model, TrFinal, expDir, foldNum, testNames, se
       pred[i] = which.max(predictions[i,])
     }
   }
+  
+  y_test_pred = rep("0",length(pred))
+  for(i in 1:length(y_test_pred)){
+    y_test_pred[i] = TrFinal$classLevels[pred[i]]
+  }
+  
+  if(opt$mode == "prediction") {
+    # print(y_test_pred)
+    # print(originalNames)
+    # print(factor(as.character(TrFinal$mapping[as.numeric(y_test_pred),1])))
+    
+    df = data.frame(matrix(0, ncol = 1+length(TrFinal$mapping[,1]), nrow = length(originalNames), byrow = FALSE))
+    df[,1] = originalNames
+
+    for(i in 1:length(y_test_pred)){
+      df[i,as.numeric(y_test_pred[i])+1] = 1
+    }
+    
+    df = aggregate(df[,-1], list(df[,1]), mean)
+    colnames(df) = c("name", as.character(TrFinal$mapping[,1]))
+    
+    print(df)
+    
+    write.table(df, file = paste(expDir, "/predictions.txt", sep = ""), row.names = FALSE, quote = FALSE)
+    
+    return()
+
+  }
 
   # print(pred)
   gt = reverseToCategorical(TrFinal$y_test,TrFinal$classLevels)
-  y_test_pred = rep("0",length(pred))
+  
   su = 0
   for(i in 1:length(gt)){
     if(gt[i] == TrFinal$classLevels[pred[i]]) su = su + 1
     
-    y_test_pred[i] = TrFinal$classLevels[pred[i]]
+    # y_test_pred[i] = TrFinal$classLevels[pred[i]]
   }
   su/length(gt)
   y_test_pred
@@ -3381,7 +3479,8 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
                                n_s_dijkstra = 1000,
                                stitchNum = 2000,
                                fps = TRUE,
-                               sampleFunction = 2){
+                               sampleFunction = 2,
+                               nnModelName = ""){
   
   print("------------------------------------------------------")
   print(paste("Experiment ", ExperimentName))
@@ -3500,8 +3599,10 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
       mapping[,1] = sort(unique(lab$label))
       mapping[,2] = as.numeric(as.factor(sort(unique(lab$label))))
       
-      # remove all proteinNames that are not specified in
-      quantilesTrain = quantilesTrain[which(quantilesTrain[,1] %in% lab$name),]
+      if(opt$mode == "evaluation"){
+        # remove all proteinNames that are not specified in labels
+        quantilesTrain = quantilesTrain[which(quantilesTrain[,1] %in% lab$name),]
+      }
       protNames = as.character(unique(quantilesTrain[,1]))
       
       protClasses = unlist(lapply(c(1:length(protNames)), FUN = function(i){
@@ -3515,10 +3616,6 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
       quantilesTrain[,1] = unlist(lapply(c(1:length(classLabels)), FUN = function(i){
         paste(classLabels[i],"_",quantilesTrain[i,1], sep = "")
       }))
-      
-      # print(quantilesTrain[1:5,1])
-      
-      # return(quantilesTrain)
       
       classLevels = mapping$name
       
@@ -3628,103 +3725,112 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
         print(weights)
         
         model <- keras_model_sequential()
-        if(pre_training == TRUE){
-          # first build an autoEncoder
-          print("Building the auto-encoder ...")
-          
-          GR = createPermutations2(Train_X, names = originalNames,y = Train_y, numPermutations = numPermutations, m = sampleTimes)
-          library(permute)
-          shuf = shuffle(1:nrow(GR$X_perm))
-          GR$X_perm = GR$X_perm[shuf,]
-          GR$X_perm_out = GR$X_perm_out[shuf,]
-          GR$originalNames = GR$originalNames[shuf]
-          GR$y = GR$y[shuf,]
-          
-          modelPreTrained = autoEncoder2(GR$X_perm, GR$X_perm_out, epochs = 15,encoderDim = 100,dropOuts = c(0.0,0.0,0.0,0.0,0.0), unitNums = c(50,50,50,50),batchSize = modelParameters$batch_size*numPermutations)
-          # model %>% save_model_hdf5(paste(outPath,"autoEncodeModel.h5", sep =""))
-          # 
-          # modelPreTrained <- load_model_hdf5(paste(outPath,"autoEncodeModel.h5", sep =""))
-          # modelPreTrained %>% summary()
-          
-          print("Training the neural-net ...")
-          model = model_built_from_pretrained(GR,modelPreTrained,weights = weights, batch_size = modelParameters$batch_size*(numPermutations/sampleTimes) ,epochs = modelParameters$epochs)
-
-          # model %>% save_model_hdf5(paste(expDir,"/my_model.h5", sep = ""))
-          
-        } else {
-          shuf = shuffle(1:nrow(Train_X))
-          TrFinal = list("x_train" = Train_X[shuf,], "y_train" = Train_y[shuf,], "x_test" = Test_X, "y_test" = Test_y, "numClasses" = numClasses, "classLevels" = classLevels, "mapping" = mapping)
-          # classLabels = reverseToCategorical(oneHot = TrFinal$y_train, mapping$name)
-          
-          
-          model = modelProt_custom(TrainTest = TrFinal,
-                                   weights = weights,
-                                   layers = modelParameters$layers,
-                                   dropOuts = modelParameters$dropOuts,
-                                   optimizerFunName = modelParameters$optimizerFunName,
-                                   metrics = modelParameters$metrics,
-                                   batch_size = modelParameters$batch_size,
-                                   epochs = modelParameters$epochs)
-          
-          # model %>% save_model_hdf5(paste(expDir,"/my_model.h5", sep = ""))
+        
+        if(opt$mode == "evaluation"){
+          if(pre_training == TRUE){
+            # first build an autoEncoder
+            print("Building the auto-encoder ...")
+            
+            GR = createPermutations2(Train_X, names = originalNames,y = Train_y, numPermutations = numPermutations, m = sampleTimes)
+            library(permute)
+            shuf = shuffle(1:nrow(GR$X_perm))
+            GR$X_perm = GR$X_perm[shuf,]
+            GR$X_perm_out = GR$X_perm_out[shuf,]
+            GR$originalNames = GR$originalNames[shuf]
+            GR$y = GR$y[shuf,]
+            
+            modelPreTrained = autoEncoder2(GR$X_perm, GR$X_perm_out, epochs = 15,encoderDim = 100,dropOuts = c(0.0,0.0,0.0,0.0,0.0), unitNums = c(50,50,50,50),batchSize = modelParameters$batch_size*numPermutations)
+            # model %>% save_model_hdf5(paste(outPath,"autoEncodeModel.h5", sep =""))
+            # 
+            # modelPreTrained <- load_model_hdf5(paste(outPath,"autoEncodeModel.h5", sep =""))
+            # modelPreTrained %>% summary()
+            
+            print("Training the neural-net ...")
+            model = model_built_from_pretrained(GR,modelPreTrained,weights = weights, batch_size = modelParameters$batch_size*(numPermutations/sampleTimes) ,epochs = modelParameters$epochs)
+  
+            # model %>% save_model_hdf5(paste(expDir,"/my_model.h5", sep = ""))
+            
+          } else {
+            shuf = shuffle(1:nrow(Train_X))
+            TrFinal = list("x_train" = Train_X[shuf,], "y_train" = Train_y[shuf,], "x_test" = Test_X, "y_test" = Test_y, "numClasses" = numClasses, "classLevels" = classLevels, "mapping" = mapping)
+            # classLabels = reverseToCategorical(oneHot = TrFinal$y_train, mapping$name)
+            
+            
+            model = modelProt_custom(TrainTest = TrFinal,
+                                     weights = weights,
+                                     layers = modelParameters$layers,
+                                     dropOuts = modelParameters$dropOuts,
+                                     optimizerFunName = modelParameters$optimizerFunName,
+                                     metrics = modelParameters$metrics,
+                                     batch_size = modelParameters$batch_size,
+                                     epochs = modelParameters$epochs)
+            
+            # model %>% save_model_hdf5(paste(expDir,"/my_model.h5", sep = ""))
+          }
+  
+          # only save a model if all data was used that means the number of folds == 1
+          if(k == 1){
+            print(paste("saving model to", nnModelName))
+            model %>% save_model_hdf5(nnModelName)
+          }
+        }else{
+          model <- load_model_hdf5(nnModelName)
+          model %>% summary()
         }
-        
-        
-        # return(model)
 
-        # model %>% save_model_hdf5(paste(expDir,"/my_model.h5", sep = ""))
-        # model <- load_model_hdf5(paste(expDir,"my_model.h5", sep =""))
-        
-        
         TrFinal = list("x_train" = Train_X, "y_train" = Train_y, "x_test" = Test_X, "y_test" = Test_y, "numClasses" = numClasses, "classLevels" = classLevels, "mapping" = mapping)
         
-        createModelStatistics(model, TrFinal, expDir, foldInd, testNames = testNames)
+        # print("-------------------------------------------------------------------------")
+        # print(originalNames)
+        createModelStatistics(model, TrFinal, expDir, foldInd, testNames = testNames, originalNames = originalNames)
       }
   }
   
-  # now read in all confusion-matrices and average over the performance
-  conf_all = read.table(paste(expDir, "/confMat_fold_", 1, ".txt", sep = ""))
-  f1_all = read.table(paste(expDir,"/f1_score_",1,".txt", sep =""), header = TRUE)
-
-  if(k > 1){
-    for(i in 2:k){
-      conf_i = read.table(paste(expDir, "/confMat_fold_", i, ".txt", sep = ""))
-      conf_all = conf_all + conf_i
-      
-      
-      f1_tmp = read.table(paste(expDir,"/f1_score_",i,".txt", sep =""), header = TRUE)
-      
-      if(is.na(f1_tmp)) f1_tmp = 0
-      
-      f1_all = f1_all + f1_tmp
+    
+    if(opt$mode == "evaluation"){
+    # now read in all confusion-matrices and average over the performance
+    conf_all = read.table(paste(expDir, "/confMat_fold_", 1, ".txt", sep = ""))
+    f1_all = read.table(paste(expDir,"/f1_score_",1,".txt", sep =""), header = TRUE)
+  
+    if(k > 1){
+      for(i in 2:k){
+        conf_i = read.table(paste(expDir, "/confMat_fold_", i, ".txt", sep = ""))
+        conf_all = conf_all + conf_i
+        
+        
+        f1_tmp = read.table(paste(expDir,"/f1_score_",i,".txt", sep =""), header = TRUE)
+        
+        if(is.na(f1_tmp)) f1_tmp = 0
+        
+        f1_all = f1_all + f1_tmp
+      }
+    }  
+  
+    
+    conf_all = as.matrix(conf_all)
+    
+    accuracy = sum(diag(conf_all)) / sum(conf_all)
+    accuracy
+    
+    
+    confMatNormalized = conf_all/colSums(conf_all)[col(conf_all)]
+    
+    write.table(x = signif(accuracy,2),file = paste(expDir,"/Accuracy.tex", sep = ""),
+                quote = FALSE, col.names = FALSE, row.names = FALSE)
+    
+    print(xtable(x = conf_all,caption = paste("Confusion-matrix from the 106-Redoxins-test-set.",sep =""),label = "Redoxins106TestConf", type = "latex"),
+          file = paste(expDir,"Confusion.tex", sep = ""))
+    
+    print(xtable(x = confMatNormalized,caption = paste("Confusion-matrix from the 106-Redoxins-test-set.",sep =""),label = "Redoxins106TestConfNormalized", type = "latex"),
+          file = paste(expDir,"ConfusionNormalized.tex", sep = ""))
+    
+    
+    
+    f1_all = f1_all/k
+    
+    write.table(x = signif(f1_all,2),file = paste(expDir,"/F1.tex", sep = ""),
+                quote = FALSE, col.names = FALSE, row.names = FALSE)
     }
-  }  
-
-  
-  conf_all = as.matrix(conf_all)
-  
-  accuracy = sum(diag(conf_all)) / sum(conf_all)
-  accuracy
-  
-  
-  confMatNormalized = conf_all/colSums(conf_all)[col(conf_all)]
-  
-  write.table(x = signif(accuracy,2),file = paste(expDir,"/Accuracy.tex", sep = ""),
-              quote = FALSE, col.names = FALSE, row.names = FALSE)
-  
-  print(xtable(x = conf_all,caption = paste("Confusion-matrix from the 106-Redoxins-test-set.",sep =""),label = "Redoxins106TestConf", type = "latex"),
-        file = paste(expDir,"Confusion.tex", sep = ""))
-  
-  print(xtable(x = confMatNormalized,caption = paste("Confusion-matrix from the 106-Redoxins-test-set.",sep =""),label = "Redoxins106TestConfNormalized", type = "latex"),
-        file = paste(expDir,"ConfusionNormalized.tex", sep = ""))
-  
-  
-  
-  f1_all = f1_all/k
-  
-  write.table(x = signif(f1_all,2),file = paste(expDir,"/F1.tex", sep = ""),
-              quote = FALSE, col.names = FALSE, row.names = FALSE)
-  
 }
 
 # f1_all = read.table("/home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Test1/f1_score_1.txt", header = TRUE)
@@ -3936,36 +4042,24 @@ getTrainFName <- function(path, name = "All", n = 0.2, m = 1, q = 1, muNN = 10, 
   paste(path, "/",name, "_n_", n, "_m_", m, "_q_", q, "_muNN_", muNN, "_alpha_", alpha,"_betha_", betha, "_loc_", local,".csv", sep ="")
 }
 
-
-
 #------------------------------------------------------------------------
 
 chooseOneRandom <- function(v){
   return(v[sample(1:length(v), 1)])
 }
 
-if(opt$onlyGenerateModels != 1){
-  print("starting training ...")
+evalPredictWrapper <- function(){
   
-  p2 = strsplit(pathToExperiment, "/Output/")[[1]][1]
+  p2 = strsplit(as.character(parameters$pathToExperiment), "/Output/")[[1]][1]
   print(p2)
   NNexperimentsKfoldDir = paste(p2, "/NNexperimentsKfoldCV/", sep = "")
   
-  df_summary = getExperimentSummary(expDir = NNexperimentsKfoldDir)
+  if(opt$mode == "evaluation") df_summary = getExperimentSummary(expDir = NNexperimentsKfoldDir)
   
-  
-  # 0.05,0.1,0.2,0.3,0.5,0.8)
-  # "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.1_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
-  # "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
-  # "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.05_m_1_q_1_muNN_10_alpha_0_betha_0_loc_TRUE.csv",
-  # "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.5_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
-  # "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.8_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv"
-
   vec = strsplit(NNexperimentsKfoldDir, "/")
   QuantFolder = paste(paste(vec[[1]][1:(length(vec[[1]])-1)],collapse = "/"),"/Quantiles/", sep ="")
   
   print(QuantFolder)
-  
   
   mat = matrix(c(convertToNumeric(parameters$a1), convertToNumeric(parameters$b1), convertToNumeric(parameters$n1),
                  convertToNumeric(parameters$a2), convertToNumeric(parameters$b2), convertToNumeric(parameters$n2),
@@ -3985,14 +4079,13 @@ if(opt$onlyGenerateModels != 1){
                                  alpha = mat[i,1],
                                  betha = mat[i,2],
                                  local = TRUE)
-    
+      
       print(fNameTrain)
       fNameTrainVector = c(fNameTrainVector, fNameTrain)
     }
   }
   
   # nnet architecture supports up to 5 layers
-  
   
   conv = FALSE
   SAMPLESIZE = 20
@@ -4023,12 +4116,113 @@ if(opt$onlyGenerateModels != 1){
                              pre_training = TRUE,
                              numPermutations = convertToNumeric(parameters$numPermutations),
                              fps = FALSE,
-                             sampleFunction = 3
+                             sampleFunction = 3,
+                             nnModelName = as.character(parameters$nnModelName)
+  )
+  
+  if(opt$mode == "evaluation") df_summary = getExperimentSummary(expDir = NNexperimentsKfoldDir)
+}
+
+if(opt$onlyGenerateModels != 1 && opt$mode == "evaluation"){
+  print("starting training ...")
+  
+  p2 = strsplit(as.character(parameters$pathToExperiment), "/Output/")[[1]][1]
+  print(p2)
+  NNexperimentsKfoldDir = paste(p2, "/NNexperimentsKfoldCV/", sep = "")
+  
+  df_summary = getExperimentSummary(expDir = NNexperimentsKfoldDir)
+  
+  
+  # 0.05,0.1,0.2,0.3,0.5,0.8)
+  # "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.1_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+  # "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.2_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+  # "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.05_m_1_q_1_muNN_10_alpha_0_betha_0_loc_TRUE.csv",
+  # "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.5_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv",
+  # "/home/willy/PredictingProteinInteractions/data/106Test/Quantiles/All_n_0.8_m_1_q_1_muNN_10_alpha_3_betha_3_loc_TRUE.csv"
+
+  vec = strsplit(NNexperimentsKfoldDir, "/")
+  QuantFolder = paste(paste(vec[[1]][1:(length(vec[[1]])-1)],collapse = "/"),"/Quantiles/", sep ="")
+  
+  print(QuantFolder)
+  
+  mat = matrix(c(convertToNumeric(parameters$a1), convertToNumeric(parameters$b1), convertToNumeric(parameters$n1),
+                 convertToNumeric(parameters$a2), convertToNumeric(parameters$b2), convertToNumeric(parameters$n2),
+                 convertToNumeric(parameters$a3), convertToNumeric(parameters$b3), convertToNumeric(parameters$n3),
+                 convertToNumeric(parameters$a4), convertToNumeric(parameters$b4), convertToNumeric(parameters$n4),
+                 convertToNumeric(parameters$a5), convertToNumeric(parameters$b5), convertToNumeric(parameters$n5)), ncol = 3, byrow = TRUE)
+  
+  fNameTrainVector = c()
+  for(i in 1:nrow(mat)){
+    if(mat[i,1] != -1 && mat[i,2] != -1 && mat[i,3] != -1){
+      fNameTrain = getTrainFName(path = QuantFolder,
+                                 name = "All",
+                                 n = mat[i,3],
+                                 m = 1,
+                                 q = convertToNumeric(parameters$q),
+                                 muNN = convertToNumeric(parameters$mNearestNeighbor),
+                                 alpha = mat[i,1],
+                                 betha = mat[i,2],
+                                 local = TRUE)
+    
+      print(fNameTrain)
+      fNameTrainVector = c(fNameTrainVector, fNameTrain)
+    }
+  }
+  
+  # nnet architecture supports up to 5 layers
+  
+  conv = FALSE
+  SAMPLESIZE = 20
+  modelParameters = list("layers" = c(convertToNumeric(parameters$l1),convertToNumeric(parameters$l2),convertToNumeric(parameters$l3),convertToNumeric(parameters$l4),convertToNumeric(parameters$l5)),
+                         "dropOuts" = c(convertToNumeric(parameters$d1),convertToNumeric(parameters$d2),convertToNumeric(parameters$d3),convertToNumeric(parameters$d4),convertToNumeric(parameters$d5)), "metrics" = "accuracy", "optimizerFunName" = "optimizer_adam",
+                         "batch_size" = c(convertToNumeric(parameters$batchSize)), "epochs" = c(convertToNumeric(parameters$epochs)))
+  ProteinsExperimentKfoldCV( sampleSize = convertToNumeric(parameters$sampleSize),
+                             sampleTimes = convertToNumeric(parameters$sampleTimes),
+                             sampleTimes_test = 10,
+                             batch_size = 32,
+                             epochs = 30,
+                             euklid = "both",
+                             potentials = c("pos", "neg", "pos_neg"),
+                             q = convertToNumeric(parameters$q),
+                             m = 1000,
+                             numClasses = convertToNumeric(parameters$numClasses),
+                             fNameTrain = fNameTrainVector,
+                             ExperimentName = as.character(parameters$experimentName),
+                             modelParameters = modelParameters,
+                             recalculate = convertToNumeric(parameters$recalculateNN) == 1,
+                             k = convertToNumeric(parameters$kFolds),
+                             onlySummarizeFolds = FALSE,
+                             normalizeInputs = TRUE,
+                             saveExperiment = TRUE,
+                             useColIndsToKeep = TRUE,
+                             path = NNexperimentsKfoldDir,
+                             labels = as.character(parameters$labelsPath),
+                             pre_training = TRUE,
+                             numPermutations = convertToNumeric(parameters$numPermutations),
+                             fps = FALSE,
+                             sampleFunction = 3,
+                             nnModelName = as.character(parameters$nnModelName)
                              )
 
   
   df_summary = getExperimentSummary(expDir = NNexperimentsKfoldDir)
+  
+} else if(opt$onlyGenerateModels != 1 && opt$mode == "prediction"){
+
+  # look for the nn-model, if not existent abort
+  # nnModelNameFullPath = paste(EXPERIMENTFOLDER,"/", as.character(parameters$nnModelName), sep ="")
+  if(!file.exists(as.character(parameters$nnModelName))){
+    print(paste("ERROR: Can't find the pre-trained nn-model. Was looking for ", as.character(parameters$nnModelName), sep = ""))
+    print("exiting ...")
+    quit()
+  }
+  
+  print(paste("Using ", as.character(parameters$nnModelName), " to make predictions ..."))
+  
+  evalPredictWrapper()
 }
+
+
 
 
 

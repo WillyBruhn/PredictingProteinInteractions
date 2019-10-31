@@ -84,7 +84,7 @@ the file "active_center.pts" has to be present which is delivered by selectCente
   onlyGenerateModels  ... 1: only generate the features of the models. Else the features are generated and then the neural-net
                              is trained.
 
-  mode                ... predict/evaluate. Either make predictions on new data or perform k-fold-cv to evaluate a model.
+  mode                ... prediction/evaluation. Either make predictions on new data or perform k-fold-cv to evaluate a model.
 
   parametersFile      ... contains the parameters need for the features and the neural net. Separated by ; the arguments
                           are inserted row-wise. If no parametersFile is specified then the default-parameters are used..
@@ -175,6 +175,25 @@ neural net are stored in this file. The columns are ","-separated.
 
 #### Output
 For each fold three files are created: **accuracy.txt**, **f1_score.txt**, **confMat.txt** storing the accuracy, the F1-score and the confusion-matrix. Additionaly three such files with tex-extensions are created which are obtained by averaging over the folds. 
+
+
+#### Creating a classifier and evaluating it 
+If mode is set to "evaluation" then the necessary features are generated as specified in **parametersFile**. 
+Then with k-fold cross-validation a neural net is trained. For each fold the accuracy, F1-score and confusion-matrix is saved.
+In case of k == 1 additionally the finall trained model is exported. This model can then be used for prediction of new data.
+
+An exemplary confusion-matrix (with k == 1) looks like this:
+|                 | functional | not_functional |
+|-----------------|------------|----------------|
+| functional      | 0.90000000 | 0.02865169     |
+| not_functional  | 0.10000000 | 0.97134831     |
+
+Keep in mind that with lower k, that means a lower number of different folds, the reliabilty of the evaluation of the model for new unseen data shrinks. 
+With k == 1, the evaluation is only a training-error and hence does not show how well the model will perform on unseen data.
+
+#### Predicting new data
+If mode is set to "predict" then a previously trained neural net is read in and a folder containing new data has to be specified.
+For the proteins in that new folder predictions are made with the neural net.
 
 
 ## 4. Clustering
