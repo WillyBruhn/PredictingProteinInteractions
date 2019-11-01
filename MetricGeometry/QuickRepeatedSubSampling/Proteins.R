@@ -39,6 +39,10 @@
 # nnModelFolder       ... if mode == prediction, you need to specify the folder in which the model and the parameters of the model
 #                         are stored. nnModelFolder is the path to that folder.
 #
+# useSmallExmaple     ... (logical, use as --useSmallExample), this option is usefull when you want to test if all configurations are correct
+#                         the training is done with only few features and hence runs through quickly. Adjusting the parameters afterwards
+#                         for an actual experiment is then suggested.
+#
 #   #----------------------------------------------------------------------------------------------------------------------
 #   # Feature-specific
 #   # These arguments need to be set in the parametersFile. 
@@ -166,19 +170,26 @@ readParameters <- function(parametersFile){
   l = as.list(as.character(parameters$value))
   l = setNames(l, as.character(parameters$parameter))
   
-  print(l)
+  # print(l)
   
   return(l)
 }
 
-initializeParameters <- function(){
+initializeParameters <- function(useSmallExample){
   featureParameters = list()
   
   featureParameters$a1 = 1
   featureParameters$a2 = 1
   featureParameters$a3 = 1 
   featureParameters$a4 = 1 
-  featureParameters$a5 = 1 
+  featureParameters$a5 = 1
+  
+  if(useSmallExample){
+    featureParameters$a2 = -1
+    featureParameters$a3 = -1 
+    featureParameters$a4 = -1 
+    featureParameters$a5 = -1
+  }
   
   featureParameters$b1 = 1
   featureParameters$b2 = 1
@@ -201,7 +212,6 @@ initializeParameters <- function(){
   featureParameters$recalculateModel = 0
   featureParameters$recalculateQuants = 0
   
-  featureParameters$sampleSize = 20
   featureParameters$l1 = 100
   featureParameters$l2 = 100
   featureParameters$l3 = 100
@@ -227,6 +237,14 @@ initializeParameters <- function(){
   featureParameters$numClasses = 2
   featureParameters$recalculateNN = 1
   featureParameters$labelsPath = getPath("106ExperimentLabels")
+  
+  if(useSmallExample){
+    featureParameters$kFolds = 1
+    featureParameters$numPermutations = 1
+    featureParameters$sampleSize = 2
+    featureParameters$sampleTimes = 4
+  }
+  
   
   featureParameters$nnModelName = paste(EXPERIMENTFOLDER,"/nnModel.h5", sep ="")
   
@@ -259,7 +277,8 @@ spec = matrix(c(
   'parametersFile', 'r', 2, "character",
   'mode', 'm', 2, "character",
   'outPutFolder', 'a', 2, "character",
-  'nnModelFolder', 'f', 2, "character"
+  'nnModelFolder', 'f', 2, "character",
+  'useSmallExample', 'u', 2, "logical"
 ), byrow=TRUE, ncol=4)
 opt = getopt(spec)
 
@@ -311,23 +330,27 @@ if(opt$mode == "prediction"){
   parametersFromModel = paste(opt$nnModelFolder, "/parameters.csv", sep ="")
   if(!file.exists(parametersFromModel)){
     print(paste("ERROR: parameters-file missing in ", opt$nnModelFolder, sep = ""))
+    print("Exiting ...")
+    quit()
   } else {
     file.copy(from = parametersFromModel, to = parametersFileInFolder,overwrite = TRUE)
   }
   
   # extract the nnModelName and copy that aswell
   parameters = readParameters(parametersFileInFolder)
-  
+
   nnModelOrig = as.character(parameters$nnModelName)
   
   vec = strsplit(nnModelOrig,split = "/")[[1]][]
   nnModelOrigName = vec[length(vec)]
-  print(nnModelOrigName)
+  # print(nnModelOrigName)
   
   nnModelNew = paste(EXPERIMENTFOLDER,"/", nnModelOrigName, sep = "")
-
+  
   if(!file.exists(nnModelOrig)){
     print(paste("ERROR: nnModel missing in ", opt$nnModelFolder, sep = ""))
+    print("Exiting ...")
+    quit()
   } else {
     file.copy(from = nnModelOrig, to = nnModelNew,overwrite = TRUE)
   }
@@ -337,7 +360,6 @@ if(opt$mode == "prediction"){
   parameters$recalculateQuants = 1
   
   writeParameters(parameters = parameters, parametersFileInFolder)
-  
   
 }
 
@@ -360,7 +382,7 @@ if(opt$mode == "prediction"){
 # mode = opt$mode
 # 
 
-parameters = initializeParameters()
+parameters = initializeParameters(opt$useSmallExample)
 
 if(!file.exists(parametersFileInFolder)){
   print(paste(parametersFileInFolder, " does not exist yet. Creating new one ..."))

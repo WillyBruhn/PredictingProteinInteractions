@@ -22,6 +22,17 @@ This requires *mkdocs* to be installed.
 
 ## 1. Predicting Protein Interactions
 
+#### Example Usage
+
+In **/QuickStart/SmallExample/** a small example can be found on which the funtionality and correct installation can be tested.
+Adjust the parameters on your machine in the following call:
+
+```
+/home/willy/PredictingProteinInteractions/Classification/./predictingProteinInteractions.R --mode SingleDistance --doClustering TRUE --pdb_folder /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/pdb/ --distances_train /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/UltraQuickRepSub/ --numberOfPoints 4 --rounds 10 --MutCompOutPut /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/ --doMutComp TRUE --q_val 1 --labels_train /home/willy/PredictingProteinInteractions/data/106Test/labels.txt
+```
+
+This invokes the preprocessing with **MutComp** and **VMD**. Then **UltraQuickRepeatedSubSampling** is called and a dendrogram is produced.
+
 
 ## 2. Preprocessing
 
@@ -182,7 +193,14 @@ If mode is set to "evaluation" then the necessary features are generated as spec
 Then with k-fold cross-validation a neural net is trained. For each fold the accuracy, F1-score and confusion-matrix is saved.
 In case of k == 1 additionally the finall trained model is exported. This model can then be used for prediction of new data.
 
-An exemplary confusion-matrix (with k == 1) looks like this:
+An exemplary call looks like this:
+
+```
+./Proteins.R --pathToExperiment /home/willy/PredictingProteinInteractions/data/106Test/Output/ --mode evaluation --outPutFolder Dummy2
+```
+
+The output is a confusion-matrix (here with k == 1) and might look like this:
+
 |                 | functional | not_functional |
 |-----------------|------------|----------------|
 | functional      | 0.90000000 | 0.02865169     |
@@ -194,6 +212,23 @@ With k == 1, the evaluation is only a training-error and hence does not show how
 #### Predicting new data
 If mode is set to "predict" then a previously trained neural net is read in and a folder containing new data has to be specified.
 For the proteins in that new folder predictions are made with the neural net.
+
+An exemplary call looks like this:
+```
+./Proteins.R --outPutFolder Dummy5 --pathToExperiment /home/willy/PredictingProteinInteractions/data/NewPredTest/Output/ --mode prediction --nnModelFolder /home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Dummy2/
+```
+
+The above call creates a new folder **/home/willy/PredictingProteinInteractions/data/NewPredTest/Output/NNexperimentsKfoldCV/Dummy5/** in which all data will be stored. 
+Predictions will be made for all proteins that can be found in the folder **/home/willy/PredictingProteinInteractions/data/NewPredTest/Output/**. The previously trained neural net that will be used for prediction is located in **/home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Dummy2/**. 
+
+The predictions are then stored in a file **predictions.txt**. Row-wise the names of the proteins are denoted. Column-wise the predicted probabilities for the specific class can be seen.
+
+| name | functional | not_functional |
+|------|------------|----------------|
+| 1aba | 0.2        | 0.8            |
+| 5e37 | 0.1        | 0.9            |
+| 5j3r | 0          | 1              |
+| 5jy5 | 0.01       | 0.99           |
 
 
 ## 4. Clustering

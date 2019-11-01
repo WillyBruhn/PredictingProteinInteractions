@@ -105,6 +105,13 @@ This diagram illustrates the different functionallities of this software-tool an
 
 <p>This requires <em>mkdocs</em> to be installed.</p>
 <h2 id="1-predicting-protein-interactions">1. Predicting Protein Interactions</h2>
+<h4 id="example-usage">Example Usage</h4>
+<p>In <strong>/QuickStart/SmallExample/</strong> a small example can be found on which the funtionality and correct installation can be tested.
+Adjust the parameters on your machine in the following call:</p>
+<pre><code>/home/willy/PredictingProteinInteractions/Classification/./predictingProteinInteractions.R --mode SingleDistance --doClustering TRUE --pdb_folder /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/pdb/ --distances_train /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/UltraQuickRepSub/ --numberOfPoints 4 --rounds 10 --MutCompOutPut /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/ --doMutComp TRUE --q_val 1 --labels_train /home/willy/PredictingProteinInteractions/data/106Test/labels.txt
+</code></pre>
+
+<p>This invokes the preprocessing with <strong>MutComp</strong> and <strong>VMD</strong>. Then <strong>UltraQuickRepeatedSubSampling</strong> is called and a dendrogram is produced.</p>
 <h2 id="2-preprocessing">2. Preprocessing</h2>
 <h3 id="mutcomp">Mutcomp</h3>
 <p>(<a href="https://github.com/WillyBruhn/MutComp">MutComp</a>). </p>
@@ -375,16 +382,75 @@ neural net are stored in this file. The columns are ","-separated.</p>
 <p>If mode is set to "evaluation" then the necessary features are generated as specified in <strong>parametersFile</strong>. 
 Then with k-fold cross-validation a neural net is trained. For each fold the accuracy, F1-score and confusion-matrix is saved.
 In case of k == 1 additionally the finall trained model is exported. This model can then be used for prediction of new data.</p>
-<p>An exemplary confusion-matrix (with k == 1) looks like this:
-|                 | functional | not_functional |
-|-----------------|------------|----------------|
-| functional      | 0.90000000 | 0.02865169     |
-| not_functional  | 0.10000000 | 0.97134831     |</p>
+<p>An exemplary call looks like this:</p>
+<pre><code>./Proteins.R --pathToExperiment /home/willy/PredictingProteinInteractions/data/106Test/Output/ --mode evaluation --outPutFolder Dummy2
+</code></pre>
+
+<p>The output is a confusion-matrix (here with k == 1) and might look like this:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>functional</th>
+<th>not_functional</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>functional</td>
+<td>0.90000000</td>
+<td>0.02865169</td>
+</tr>
+<tr>
+<td>not_functional</td>
+<td>0.10000000</td>
+<td>0.97134831</td>
+</tr>
+</tbody>
+</table>
 <p>Keep in mind that with lower k, that means a lower number of different folds, the reliabilty of the evaluation of the model for new unseen data shrinks. 
 With k == 1, the evaluation is only a training-error and hence does not show how well the model will perform on unseen data.</p>
 <h4 id="predicting-new-data">Predicting new data</h4>
 <p>If mode is set to "predict" then a previously trained neural net is read in and a folder containing new data has to be specified.
 For the proteins in that new folder predictions are made with the neural net.</p>
+<p>An exemplary call looks like this:</p>
+<pre><code>./Proteins.R --outPutFolder Dummy5 --pathToExperiment /home/willy/PredictingProteinInteractions/data/NewPredTest/Output/ --mode prediction --nnModelFolder /home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Dummy2/
+</code></pre>
+
+<p>The above call creates a new folder <strong>/home/willy/PredictingProteinInteractions/data/NewPredTest/Output/NNexperimentsKfoldCV/Dummy5/</strong> in which all data will be stored. 
+Predictions will be made for all proteins that can be found in the folder <strong>/home/willy/PredictingProteinInteractions/data/NewPredTest/Output/</strong>. The previously trained neural net that will be used for prediction is located in <strong>/home/willy/PredictingProteinInteractions/data/106Test/NNexperimentsKfoldCV/Dummy2/</strong>. </p>
+<p>The predictions are then stored in a file <strong>predictions.txt</strong>. Row-wise the names of the proteins are denoted. Column-wise the predicted probabilities for the specific class can be seen.</p>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>functional</th>
+<th>not_functional</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1aba</td>
+<td>0.2</td>
+<td>0.8</td>
+</tr>
+<tr>
+<td>5e37</td>
+<td>0.1</td>
+<td>0.9</td>
+</tr>
+<tr>
+<td>5j3r</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td>5jy5</td>
+<td>0.01</td>
+<td>0.99</td>
+</tr>
+</tbody>
+</table>
 <h2 id="4-clustering">4. Clustering</h2>
 <p>Create dendrograms like this one from the 106-Redoxin-data-set:</p>
 <p><img alt="Diagram1" src="./docs/ClusteringExample.png" /></p>
@@ -487,5 +553,5 @@ clustering is performed. With this clustering then a dendrogram is obtained.</p>
 
 <!--
 MkDocs version : 0.16.3
-Build Date UTC : 2019-10-31 19:10:50
+Build Date UTC : 2019-11-01 14:46:13
 -->

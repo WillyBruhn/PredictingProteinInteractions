@@ -74,3 +74,16 @@ MetricGeometry/QuickRepeatedSubSampling/Rplots.pdf
 MetricGeometry/Benchmark/
 
 data/NewPredTest/
+
+QuickStart/SmallExample/Output/
+QuickStart/SmallExample/Input/
+QuickStart/SmallExample/UltraQuickRepSub/
+
+QuickStart/SmallExample/parameters.txt
+
+QuickStart/Prediction/
+
+
+
+
+

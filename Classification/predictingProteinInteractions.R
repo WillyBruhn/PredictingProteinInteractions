@@ -7,12 +7,9 @@
 # 1. Call MutComp to produce dx/obj-files
 # 2. Calculate pts-files
 # Then either
-#           3.1 Train a model
-#               - calculate all distances with createAllDistances.R
-#               - find optimal boosted model evolutionaryAlgOptParam.R
+#           3.1 Train a neural net
 # or
 #           3.2 Make predictions on new data
-#               - run BoostedNNClassification.R
 #
 # 4. Build a clustering
 #
@@ -737,6 +734,9 @@ mydendrogramplot2 <- function(outPath, dist, labels,fName, dendroHeight = 8, den
   hc2 = hclust(dist(dist), "ave")
   dendr2    <- dendro_data(hc2, type="rectangle") # convert for ggplot
   clust2    <- cutree(hc2,k=2)                    # find 2 clusters
+  
+  labels = labels[which(labels$name %in% names(clust2)),]
+  
   clust2.df <- data.frame(label=names(clust2), cluster=factor(labels$label))
   
   dendr2[["labels"]] <- merge(dendr2[["labels"]],clust2.df, by="label")
@@ -872,14 +872,14 @@ if(mode == "SingleDistance"){
   average_pos_neg = (positive+negative)/2
   
   d = average_pos_neg-positive
-  print(d[1:5,1:5])
+  # print(d[1:5,1:5])
   
   max_pos_neg = matrix(mapply(as.matrix(positive),as.matrix(negative),FUN = max),ncol = ncol(positive),nrow = nrow(positive))
   
   rownames(max_pos_neg) = rownames(positive)
   colnames(max_pos_neg) = colnames(positive)
   
-  print(max_pos_neg[1:5,1:5])
+  # print(max_pos_neg[1:5,1:5])
   
   dendrogramFolder = paste(opt$distances_train, "/Dendrogramms/", sep ="")
   if(!dir.exists(dendrogramFolder)) dir.create(dendrogramFolder)
