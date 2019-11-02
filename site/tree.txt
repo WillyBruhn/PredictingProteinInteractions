@@ -27,6 +27,7 @@
 │   │   ├── Evaluation
 │   │   ├── Evaluation (copy)
 │   │   └── models
+│   ├── animals_raw
 │   ├── __MACOSX
 │   │   └── ModelNet10
 │   ├── MNist
@@ -35,6 +36,7 @@
 │   │   ├── AllQuantilesDirStandard
 │   │   ├── __MACOSX
 │   │   └── ModelNet10
+│   ├── ModelNet10_raw
 │   ├── NewPredTest
 │   │   ├── NNexperimentsKfoldCV
 │   │   ├── Output
@@ -150,4 +152,4 @@
 └── Summerschool
     └── old
 
-150 directories
+152 directories

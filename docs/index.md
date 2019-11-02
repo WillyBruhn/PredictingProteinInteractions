@@ -32,7 +32,9 @@ Adjust the parameters on your machine in the following call:
 ```
 
 This invokes the preprocessing with **MutComp** and **VMD**. Then **UltraQuickRepeatedSubSampling** is called and a dendrogram is produced.
+If everything goes well the dendrogramms can be found in **/QuickStart/SmallExample/Dendrogramms/** and should look similar to this one:
 
+![Diagram1](docs/ClusteringExample.png)
 
 ## 2. Preprocessing
 
