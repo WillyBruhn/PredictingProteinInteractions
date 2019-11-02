@@ -24,6 +24,8 @@ data/MNist/
 data/nonRigidWorld/
 
 data/ModelNet10/
+data/__MACOSX/
+
 data/animals/
 
 data/ModelNet10.zip
@@ -45,12 +47,31 @@ data/Final_120_pdbs_20181024/
 Manifold/
 data/ModelNet10Processed.zip
 
+CreateMasterThesisCD.R
+MACD_README
 
 
+data/106Test/CompareProteinsOutPut/
+data/106Test/NNexperiments/
+data/106Test/NNexperimentsKfoldCV/
+data/106Test/Output/
+data/106Test/QuantileDistances/
+data/106Test/Quantiles/
+data/106Test/RepSubOutput/
+data/106Test/UltraQuickRepSub/
+data/106Test/HowTo
+data/106Test/parameters.txt
+data/106Test/parametersCenterselect.txt
+data/106Test/Input/pdb/
+data/106Test/Input/pqr/
 data/106Test/
 
-
-
+data/animals_raw/
+data/106Test_pdb.tar.xz
+data/120Experiment_pdb.tar.xz
+data/animals_raw.tar.xz
+data/ModelNet10_raw.tar.xz
+data/ModelNet10_raw/
 
 Drugs/
 P06401.html
@@ -83,6 +104,11 @@ QuickStart/SmallExample/parameters.txt
 
 QuickStart/Prediction/
 
+
+
+Manifold/
+
+MACD_setup.R
 
 
 
