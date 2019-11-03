@@ -82,6 +82,7 @@
     <ul class="nav bs-sidenav">
         <li class="main active"><a href="#predicting-protein-interactions">Predicting Protein Interactions</a></li>
             <li><a href="#installation">Installation</a></li>
+            <li><a href="#quickstart">QuickStart</a></li>
             <li><a href="#1-predicting-protein-interactions">1. Predicting Protein Interactions</a></li>
             <li><a href="#2-preprocessing">2. Preprocessing</a></li>
             <li><a href="#3-prediction">3. Prediction</a></li>
@@ -104,16 +105,61 @@ This diagram illustrates the different functionallities of this software-tool an
 </code></pre>
 
 <p>This requires <em>mkdocs</em> to be installed.</p>
-<h2 id="1-predicting-protein-interactions">1. Predicting Protein Interactions</h2>
-<h4 id="example-usage">Example Usage</h4>
+<h2 id="quickstart">QuickStart</h2>
 <p>In <strong>/QuickStart/SmallExample/</strong> a small example can be found on which the funtionality and correct installation can be tested.
 Adjust the parameters on your machine in the following call:</p>
-<pre><code>/home/willy/PredictingProteinInteractions/Classification/./predictingProteinInteractions.R --mode SingleDistance --doClustering TRUE --pdb_folder /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/pdb/ --distances_train /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/UltraQuickRepSub/ --numberOfPoints 4 --rounds 10 --MutCompOutPut /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/ --doMutComp TRUE --q_val 1 --labels_train /home/willy/PredictingProteinInteractions/data/106Test/labels.txt
+<pre><code>/home/willy/PredictingProteinInteractions/Classification/./predictingProteinInteractions.R --mode SingleDistance --doClustering TRUE --pdb_folder /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/pdb_train/ --distances_train /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/Train/UltraQuickRepSub/ --numberOfPoints 4 --rounds 10 --MutCompOutPut /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/Train/ --doMutComp TRUE --q_val 1 --labels_train /home/willy/PredictingProteinInteractions/data/106Test/labels.txt
 </code></pre>
 
 <p>This invokes the preprocessing with <strong>MutComp</strong> and <strong>VMD</strong>. Then <strong>UltraQuickRepeatedSubSampling</strong> is called and a dendrogram is produced.
 If everything goes well the dendrogramms can be found in <strong>/QuickStart/SmallExample/Dendrogramms/</strong> and should look similar to this one:</p>
-<p><img alt="Diagram1" src="./docs/ClusteringExample.png" /></p>
+<p><img alt="Diagram1" src="./docs/DendrogramSmallExample.png" /></p>
+<h3 id="training-a-neural-net">Training a neural net</h3>
+<p>In order to train a neural net type:</p>
+<pre><code>../../MetricGeometry/QuickRepeatedSubSampling/./Proteins.R --pathToExperiment /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/Train/Output/ --mode evaluation --outPutFolder Test1 --useSmallExample
+</code></pre>
+
+<p>In <strong>/QuickStart/SmallExample/Train/NNexperimentsKfoldCV/Test1/</strong> a file <strong>nnModel.h5</strong> can then be found which can be used to make predictions on new data.</p>
+<h3 id="making-predictions-for-new-data">Making predictions for new data</h3>
+<p>In order to make predictions for new data you first need to train a neural net as described in the previous section.
+The resulting neural net can then be used to make predictions on a new data set.</p>
+<p>In <strong>/QuickStart/SmallExample/pdb_predict</strong> a folder with pdb-files for which predictions should be made, can be found.
+First you need to preprocess the pdbs with <strong>PredictingProteinInteractions.R</strong> as follows:</p>
+<pre><code>/home/willy/PredictingProteinInteractions/Classification/./predictingProteinInteractions.R --mode SingleDistance --doClustering FALSE --pdb_folder /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/pdb_predict/ --MutCompOutPut /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/Predict/ --doMutComp TRUE --q_val 1
+</code></pre>
+
+<p>Then using the model that was trained and placed in <strong>/QuickStart/SmallExample/Train/NNexperimentsKfoldCV/Test1/</strong> in the previous section make predictions on the new data:</p>
+<pre><code>../../MetricGeometry/QuickRepeatedSubSampling/./Proteins.R --outPutFolder TestPred --pathToExperiment /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/Predict/Output/ --mode prediction --nnModelFolder /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/Train/NNexperimentsKfoldCV/Test1/
+</code></pre>
+
+<p>The results can be found in <strong>/QuickStart/SmallExample/Predict/NNexperimentsKfoldCV/TestPred/</strong> and can look similar to this one (predictions.txt):</p>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>functional</th>
+<th>not_functional</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>000_Grx4_1</td>
+<td>0.50</td>
+<td>0.50</td>
+</tr>
+<tr>
+<td>013</td>
+<td>0.25</td>
+<td>0.75</td>
+</tr>
+<tr>
+<td>085</td>
+<td>1.00</td>
+<td>0.00</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-predicting-protein-interactions">1. Predicting Protein Interactions</h2>
 <h2 id="2-preprocessing">2. Preprocessing</h2>
 <h3 id="mutcomp">Mutcomp</h3>
 <p>(<a href="https://github.com/WillyBruhn/MutComp">MutComp</a>). </p>
@@ -555,5 +601,5 @@ clustering is performed. With this clustering then a dendrogram is obtained.</p>
 
 <!--
 MkDocs version : 0.16.3
-Build Date UTC : 2019-11-02 17:18:47
+Build Date UTC : 2019-11-03 21:42:46
 -->

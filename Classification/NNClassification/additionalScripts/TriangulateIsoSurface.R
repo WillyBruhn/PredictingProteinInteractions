@@ -2037,6 +2037,8 @@ myFarthestPointSampling <- function(data, start_ind = 1, k = 10){
   # farthest ... matrix of size nrow(data)Xk with the distances to the farthest k points
   # farthest_indices ... matrix of the farthest k points 
   
+  # print("yolo")
+  # print(is.numeric(k))
   library(pracma)
   
   available_indices = c(1:nrow(data))

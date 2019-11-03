@@ -20,21 +20,57 @@ In order to view this documentation on your local machine type:
 This requires *mkdocs* to be installed.
 
 
-## 1. Predicting Protein Interactions
 
-#### Example Usage
 
+## QuickStart
 In **/QuickStart/SmallExample/** a small example can be found on which the funtionality and correct installation can be tested.
 Adjust the parameters on your machine in the following call:
 
 ```
-/home/willy/PredictingProteinInteractions/Classification/./predictingProteinInteractions.R --mode SingleDistance --doClustering TRUE --pdb_folder /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/pdb/ --distances_train /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/UltraQuickRepSub/ --numberOfPoints 4 --rounds 10 --MutCompOutPut /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/ --doMutComp TRUE --q_val 1 --labels_train /home/willy/PredictingProteinInteractions/data/106Test/labels.txt
+/home/willy/PredictingProteinInteractions/Classification/./predictingProteinInteractions.R --mode SingleDistance --doClustering TRUE --pdb_folder /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/pdb_train/ --distances_train /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/Train/UltraQuickRepSub/ --numberOfPoints 4 --rounds 10 --MutCompOutPut /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/Train/ --doMutComp TRUE --q_val 1 --labels_train /home/willy/PredictingProteinInteractions/data/106Test/labels.txt
 ```
 
 This invokes the preprocessing with **MutComp** and **VMD**. Then **UltraQuickRepeatedSubSampling** is called and a dendrogram is produced.
 If everything goes well the dendrogramms can be found in **/QuickStart/SmallExample/Dendrogramms/** and should look similar to this one:
 
-![Diagram1](docs/ClusteringExample.png)
+![Diagram1](docs/DendrogramSmallExample.png)
+
+
+### Training a neural net
+In order to train a neural net type:
+
+```
+../../MetricGeometry/QuickRepeatedSubSampling/./Proteins.R --pathToExperiment /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/Train/Output/ --mode evaluation --outPutFolder Test1 --useSmallExample
+```
+
+In **/QuickStart/SmallExample/Train/NNexperimentsKfoldCV/Test1/** a file **nnModel.h5** can then be found which can be used to make predictions on new data.
+
+
+### Making predictions for new data
+In order to make predictions for new data you first need to train a neural net as described in the previous section.
+The resulting neural net can then be used to make predictions on a new data set.
+
+In **/QuickStart/SmallExample/pdb_predict** a folder with pdb-files for which predictions should be made, can be found.
+First you need to preprocess the pdbs with **PredictingProteinInteractions.R** as follows:
+
+```
+/home/willy/PredictingProteinInteractions/Classification/./predictingProteinInteractions.R --mode SingleDistance --doClustering FALSE --pdb_folder /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/pdb_predict/ --MutCompOutPut /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/Predict/ --doMutComp TRUE --q_val 1
+```
+
+Then using the model that was trained and placed in **/QuickStart/SmallExample/Train/NNexperimentsKfoldCV/Test1/** in the previous section make predictions on the new data:
+```
+../../MetricGeometry/QuickRepeatedSubSampling/./Proteins.R --outPutFolder TestPred --pathToExperiment /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/Predict/Output/ --mode prediction --nnModelFolder /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/Train/NNexperimentsKfoldCV/Test1/
+```
+
+The results can be found in **/QuickStart/SmallExample/Predict/NNexperimentsKfoldCV/TestPred/** and can look similar to this one (predictions.txt):
+
+| name       | functional | not_functional |
+|------------|------------|----------------|
+| 000_Grx4_1 | 0.50       | 0.50           |
+| 013        | 0.25       | 0.75           |
+| 085        | 1.00       | 0.00           |
+
+## 1. Predicting Protein Interactions
 
 ## 2. Preprocessing
 

@@ -731,7 +731,7 @@ quickRepSampling <- function(OutputPath, distance_path, fName, pos = TRUE, n = 1
   
   
   print(fName_final)
-  protein_distances = read.csv(fName_final, header = TRUE, row.names = 1)
+  protein_distances = read.csv(fName_final, header = TRUE, row.names = 1, check.names = F)
   
   # print(protein_distances)
   

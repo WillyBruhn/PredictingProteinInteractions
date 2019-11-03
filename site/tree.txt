@@ -124,10 +124,10 @@
 │   │   ├── distances
 │   │   └── proteins
 │   ├── SmallExample
-│   │   ├── Input
-│   │   ├── Output
-│   │   ├── pdb
-│   │   └── UltraQuickRepSub
+│   │   ├── pdb_predict
+│   │   ├── pdb_train
+│   │   ├── Predict
+│   │   └── Train
 │   └── Test
 │       ├── pdb
 │       └── Proteins

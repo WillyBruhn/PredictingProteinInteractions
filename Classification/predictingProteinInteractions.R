@@ -714,9 +714,16 @@ AllvsAll.Cluster <- function(outPath, distance_matrix, fname, plotToFile = TRUE,
 mydendrogramplot2 <- function(outPath, dist, labels,fName, dendroHeight = 8, dendroWidth = 5, dendroLetterSize = 2){
   
   # print(dist)
+  colnames(dist) = make.names(colnames(dist))
+  # 
+  # # strsplit(validNames, pattern = "X")
+  # 
+  # substring(validNames, 2)
   
   
-  print(labels)
+  # quit()
+  
+  # print(labels)
   if(is.null(labels)){
     print("no labels specified ...")
     labels = data.frame(matrix(0, ncol = 2, nrow = nrow(dist)))
@@ -735,7 +742,24 @@ mydendrogramplot2 <- function(outPath, dist, labels,fName, dendroHeight = 8, den
   dendr2    <- dendro_data(hc2, type="rectangle") # convert for ggplot
   clust2    <- cutree(hc2,k=2)                    # find 2 clusters
   
-  labels = labels[which(labels$name %in% names(clust2)),]
+  # print(clust2)
+  
+  # print(dist)
+  
+  # print(names(clust2))
+  # print("kkkkkkkk")
+  
+  labels$name = make.names(labels$name)
+  
+  # print(labels$name)
+  # print(colnames(dist))
+  # print(names(clust2))
+  
+  # quit()
+  
+  labels = labels[which(labels$name %in% colnames(dist)),]
+  
+  print(labels)
   
   clust2.df <- data.frame(label=names(clust2), cluster=factor(labels$label))
   

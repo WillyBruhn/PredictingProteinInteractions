@@ -39,7 +39,7 @@
 # nnModelFolder       ... if mode == prediction, you need to specify the folder in which the model and the parameters of the model
 #                         are stored. nnModelFolder is the path to that folder.
 #
-# useSmallExmaple     ... (logical, use as --useSmallExample), this option is usefull when you want to test if all configurations are correct
+# useSmallExample     ... (logical, use as --useSmallExample), this option is usefull when you want to test if all configurations are correct
 #                         the training is done with only few features and hence runs through quickly. Adjusting the parameters afterwards
 #                         for an actual experiment is then suggested.
 #
@@ -161,6 +161,67 @@ library(e1071)
 
 print("done loading ...")
 
+convertParametersToCorrectType <- function(parameters){
+  parameters$a1 = as.numeric(parameters$a1)
+  parameters$a2 = as.numeric(parameters$a2)
+  parameters$a3 = as.numeric(parameters$a3)
+  parameters$a4 = as.numeric(parameters$a4)
+  parameters$a5 = as.numeric(parameters$a5)
+  
+  parameters$b1 = as.numeric(parameters$b1)
+  parameters$b2 = as.numeric(parameters$b2)
+  parameters$b3 = as.numeric(parameters$b3)
+  parameters$b4 = as.numeric(parameters$b4)
+  parameters$b5 = as.numeric(parameters$b5)
+  
+  parameters$n1 = as.numeric(parameters$n1)
+  parameters$n2 = as.numeric(parameters$n2)
+  parameters$n3 = as.numeric(parameters$n3)
+  parameters$n4 = as.numeric(parameters$n4)
+  parameters$n5 = as.numeric(parameters$n5)
+  parameters$mNearestNeighbor = as.numeric(parameters$mNearestNeighbor)
+  
+  parameters$pathToExperiment = as.character(parameters$pathToExperiment)
+  parameters$n_s_euclidean = as.numeric(parameters$n_s_euclidean)
+  parameters$n_s_dijkstra = as.numeric(parameters$n_s_dijkstra)
+  parameters$stitchNum = as.numeric(parameters$stitchNum)
+  
+  parameters$recalculateModel = as.numeric(parameters$recalculateModel)
+  parameters$recalculateQuants = as.numeric(parameters$recalculateQuants)
+  
+  parameters$l1 = as.numeric(parameters$l1)
+  parameters$l2 = as.numeric(parameters$l2)
+  parameters$l3 = as.numeric(parameters$l3)
+  parameters$l4 = as.numeric(parameters$l4)
+  parameters$l5 = as.numeric(parameters$l5)
+  
+  parameters$d1 = as.numeric(parameters$d1)
+  parameters$d2 = as.numeric(parameters$d2)
+  parameters$d3 = as.numeric(parameters$d3)
+  parameters$d4 = as.numeric(parameters$d4)
+  parameters$d5 = as.numeric(parameters$d5)
+  
+  parameters$epochs = as.numeric(parameters$epochs)
+  parameters$batchSize = as.numeric(parameters$batchSize)
+  
+  parameters$experimentName = as.character(parameters$experimentName)
+  parameters$recalculateNN = as.numeric(parameters$recalculateNN)
+  parameters$kFolds = as.numeric(parameters$kFolds)
+  parameters$numPermutations = as.numeric(parameters$numPermutations)
+  parameters$sampleSize = as.numeric(parameters$sampleSize)
+  parameters$sampleTimes = as.numeric(parameters$sampleTimes)
+  parameters$q = as.numeric(parameters$q)
+  parameters$numClasses = as.numeric(parameters$numClasses)
+  parameters$recalculateNN = as.numeric(parameters$recalculateNN)
+  parameters$labelsPath = as.character(parameters$labelsPath)
+  
+  parameters$nnModelName = as.character(parameters$nnModelName)
+  
+  parameters$numCores = as.numeric(parameters$numCores)
+  
+  return(parameters)
+}
+
 readParameters <- function(parametersFile){
   # returns a list
   print(paste("reading parameters from ", parametersFile))
@@ -170,7 +231,11 @@ readParameters <- function(parametersFile){
   l = as.list(as.character(parameters$value))
   l = setNames(l, as.character(parameters$parameter))
   
-  # print(l)
+  l = convertParametersToCorrectType(l)
+  
+  print(l)
+  
+  # quit()
   
   return(l)
 }
@@ -184,13 +249,6 @@ initializeParameters <- function(useSmallExample){
   featureParameters$a4 = 1 
   featureParameters$a5 = 1
   
-  if(useSmallExample){
-    featureParameters$a2 = -1
-    featureParameters$a3 = -1 
-    featureParameters$a4 = -1 
-    featureParameters$a5 = -1
-  }
-  
   featureParameters$b1 = 1
   featureParameters$b2 = 1
   featureParameters$b3 = 1 
@@ -203,6 +261,16 @@ initializeParameters <- function(useSmallExample){
   featureParameters$n4 = 0.5 
   featureParameters$n5 = 0.8
   featureParameters$mNearestNeighbor = 10
+  
+  
+  if(useSmallExample){
+    featureParameters$n1 = 0.01
+    featureParameters$a2 = -1
+    featureParameters$a3 = -1 
+    featureParameters$a4 = -1 
+    featureParameters$a5 = -1
+  }
+  
   
   featureParameters$pathToExperiment = getPath("106Experiment")
   featureParameters$n_s_euclidean = 1000
@@ -287,6 +355,10 @@ opt = getopt(spec)
 if ( !is.null(opt$help) ) {
   cat(getopt(spec, usage=TRUE))
   q(status=1)
+}
+
+if (is.null(opt$useSmallExample) ) {
+  opt$useSmallExample = FALSE
 }
 
 # mode = "onlyExperiments2"
@@ -844,6 +916,7 @@ getAllProteinModels = function(path = "/home/willy/Schreibtisch/106Test/Output/"
   # proteinModels = list()
   proteinModels = foreach(i = 1:length(dirs)) %dopar% {
     # proteinModels[[i]] = 
+    print("hi")
     getProteinModelStichedSurface(path = path, protName = dirs[i], n_s_euclidean = n_s_euclidean,
                                                        n_s_dijkstra = n_s_dijkstra, plot = FALSE,
                                                        recalculate = recalculate,
@@ -852,6 +925,8 @@ getAllProteinModels = function(path = "/home/willy/Schreibtisch/106Test/Output/"
                                                        alpha = alpha,
                                                        betha = betha)
   }
+  
+  print("Hu")
   
   return(proteinModels)
 }
@@ -924,6 +999,7 @@ getProteinModelStichedSurface <- function(path = "/home/willy/Schreibtisch/106Te
                                                   "_betha_",betha,
                                                   "_model_downsampled.rData", sep ="")
   
+  
   if(!file.exists(fNameModelDownsampled_additional_params) || recalculate == TRUE){
     if(!file.exists(fNameModelDownsampled) || recalculate == TRUE){
       if(!file.exists(fNameStitched) || recalculate == TRUE){
@@ -935,6 +1011,7 @@ getProteinModelStichedSurface <- function(path = "/home/willy/Schreibtisch/106Te
         system(paste(path2Manifold,manifoldCommand,args, sep =""))
         
       }
+      
       
       rglModStitched = read.obj(fNameStitched)
       points = t(rglModStitched$shapes[[1]]$positions)
@@ -953,19 +1030,22 @@ getProteinModelStichedSurface <- function(path = "/home/willy/Schreibtisch/106Te
       edges = ob$edges
       
       
+      # myFarthestPointSampling -> TriangulateIsoSurface.R
       sampled_indices = myFarthestPointSampling(points, k = n_s_euclidean)
       
+      # print(points)
+      print(n_s_euclidean)
+      
       # points3d(points[sampled_indices,], col = "green", size = 20)
+      
+      # print(sampled_indices)
       
       d_surface = myShortestDistances(graph,sampled_indices)
       
       fps_surface <- farthest_point_sampling(d_surface)
       sampled_indices2 = fps_surface[1:n_s_dijkstra]
-      
-   
+
       d_surface = d_surface[sampled_indices2, sampled_indices2]
-      
-      
       centers = points[sampled_indices[sampled_indices2],]
       
       # find out for each point if it belongs to positive or negative
@@ -992,6 +1072,7 @@ getProteinModelStichedSurface <- function(path = "/home/willy/Schreibtisch/106Te
                                                                         activeCenterInds = atomCoords$activeCenterInds,
                                                                         centers = centers)
       
+      
       measure = getProteinMeasure(distancesToActiveCenter = distancesToActiveCenter,boarderCounts = boarderCounts,alpha = alpha, betha = betha)
       
       # calculate for each starting point the fps-sequence
@@ -1017,7 +1098,7 @@ getProteinModelStichedSurface <- function(path = "/home/willy/Schreibtisch/106Te
       saveRDS(lis,file = fNameModelDownsampled)
       saveRDS(lis,file = fNameModelDownsampled_additional_params)
     }
-    
+
     
     lis = readRDS(fNameModelDownsampled)
     my_print(fNameModelDownsampled, 1)
