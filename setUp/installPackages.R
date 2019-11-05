@@ -228,6 +228,14 @@ write.table(paths, paste(PredictingProteinInteractionsFolder, "setUp/Paths.txt",
 
 
 
+# clone MutComp
+setwd(paste(PredictingProteinInteractionsFolder, "/PreProcessingProteins/", sep =""))
+system("git clone https://github.com/WillyBruhn/MutComp.git")
+
+setwd(paste(PredictingProteinInteractionsFolder, "/PreProcessingProteins/", sep =""))
+system("git clone https://github.com/WillyBruhn/centerSelect.git")
+
+
 
 # #------------------------------------------------------------------------------------------------------------------------
 # # other paths and data-sets
