@@ -106,8 +106,8 @@ This diagram illustrates the different functionallities of this software-tool an
 
 <p>This requires <em>mkdocs</em> to be installed.</p>
 <h2 id="quickstart">QuickStart</h2>
-<p>In <strong>/QuickStart/SmallExample/</strong> a small example can be found on which the funtionality and correct installation can be tested.
-Adjust the parameters on your machine in the following call:</p>
+<p>In <strong>/QuickStart/SmallExample/</strong> a small example can be found on which the funtionality and correct installation can be tested. For more details of the specific features refer to the corresponding sections in this documentation.</p>
+<p>Adjust the parameters on your machine in the following call:</p>
 <pre><code>/home/willy/PredictingProteinInteractions/Classification/./predictingProteinInteractions.R --mode SingleDistance --doClustering TRUE --pdb_folder /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/pdb_train/ --distances_train /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/Train/UltraQuickRepSub/ --numberOfPoints 4 --rounds 10 --MutCompOutPut /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/Train/ --doMutComp TRUE --q_val 1 --labels_train /home/willy/PredictingProteinInteractions/data/106Test/labels.txt
 </code></pre>
 
@@ -160,9 +160,46 @@ First you need to preprocess the pdbs with <strong>PredictingProteinInteractions
 </tbody>
 </table>
 <h2 id="1-predicting-protein-interactions">1. Predicting Protein Interactions</h2>
+<h4 id="usage">Usage</h4>
+<pre><code>    pdb_folder          ... pdb-files to be processed
+
+    MutCompOutPut       ... output of MutComp (dx,pts, ...)
+
+    MutCompParametersFile ... full path to the parameters-file
+
+    doMutComp           ... compute MutComp
+
+    doClustering        ... compute a clustering
+
+    subNamesFile        ... file with a subset of names available in the output-folder. Then
+                            only with these names the clustering is done.
+
+    mode(Train/Predict/SingleDistance) ... either Train a model or make predictions
+
+    distances_train       ... folder in which all distance-matrices will be stored
+
+    numberOfPoints        ... number of points to select (see parameters of RepeatedSampling)
+
+    rounds                ... number of repetitions
+
+    q                     ... number that indicates how fine the approximation should be
+                              (higher =&gt; more accurate, but slower)
+
+    distances_train       ... folder with all available distances
+
+    MutCompOutPut         ... folder with the proteins, that means
+                              as output of MutComp (dx,pts-files neccessary)
+
+    labels_train          ... a file with &quot;names&quot; and &quot;labels&quot; sepcifying the functions of the proteins
+                              the model will be build only on the proteins that are mentioned in this file
+                              That means the names must occur in the column-names and row-names of the distances
+                              in the folder &quot;Distances&quot;
+</code></pre>
+
 <h2 id="2-preprocessing">2. Preprocessing</h2>
 <h3 id="mutcomp">Mutcomp</h3>
-<p>(<a href="https://github.com/WillyBruhn/MutComp">MutComp</a>). </p>
+<p>For a detailed description refer to:
+(<a href="https://github.com/WillyBruhn/MutComp">MutComp</a>). </p>
 <p>The standard path to the parameters-file is (for the use on the WS):</p>
 <pre><code>/home/sysgen/Documents/LWB/TCL/MutComp/GUI/Parameters/parameters.txt
 </code></pre>
@@ -182,7 +219,10 @@ If you want to use a different parameter-file just pass it as an argument to the
 
 <p>I strongly recommmend placing the <strong>parametersFile</strong> for each data-set in the same folder. </p>
 <h3 id="centerselect">centerSelect</h3>
-<p>(<a href="https://github.com/WillyBruhn/centerSelect">centerSelect</a>). </p>
+<p>For a detailed description refer to:
+(<a href="https://github.com/WillyBruhn/centerSelect">centerSelect</a>). </p>
+<p>Selects a box around the active site.
+<img style="float: right;" src="https://github.com/WillyBruhn/centerSelect/blob/master/exampleImages/img.png"></p>
 <h2 id="3-prediction">3. Prediction</h2>
 <p>Based on the approximation of the DE multiple features are calculated. Then data-augmentation is performed. 
 Then a neural net is trained. The neural net can then be used to predict if two given proteins react with each other.</p>
@@ -204,7 +244,7 @@ onlyGenerateModels = TRUE</p>
 <li>If the measure should be updated with the information about the active center, then
 the file "active_center.pts" has to be present which is delivered by selectCenter.R.</li>
 </ul>
-<h4 id="usage">Usage</h4>
+<h4 id="usage_1">Usage</h4>
 <pre><code>  pathToExperiment    ... path to the folder that contains all the folders of all proteins. (Output-folder of MutComp).
 
   onlyGenerateModels  ... 1: only generate the features of the models. Else the features are generated and then the neural-net
@@ -507,7 +547,7 @@ Predictions will be made for all proteins that can be found in the folder <stron
 <p>Calculate the repeatedSubSampling fast. The points are only sampled m times once for each protein. Then the distributions are calculated. Then from these distributions the quantile-
 approximation is calculated. The DE is then calculated with the manhattan distance between
 the quantiles.</p>
-<h4 id="usage_1">Usage</h4>
+<h4 id="usage_2">Usage</h4>
 <pre><code>  ProteinsPath        ... path to all proteins as produced by MutComp
 
   distance_name       ... folder in which all distance-matrices will be stored
@@ -541,7 +581,7 @@ the quantiles.</p>
 bottle-neck-layer is extracted and used to extract a condensed representation of
 the proteins. With these condensed representations then an agglomerative, bottom-up
 clustering is performed. With this clustering then a dendrogram is obtained.</p>
-<h4 id="usage_2">Usage</h4>
+<h4 id="usage_3">Usage</h4>
 <pre><code>  inputPath           ... path to a file with a .Rdata-extension that stores the feature-matrix for
                           all proteins. Can be obtained by running Proteins.R.
 
@@ -601,5 +641,5 @@ clustering is performed. With this clustering then a dendrogram is obtained.</p>
 
 <!--
 MkDocs version : 0.16.3
-Build Date UTC : 2019-11-03 21:42:46
+Build Date UTC : 2019-11-05 11:58:14
 -->

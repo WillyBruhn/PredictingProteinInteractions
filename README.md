@@ -23,7 +23,8 @@ This requires *mkdocs* to be installed.
 
 
 ## QuickStart
-In **/QuickStart/SmallExample/** a small example can be found on which the funtionality and correct installation can be tested.
+In **/QuickStart/SmallExample/** a small example can be found on which the funtionality and correct installation can be tested. For more details of the specific features refer to the corresponding sections in this documentation.
+
 Adjust the parameters on your machine in the following call:
 
 ```
@@ -72,9 +73,49 @@ The results can be found in **/QuickStart/SmallExample/Predict/NNexperimentsKfol
 
 ## 1. Predicting Protein Interactions
 
+
+#### Usage
+```
+    pdb_folder          ... pdb-files to be processed
+
+    MutCompOutPut       ... output of MutComp (dx,pts, ...)
+
+    MutCompParametersFile ... full path to the parameters-file
+
+    doMutComp           ... compute MutComp
+
+    doClustering        ... compute a clustering
+
+    subNamesFile        ... file with a subset of names available in the output-folder. Then
+                            only with these names the clustering is done.
+
+    mode(Train/Predict/SingleDistance) ... either Train a model or make predictions
+
+    distances_train       ... folder in which all distance-matrices will be stored
+
+    numberOfPoints        ... number of points to select (see parameters of RepeatedSampling)
+
+    rounds                ... number of repetitions
+
+    q                     ... number that indicates how fine the approximation should be
+                              (higher => more accurate, but slower)
+
+    distances_train       ... folder with all available distances
+
+    MutCompOutPut         ... folder with the proteins, that means
+                              as output of MutComp (dx,pts-files neccessary)
+
+    labels_train          ... a file with "names" and "labels" sepcifying the functions of the proteins
+                              the model will be build only on the proteins that are mentioned in this file
+                              That means the names must occur in the column-names and row-names of the distances
+                              in the folder "Distances"
+```
+
+
 ## 2. Preprocessing
 
 ### Mutcomp
+For a detailed description refer to:
 ([MutComp](https://github.com/WillyBruhn/MutComp)). 
 
 The standard path to the parameters-file is (for the use on the WS):
@@ -99,7 +140,13 @@ I strongly recommmend placing the **parametersFile** for each data-set in the sa
 
 
 ### centerSelect
+For a detailed description refer to:
 ([centerSelect](https://github.com/WillyBruhn/centerSelect)). 
+
+Selects a box around the active site.
+<img style="float: right;" src="https://github.com/WillyBruhn/centerSelect/blob/master/exampleImages/img.png">
+
+
 
 ## 3. Prediction
 Based on the approximation of the DE multiple features are calculated. Then data-augmentation is performed. 

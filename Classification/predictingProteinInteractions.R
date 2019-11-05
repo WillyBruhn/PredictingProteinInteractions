@@ -32,13 +32,6 @@
 #
 #     mode(Train/Predict/SingleDistance) ... either Train a model or make predictions
 #
-#     ------------------------------------------------------------------
-#     mode == Train 
-#     -------------------------------------------------------------------
-#     createAllDistances.R
-#     -------------------------------------------------------------------
-#     MutCompOutPut         ... path to all proteins as produced by MutComp
-#
 #     distances_train       ... folder in which all distance-matrices will be stored
 #
 #     numberOfPoints        ... number of points to select (see parameters of RepeatedSampling)
@@ -48,9 +41,6 @@
 #     q                     ... number that indicates how fine the approximation should be 
 #                               (higher => more accurate, but slower)
 #
-#     -------------------------------------------------------------------
-#     evolutionary algorithm to find optimal boosted model
-#     -------------------------------------------------------------------
 #     distances_train       ... folder with all available distances
 # 
 #     MutCompOutPut         ... folder with the proteins, that means
@@ -60,38 +50,7 @@
 #                               the model will be build only on the proteins that are mentioned in this file
 #                               That means the names must occur in the column-names and row-names of the distances
 #                               in the folder "Distances"
-#   
-#     bestModelDirectory    ... directory to store the best model
-#   
-#     bestModelFileName     ... name of the best model
-#   
-#     popSize_train         ... size of the population of the evolutionary algorithm
-#   
-#     generations_train     ... iterations to run the ev alg
-#   
-#     royalNumber_train     ... number of individuals that are kept without mutation for the next generation
-#   
-#     randoms_train         ... number of individuals that are randomly generated in each generation
-#   
-#   
-#     ------------------------------------------------------------------
-#     mode == Predict 
-#     ------------------------------------------------------------------
-#     bestModelDirectory          ... directory to store the best model
-#   
-#     bestModelFileName           ... name of the best model
 #
-#                                     name of the file with the model, a ".RData"-file
-#
-#                                     This file has to be produced with the function BoostedKNN.saveModelToFile()
-#                                     The known labels are also stored in this file.
-#
-#     MutCompOutPut            ... /home/willy/Schreibtisch/PPItest100/Output/
-#                                     path to the proteins that predictions should be made for
-#                                     Needs the output of MutComp, and produced pts-files.
-#
-#     predictions_folder          ... /home/willy/Schreibtisch/PPItest100/KNNPredictions/
-#                                     path to were the predictions should be stored.
 #
 #----------------------------------------------------------------------------------
 #
