@@ -263,19 +263,24 @@ initializeParameters <- function(useSmallExample){
   featureParameters$mNearestNeighbor = 10
   
   
+  featureParameters$pathToExperiment = getPath("106Experiment")
+  featureParameters$n_s_euclidean = 1000
+  featureParameters$n_s_dijkstra = 1000
+  featureParameters$stitchNum = 2000
+  
+  
   if(useSmallExample){
     featureParameters$n1 = 0.01
     featureParameters$a2 = -1
     featureParameters$a3 = -1 
     featureParameters$a4 = -1 
     featureParameters$a5 = -1
+    
+    # featureParameters$n_s_euclidean = 1
+    # featureParameters$n_s_dijkstra = 10
+    # featureParameters$stitchNum = 2000
   }
   
-  
-  featureParameters$pathToExperiment = getPath("106Experiment")
-  featureParameters$n_s_euclidean = 1000
-  featureParameters$n_s_dijkstra = 1000
-  featureParameters$stitchNum = 2000
   
   featureParameters$recalculateModel = 0
   featureParameters$recalculateQuants = 0

@@ -794,7 +794,14 @@ if(mode == "SingleDistance"){
   distName_max = paste(opt$distance_name,"_max_quickEmd_n_",opt$numberOfPoints,"_m_",opt$rounds,"_q_",opt$q_val,sep ="")
   
   labels = NULL
-  if(!is.null(opt$labels_train)) labels = read.table(opt$labels_train, header = TRUE)
+  if(!is.null(opt$labels_train)) {
+    if(!file.exists(opt$labels_train)) {
+      print(paste("Error: Can't read labels-file ", opt$labels_train))
+      quit()
+    }
+    
+    labels = read.table(opt$labels_train, header = TRUE)
+  }
     
   functionals = labels$name[which(labels$label == "functional")]
   
