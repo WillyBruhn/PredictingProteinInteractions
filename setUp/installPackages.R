@@ -227,18 +227,26 @@ paths = addSource(paths, "120ExperimentLabels", "./data/120Experiment/labels120.
 write.table(paths, paste(PredictingProteinInteractionsFolder, "setUp/Paths.txt", sep = ""), row.names = FALSE)
 
 
+isFolderEmpty <- function(path){
+  if(length(list.files(path = path)) == 0) return(TRUE)
+  return(FALSE)
+}
+
+# isFolderEmpty("/home/willy/Schreibtisch/PPITEST2/PredictingProteinInteractions/PreProcessingProteins/centerSelect/")
+
 
 # clone MutComp
-setwd(paste(PredictingProteinInteractionsFolder, "/PreProcessingProteins/", sep =""))
-if(!dir.exists(paste(PredictingProteinInteractionsFolder, "/PreProcessingProteins/MutComp/", sep = "" ))) system("git clone https://github.com/WillyBruhn/MutComp.git")
+PreProcessingPath = paste(PredictingProteinInteractionsFolder, "/PreProcessingProteins/", sep ="")
+MutCompPath = paste(PredictingProteinInteractionsFolder, "/PreProcessingProteins/MutComp/", sep ="")
+setwd(PreProcessingPath)
+if(!dir.exists(MutCompPath) || isFolderEmpty(MutCompPath)) system("git clone https://github.com/WillyBruhn/MutComp.git")
 
-setwd(paste(PredictingProteinInteractionsFolder, "/PreProcessingProteins/", sep =""))
-if(!dir.exists(paste(PredictingProteinInteractionsFolder, "/PreProcessingProteins/centerSelect/", sep = "" ))) system("git clone https://github.com/WillyBruhn/centerSelect.git")
+centerSelectPath = paste(PredictingProteinInteractionsFolder, "/PreProcessingProteins/centerSelect/", sep = "" )
+setwd(PreProcessingPath)
+if(!dir.exists(centerSelectPath) || isFolderEmpty(centerSelectPath)) system("git clone https://github.com/WillyBruhn/centerSelect.git")
 
 print("changing MutCompDummyParameters.txt ...")
 system(paste(PredictingProteinInteractionsFolder,"/Classification/predictingProteinInteractionsSettings/./setDummyParameters.R", sep = ""))
-
-
 
 
 # #------------------------------------------------------------------------------------------------------------------------
