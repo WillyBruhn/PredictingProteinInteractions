@@ -648,6 +648,7 @@ quickRepSampling <- function(OutputPath, distance_path, fName, pos = TRUE, n = 1
   # actually q should be capable to be larger than n
   #
   #-------------------------------------------------------
+  
   if(distance_method == "emd"){
     fName_final = paste(distance_path,"/",fName, "_emd.csv",sep ="")
   } else {
@@ -666,8 +667,9 @@ quickRepSampling <- function(OutputPath, distance_path, fName, pos = TRUE, n = 1
     all_protein_F_approximations = getAll_protein_F_approximations(OutputPath = OutputPath, m = m, q = q, n = n, pos = TRUE)
     
     df = getManhattanProjection(all_protein_F_approximations)
+    
     write.csv(df,file = fName_final_projection, row.names = FALSE)
-
+    
     protein_distances = c()
     if(distance_method == "emd"){
       distances = getDistanceMatrixFromProjection(df)

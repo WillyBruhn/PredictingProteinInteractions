@@ -1,6 +1,6 @@
 # Don't change this line! 
 # Automatically generated!
-PPISETUP = "/home/willy/Schreibtisch/PPITEST2/PredictingProteinInteractions/setUp"
+PPISETUP = "/home/willy/Schreibtisch/PPITEST3/PredictingProteinInteractions/setUp"
 
 sourceFiles <- function(vector){
   t = read.table(file = paste(PPISETUP,"/SourcableFiles.txt", sep = ""), header = TRUE)

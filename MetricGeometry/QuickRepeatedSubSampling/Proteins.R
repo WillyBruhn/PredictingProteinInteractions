@@ -916,7 +916,6 @@ getAllProteinModels = function(path = "/home/willy/Schreibtisch/106Test/Output/"
   # proteinModels = list()
   proteinModels = foreach(i = 1:length(dirs)) %dopar% {
     # proteinModels[[i]] = 
-    print("hi")
     getProteinModelStichedSurface(path = path, protName = dirs[i], n_s_euclidean = n_s_euclidean,
                                                        n_s_dijkstra = n_s_dijkstra, plot = FALSE,
                                                        recalculate = recalculate,
@@ -925,8 +924,6 @@ getAllProteinModels = function(path = "/home/willy/Schreibtisch/106Test/Output/"
                                                        alpha = alpha,
                                                        betha = betha)
   }
-  
-  print("Hu")
   
   return(proteinModels)
 }

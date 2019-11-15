@@ -414,8 +414,6 @@ if(opt$MutCompParametersFile == ""){
   MutCompParameters = copyMutCompParameterDummy("",opt$MutCompParametersFile, MutCompSettings)
 }
 
-print("Hi")
-
 # change the parameters accordingly
 MutCompParameters$parametersPath = PPIoutputFolder
 MutCompParameters$MutCompInputFolder = paste(PPIoutputFolder, "/Input/", sep = "")
@@ -517,6 +515,7 @@ names_file = paste(pathToProteins,"/names.txt", sep ="")
 proteinnames = list.dirs(path = pathToProteins, recursive = FALSE, full.names = FALSE)
 print(proteinnames)
 write(file = names_file,proteinnames)
+
 
 if(mode == "Train"){
   print("Creating all distances with createAllDistances.R ...")
@@ -799,7 +798,6 @@ if(mode == "SingleDistance"){
     
   functionals = labels$name[which(labels$label == "functional")]
   
-  
   positive = quickRepSampling(OutputPath = pathToProteins, 
                               distance_path = opt$distances_train,
                               n = opt$numberOfPoints,
@@ -810,7 +808,6 @@ if(mode == "SingleDistance"){
                               plot = TRUE,
                               functionals = functionals,
                               distance_method = "geo")
-
 
   
   negative = quickRepSampling(OutputPath = pathToProteins, 
@@ -851,6 +848,7 @@ if(mode == "SingleDistance"){
     
     labels = labels[which(labels$name %in% subsetN[,1]),]
   }
+  
   
   average_pos_neg = (positive+negative)/2
   

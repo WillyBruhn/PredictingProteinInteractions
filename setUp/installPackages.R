@@ -51,7 +51,7 @@ loadPck("DescTools")
 loadPck("doBy")
 loadPck("caret")
 loadPck("beepr")
-
+loadPck("doParallel")
 
 # # installation on WS:
 # # inside the virtual-env-directories you have to call
