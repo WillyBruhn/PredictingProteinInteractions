@@ -230,10 +230,14 @@ write.table(paths, paste(PredictingProteinInteractionsFolder, "setUp/Paths.txt",
 
 # clone MutComp
 setwd(paste(PredictingProteinInteractionsFolder, "/PreProcessingProteins/", sep =""))
-system("git clone https://github.com/WillyBruhn/MutComp.git")
+if(!dir.exists(paste(PredictingProteinInteractionsFolder, "/PreProcessingProteins/MutComp/", sep = "" ))) system("git clone https://github.com/WillyBruhn/MutComp.git")
 
 setwd(paste(PredictingProteinInteractionsFolder, "/PreProcessingProteins/", sep =""))
-system("git clone https://github.com/WillyBruhn/centerSelect.git")
+if(!dir.exists(paste(PredictingProteinInteractionsFolder, "/PreProcessingProteins/centerSelect/", sep = "" ))) system("git clone https://github.com/WillyBruhn/centerSelect.git")
+
+print("changing MutCompDummyParameters.txt ...")
+system(paste(PredictingProteinInteractionsFolder,"/Classification/predictingProteinInteractionsSettings/./setDummyParameters.R", sep = ""))
+
 
 
 
