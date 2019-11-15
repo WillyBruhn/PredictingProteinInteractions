@@ -31,6 +31,14 @@ Adjust the parameters on your machine in the following call:
 /home/willy/PredictingProteinInteractions/Classification/./predictingProteinInteractions.R --mode SingleDistance --doClustering TRUE --pdb_folder /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/pdb_train/ --distances_train /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/Train/UltraQuickRepSub/ --numberOfPoints 4 --rounds 10 --MutCompOutPut /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/Train/ --doMutComp TRUE --q_val 1 --labels_train /home/willy/PredictingProteinInteractions/data/106Test/labels.txt
 ```
 
+Or if you are working on the WS in our lab:
+```
+/home/sysgen/Documents/LWB/MATest/PredictingProteinInteractions/QuickStart/SmallExample/Train/UltraQuickRepSub//Dendrogramms//Dendrogram__max_quickEmd_n_4_m_10_q_1.pdf"
+sysgen@0817-5915-01:~/Documents/LWB/MATest/PredictingProteinInteractions/QuickStart> /home/sysgen/Documents/LWB/MATest/PredictingProteinInteractions/Classification/./predictingProteinInteractions.R --mode SingleDistance --doClustering TRUE --pdb_folder /home/sysgen/Documents/LWB/MATest/PredictingProteinInteractions/QuickStart/SmallExample/pdb_train/ --distances_train /home/sysgen/Documents/LWB/MATest/PredictingProteinInteractions/QuickStart/SmallExample/Train/UltraQuickRepSub/ --numberOfPoints 4 --rounds 10 --MutCompOutPut /home/sysgen/Documents/LWB/MATest/PredictingProteinInteractions/QuickStart/SmallExample/Train/ --doMutComp TRUE --q_val 1 --labels_train /home/sysgen/Documents/LWB/MATest/PredictingProteinInteractions/data/labels.txt --MutCompParametersFile /home/sysgen/Documents/LWB/MATest/PredictingProteinInteractions/QuickStart/SmallExample/parameters.txt
+```
+
+
+
 This invokes the preprocessing with **MutComp** and **VMD**. Then **UltraQuickRepeatedSubSampling** is called and a dendrogram is produced.
 If everything goes well the dendrogramms can be found in **/QuickStart/SmallExample/Dendrogramms/** and should look similar to this one:
 
