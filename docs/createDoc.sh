@@ -6,14 +6,15 @@
 # - The documentation with mkdocs is built and opened in firefox.
 # 
 #-------------------------------------------------------------------
+PATH2Predicting=$(pwd)
+echo $PATH2Predicting
 
 # copy the masterthesis
-cp /home/willy/RedoxChallenges/MasterThesis/WillyMT/main.pdf /home/willy/PredictingProteinInteractions/MasterThesis.pdf
-
+cp /home/willy/RedoxChallenges/MasterThesis/WillyMT/main.pdf $PATH2Predicting/MasterThesis.pdf
 # get the tree
 #tree /home/willy/PredictingProteinInteractions/ -d -I site /home/willy/PredictingProteinInteractions/data/Input data/106Redoxins/Output > /home/willy/PredictingProteinInteractions/docs/tree.txt
 
-tree /home/willy/PredictingProteinInteractions/ -d -L 3 -I site > /home/willy/PredictingProteinInteractions/docs/tree.txt
+tree $PATH2Predicting/ -d -L 3 -I site > $PATH2Predicting/docs/tree.txt
 
 
 
@@ -23,7 +24,7 @@ mkdocs build
 
 
 # interactive documentation
-cd /home/willy/PredictingProteinInteractions/
+cd $PATH2Predicting
 
 # copy to front to see at github
 cp docs/index.md README.md

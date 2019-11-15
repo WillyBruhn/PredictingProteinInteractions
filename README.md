@@ -10,9 +10,10 @@ This diagram illustrates the different functionallities of this software-tool an
 ## Installation
  A script that trys to install all necessary dependencies can be found in *setUp/setUp.sh*. Install all dependencies by typing:
 ```
+cd setUp
 ./setUp.sh
 ```
-In order to view this documentation on your local machine type:
+In order to view this documentation as displayed on github on your local machine type:
  
 ```
 ./docs/createDoc.sh
@@ -28,8 +29,10 @@ In **/QuickStart/SmallExample/** a small example can be found on which the funti
 Adjust the parameters on your machine in the following call:
 
 ```
-/home/willy/PredictingProteinInteractions/Classification/./predictingProteinInteractions.R --mode SingleDistance --doClustering TRUE --pdb_folder /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/pdb_train/ --distances_train /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/Train/UltraQuickRepSub/ --numberOfPoints 4 --rounds 10 --MutCompOutPut /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/Train/ --doMutComp TRUE --q_val 1 --labels_train /home/willy/PredictingProteinInteractions/data/106Test/labels.txt
+<pathToPredictingProteinInteractions>/PredictingProteinInteractions/Classification/./predictingProteinInteractions.R --mode SingleDistance --doClustering TRUE --pdb_folder <pathToPredictingProteinInteractions>/PredictingProteinInteractions/QuickStart/SmallExample/pdb_train/ --distances_train <pathToPredictingProteinInteractions>/PredictingProteinInteractions/QuickStart/SmallExample/Train/UltraQuickRepSub/ --numberOfPoints 4 --rounds 10 --MutCompOutPut <pathToPredictingProteinInteractions>/PredictingProteinInteractions/QuickStart/SmallExample/Train/ --doMutComp TRUE --q_val 1 --labels_train <pathToPredictingProteinInteractions>/PredictingProteinInteractions/data/labels106.txt
 ```
+where *<pathToPredictingProteinInteractions>* is the path to the implementation on your machine.
+
 
 This invokes the preprocessing with **MutComp** and **VMD**. Then **UltraQuickRepeatedSubSampling** is called and a dendrogram is produced.
 If everything goes well the dendrogramms can be found in **/QuickStart/SmallExample/Dendrogramms/** and should look similar to this one:
@@ -41,10 +44,10 @@ If everything goes well the dendrogramms can be found in **/QuickStart/SmallExam
 In order to train a neural net type:
 
 ```
-../../MetricGeometry/QuickRepeatedSubSampling/./Proteins.R --pathToExperiment /home/willy/PredictingProteinInteractions/QuickStart/SmallExample/Train/Output/ --mode evaluation --outPutFolder Test1 --useSmallExample
+<pathToPredictingProteinInteractions>/PredictingProteinInteractions/MetricGeometry/QuickRepeatedSubSampling/./Proteins.R --pathToExperiment <pathToPredictingProteinInteractions>/PredictingProteinInteractions/QuickStart/SmallExample/Train/Output/ --mode evaluation --outPutFolder Test1 --useSmallExample
 ```
 
-In **/QuickStart/SmallExample/Train/NNexperimentsKfoldCV/Test1/** a file **nnModel.h5** can then be found which can be used to make predictions on new data.
+In **/QuickStart/SmallExample/Train/NNexperimentsKfoldCV/Test1/** a file **nnModel.h5** can then be found, which can be used to make predictions on new data.
 
 
 ### Making predictions for new data
