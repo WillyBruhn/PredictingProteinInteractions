@@ -1,4 +1,4 @@
-/home/willy/Schreibtisch/PPITEST1/PredictingProteinInteractions/
+/home/willy/PredictingProteinInteractions/
 ├── Classification
 │   ├── CaretClassification
 │   ├── NNClassification
@@ -6,6 +6,59 @@
 │   │   └── optimizeDifferentModels
 │   └── predictingProteinInteractionsSettings
 ├── data
+│   ├── 106Test
+│   │   ├── CompareProteinsOutput
+│   │   ├── Input
+│   │   ├── NNexperiments
+│   │   ├── NNexperimentsKfoldCV
+│   │   ├── Output
+│   │   ├── QuantileDistances
+│   │   ├── Quantiles
+│   │   ├── RepSubOutput
+│   │   └── UltraQuickRepSub
+│   ├── 120Experiment
+│   │   ├── Input
+│   │   ├── NNexperimentsKfoldCV
+│   │   ├── NNexperimentsKfoldCV (copy)
+│   │   ├── Output
+│   │   ├── Quantiles
+│   │   └── UltraQuickRepSub
+│   ├── animals
+│   │   ├── Evaluation
+│   │   ├── Evaluation (copy)
+│   │   └── models
+│   ├── animals_raw
+│   ├── __MACOSX
+│   │   └── ModelNet10
+│   ├── MNist
+│   ├── ModelNet10
+│   │   ├── AllQuantilesDir
+│   │   ├── AllQuantilesDirStandard
+│   │   ├── __MACOSX
+│   │   └── ModelNet10
+│   ├── ModelNet10_raw
+│   ├── NewPredTest
+│   │   ├── NNexperimentsKfoldCV
+│   │   ├── Output
+│   │   └── Quantiles
+│   ├── nonRigidWorld
+│   │   └── nonrigid3d
+│   ├── ObjectNet3D_cads
+│   │   └── ObjectNet3D
+│   ├── old
+│   │   ├── 106Redoxins
+│   │   ├── 106RedoxinsWithAddionalPDBS_1
+│   │   ├── additionalPDBS_1
+│   │   └── animals
+│   ├── pdbDownloaderExperiment
+│   │   ├── Input
+│   │   ├── merged
+│   │   ├── NNexperimentsKfoldCV
+│   │   ├── Output
+│   │   ├── Quantiles
+│   │   └── QuickRep
+│   └── psb_db0-3
+│       └── benchmark
 ├── docs
 ├── Manifold
 │   ├── 3rd
@@ -21,17 +74,33 @@
 │   ├── Benchmark
 │   │   └── QuickRep
 │   ├── ComparingProteins
+│   │   ├── EMDandClustering
+│   │   └── LowerBounds
 │   ├── QuickRepeatedSubSampling
 │   └── RepeatedSubsampling
 │       └── FirstLowerBoundRelationOfPosAndNeg
+├── PCL
+│   ├── IsoSurfSimilarity
+│   │   ├── Debug
+│   │   ├── Release
+│   │   └── src
+│   └── ptsToPcd
 ├── pdbDownloader
+│   ├── Drugs
+│   ├── merged
+│   ├── P03372_pdbs
+│   ├── P06401_pdbs
+│   ├── P10275_pdbs
+│   └── P11511_pdbs
 ├── PreProcessingProteins
 │   ├── centerSelect
 │   │   ├── AA_utility
 │   │   ├── Ars
+│   │   ├── example
 │   │   ├── exampleImages
 │   │   ├── experimental
-│   │   └── parameters
+│   │   ├── parameters
+│   │   └── Redox
 │   └── MutComp
 │       ├── APBS
 │       ├── deprecated
@@ -46,13 +115,41 @@
 │       └── Tests
 ├── QuickStart
 │   ├── ModelTrain
-│   │   └── pdb
+│   │   ├── bestModel
+│   │   ├── pdb
+│   │   ├── Proteins
+│   │   └── RepeatedSubSampling
+│   ├── Prediction
+│   ├── Predictions
+│   │   ├── distances
+│   │   └── proteins
 │   ├── SmallExample
 │   │   ├── pdb_predict
 │   │   ├── pdb_train
+│   │   ├── Predict
 │   │   └── Train
 │   └── Test
-│       └── pdb
-└── setUp
+│       ├── pdb
+│       └── Proteins
+├── Results
+│   ├── Examples
+│   │   └── MeasureCouplings
+│   ├── Images
+│   │   ├── activeCenter
+│   │   ├── animalModels
+│   │   ├── FinalModel
+│   │   ├── longRange
+│   │   └── protMeasureProjection
+│   ├── QuickRepSampling
+│   │   ├── 2dPlots
+│   │   ├── EmdVsGeo
+│   │   └── Examples
+│   ├── Scripts
+│   ├── Tables
+│   ├── TablesProt
+│   └── TablesProtStatKFoldCV
+├── setUp
+└── Summerschool
+    └── old
 
-55 directories
+152 directories
