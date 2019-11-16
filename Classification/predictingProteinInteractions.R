@@ -314,6 +314,9 @@ createFolderHierarchy <- function(folderName, pdbs){
   if(!dir.exists(Output)) dir.create(Output)
   
   print("copying pdbs ...")
+  print(paste("...from ", pdbs, sep =""))
+  print(paste("... to ", Input, "/pdb/", sep =""))
+  
   list.of.files <- list.files(pdbs, ".pdb", full.names = TRUE)
   file.copy(list.of.files, paste(Input, "/pdb/", sep = ""))
   

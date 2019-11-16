@@ -32,7 +32,7 @@ PPIBASIC = TRUE
 TRAINING = TRUE
 PREDICTION = TRUE
 
-IGNOREERRORS = TRUE
+IGNOREERRORS = FALSE
 IGNORESTD = TRUE
 INGORESTERR = TRUE
 
@@ -48,6 +48,7 @@ if(PPIBASIC){
         PredictingProteinInteractionsFolder,"/QuickStart/SmallExample/Train/ --doMutComp TRUE --q_val 1 --labels_train ",
         PredictingProteinInteractionsFolder,"/data/labels106.txt", sep ="")
   
+  print(PPICALL)
   system(PPICALL,ignore.stdout = IGNORESTD,ignore.stderr = INGORESTERR)
   
   # MutComp checks
@@ -80,6 +81,7 @@ if(TRAINING){
   TRAININGCALL = paste(PredictingProteinInteractionsFolder,"/MetricGeometry/QuickRepeatedSubSampling/./Proteins.R --pathToExperiment ",
                   PredictingProteinInteractionsFolder,"/QuickStart/SmallExample/Train/Output/ --mode evaluation --outPutFolder Test1 --useSmallExample", sep ="")
   
+  print(TRAININGCALL)
   system(TRAININGCALL,ignore.stdout = IGNORESTD,ignore.stderr = INGORESTERR)
   
   # MutComp checks
@@ -99,9 +101,16 @@ if(PREDICTION){
   print("Step 3: Testing Proteins.R (Prediction) ...")
   
   # Testing Proteins.R
-  PREPROCESSCALL = paste(PredictingProteinInteractionsFolder, "Classification/./predictingProteinInteractions.R --mode SingleDistance --doClustering FALSE --pdb_folder ,",
+  PREPROCESSCALL = paste(PredictingProteinInteractionsFolder, "Classification/./predictingProteinInteractions.R --mode SingleDistance --doClustering FALSE --pdb_folder ",
                          PredictingProteinInteractionsFolder, "/QuickStart/SmallExample/pdb_predict/ --MutCompOutPut ",
                          PredictingProteinInteractionsFolder,"/QuickStart/SmallExample/Predict/ --doMutComp TRUE --q_val 1", sep ="")
+  
+  # PredictingProteinInteractionsFolder, "/Classification/./predictingProteinInteractions.R --mode SingleDistance --doClustering FALSE --pdb_folder ",
+  # PredictingProteinInteractionsFolder, "/QuickStart/SmallExample/pdb_predict/ --MutCompOutPut ",
+  # PredictingProteinInteractionsFolder, "/QuickStart/SmallExample/Predict/ --doMutComp TRUE --q_val 1
+  
+  
+  print(PREPROCESSCALL)
   system(PREPROCESSCALL,ignore.stdout = IGNORESTD,ignore.stderr = INGORESTERR)
   
   # MutComp checks
@@ -119,9 +128,12 @@ if(PREDICTION){
                          PredictingProteinInteractionsFolder,"QuickStart/SmallExample/Predict/Output/ --mode prediction --nnModelFolder ",
                          PredictingProteinInteractionsFolder,"/QuickStart/SmallExample/Train/NNexperimentsKfoldCV/Test1/", sep ="")
   
+  print(PREDICTIONCALL)
+  system(PREDICTIONCALL)
+  
   # MutComp checks
   print("Checking Proteins.R ...")
-  if(checkIfFileExists("/QuickStart/SmallExample/Predict/NNexperimentsKfoldCV/TestPred/predictions.txt", "Quantile-Calculation", PredictingProteinInteractionsFolder = PredictingProteinInteractionsFolder)){
+  if(checkIfFileExists("/QuickStart/SmallExample/Predict/NNexperimentsKfoldCV/TestPred/predictions.txt", "Predictions", PredictingProteinInteractionsFolder = PredictingProteinInteractionsFolder)){
     print("... looks good")
   } else {
     if(!IGNOREERRORS) quit()

@@ -276,8 +276,8 @@ initializeParameters <- function(useSmallExample){
     featureParameters$a4 = -1 
     featureParameters$a5 = -1
     
-    # featureParameters$n_s_euclidean = 1
-    # featureParameters$n_s_dijkstra = 10
+    # featureParameters$n_s_euclidean = 20
+    # featureParameters$n_s_dijkstra = 20
     # featureParameters$stitchNum = 2000
   }
   
@@ -3662,6 +3662,12 @@ ProteinsExperimentKfoldCV <- function(sampleSize = 20,
     protNames = c()
     classLevels = c()
     mapping = c()
+    
+    if(!file.exists(labels)){
+      print(paste("ERROR: can't read labels in ", labels, sep =""))
+      quit()
+    }
+    
     lab = read.table(labels, header = TRUE)
 
     if(!file.exists(ExperimentFile) || recalculate){
