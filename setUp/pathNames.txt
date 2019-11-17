@@ -1,3 +1,0 @@
-name path
-manifold 
-k k
