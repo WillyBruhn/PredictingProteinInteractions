@@ -89,7 +89,7 @@ downsampleEuclideanAndGetGeodesic <- function(objPath, n_s_euclidean = 4000, n_s
 # }
 
 
-getAllModelsFromAnimal <- function(path = "/home/willy/PredictingProteinInteractions/data/animals/models/",
+getAllModelsFromAnimal <- function(path = "../../data/animals_raw/",
                                    name = "camel",
                                    n_s_euclidean = 100,
                                    n_s_dijkstra = 50,
@@ -339,13 +339,13 @@ all_models = rbind(camel,cat,lion,elephant,flam,horse,head)
 # write.csv(all_models,file ="/home/willy/PredictingProteinInteractions/data/animals/models/all_models_nE_1000_nS_100_n_99_m_100_q_1.csv",
           # row.names = FALSE)
 
-write.csv(all_models,file ="/home/willy/PredictingProteinInteractions/data/animals/models/all_models_nE_1000_nS_100_n_96_m_100_q_1.csv",
+write.csv(all_models,file ="../../data/animals_raw/all_models_nE_1000_nS_100_n_96_m_100_q_1.csv",
           row.names = FALSE)
 
 # quantiles = read.csv(file ="/home/willy/PredictingProteinInteractions/data/animals/models/all_models_nE_200_nS_50_n_48_m_100_q_1.csv")
 # quantiles = read.csv(file ="/home/willy/PredictingProteinInteractions/data/animals/models/all_models_nE_1000_nS_100_n_99_m_100_q_1.csv")
 
-quantiles = read.csv(file ="/home/willy/PredictingProteinInteractions/data/animals/models/all_models_nE_1000_nS_100_n_96_m_100_q_1.csv")
+quantiles = read.csv(file ="../../data/animals_raw/all_models_nE_1000_nS_100_n_96_m_100_q_1.csv")
 
 # createImageWithArrows(quantiles, FALSE)
 # points3d(quantiles[1:100, 2:4], col = "green", size = 20)
@@ -372,7 +372,7 @@ classNames = getClassNamesFromSubClasses(uniqueModels)
 
 folds = createFolds(classNames, k = k,list = TRUE)
 
-dirName = "/home/willy/PredictingProteinInteractions/data/animals/Evaluation/"
+dirName = "../../data/animals_raw/Evaluation/"
 if(!dir.exists(dirName)) dir.create(dirName)
 
 
@@ -461,11 +461,11 @@ accuracy
 
 confMatNormalized = conf_all/colSums(conf_all)[col(conf_all)]
 
-write.table(x = signif(accuracy,2),file = paste("/home/willy/PredictingProteinInteractions/data/animals/Evaluation/Accuracy.tex", sep = ""),
+write.table(x = signif(accuracy,2),file = paste("../../data/animals_raw/Evaluation/Accuracy.tex", sep = ""),
             quote = FALSE, col.names = FALSE, row.names = FALSE)
 
 print(xtable(x = conf_all,caption = paste("Confusion-matrix from the animal-test-set.",sep =""),label = "animalConfusionNN", type = "latex"),
-      file = paste("/home/willy/PredictingProteinInteractions/data/animals/Evaluation/Confusion.tex", sep = ""))
+      file = paste("../../data/animals_raw/Evaluation/Confusion.tex", sep = ""))
 #----------------------------------------------------------------------------------------------------------------------------
 
 
