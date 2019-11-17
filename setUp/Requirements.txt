@@ -3,13 +3,20 @@
 #---------------------------------------------
 
 VMD
+https://www.ks.uiuc.edu/Research/vmd/current/ig/ig.html
 
 pdb2pqr
+https://apbs-pdb2pqr.readthedocs.io/en/latest/pdb2pqr/installing.html
 
 apbs
+https://apbs-pdb2pqr.readthedocs.io/en/latest/apbs/installing.html
+
+cmake
+https://cmake.org/install/
 
 # for documentation. Not necessary for the implementation itself
 mkdocs
+https://www.mkdocs.org/#installation
 
 #---------------------------------------------
 # Open-source-tools from github 
