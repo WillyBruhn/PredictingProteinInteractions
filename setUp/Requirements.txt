@@ -1,0 +1,23 @@
+#---------------------------------------------
+# Tools
+#---------------------------------------------
+
+VMD
+
+pdb2pqr
+
+apbs
+
+# for documentation. Not necessary for the implementation itself
+mkdocs
+
+#---------------------------------------------
+# Open-source-tools from github 
+#---------------------------------------------
+
+https://github.com/WillyBruhn/centerSelect.git
+
+https://github.com/WillyBruhn/MutComp.git
+
+Manifold
+
