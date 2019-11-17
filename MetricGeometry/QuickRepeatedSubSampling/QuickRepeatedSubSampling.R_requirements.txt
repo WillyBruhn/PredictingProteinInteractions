@@ -1,0 +1,17 @@
+doMC
+iterators
+foreach
+raster
+sp
+doBy
+rbenchmark
+parallel
+RSNNS
+Rcpp
+methods
+stats
+graphics
+grDevices
+utils
+datasets
+base

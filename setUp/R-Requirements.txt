@@ -23,13 +23,7 @@ grDevices
 utils
 datasets
 base
-e1071
-doParallel
-caret
-lattice
-rdist
 rgl
-beepr
 DescTools
 permute
 keras
@@ -46,3 +40,10 @@ pracma
 clue
 RSNNS
 Rcpp
+rdist
+lubridate
+e1071
+doParallel
+caret
+lattice
+beepr

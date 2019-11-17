@@ -29,6 +29,8 @@ library(rgl)
 library(permute)
 
 
+packagesLoadedFrom("animalTest.R")
+
 downsampleEuclideanAndGetGeodesic <- function(objPath, n_s_euclidean = 4000, n_s_dijkstra = 50, plot = FALSE){
   
   print(objPath)

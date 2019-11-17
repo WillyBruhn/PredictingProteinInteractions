@@ -48,6 +48,8 @@ datasetPath = getPath("ModelNet10")
 library(lubridate)
 library(rdist)
 
+packagesLoadedFrom("ModelNet10.R")
+
 getModel10Net <- function(fName, plot = FALSE){
   
   tab = read.table(fName,skip=2, col.names = c("x","y", "z", "trash"), fill = TRUE)
