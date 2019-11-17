@@ -185,6 +185,9 @@ source(wsPath)
 sourceFiles(c("UltraQuickRepeatedSubSampling",
               "BoostedKNN"))
 
+
+packagesLoadedFrom("predictingProteinInteractions.R")
+
 #-------------------------------------------------------------------------
 CreatALLdx <- function(ListOfProtNames,PathToProtData, recalculate = FALSE)
 {

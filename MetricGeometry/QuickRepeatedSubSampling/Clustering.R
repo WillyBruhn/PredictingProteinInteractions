@@ -122,6 +122,8 @@ print(opt)
 print("--------------------------------------------------------------------------")
 #-----------------------------------------------------------------------------------------------------
 
+packagesLoadedFrom("Clustering.R")
+
 getFunctionalProteins <- function(file = "/home/willy/PredictingProteinInteractions/data/106Test/labels.txt"){
   labels = read.table(file = file, header = TRUE)
   return(as.character(labels$name[which(labels$label == "functional")]))

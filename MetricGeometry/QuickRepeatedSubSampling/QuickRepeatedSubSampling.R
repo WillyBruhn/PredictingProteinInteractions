@@ -43,6 +43,8 @@ library(doMC)
 
 print("done lodaing libraries")
 
+packagesLoadedFrom("QuickRepeatedSubSampling.R")
+
 read_pts_file <- function(OutputPath,protName, pos = TRUE, ext_pos = "_pot_positive.pts", ext_neg = "_pot_negative.pts"){
   pts_file_name = ""
   if(pos == TRUE) {

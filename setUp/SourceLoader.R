@@ -1,6 +1,6 @@
 # Don't change this line! 
 # Automatically generated!
-PPISETUP = "/home/willy/Schreibtisch/PPITEST2/PredictingProteinInteractions/setUp"
+PPISETUP = "/home/willy/PredictingProteinInteractions/setUp"
 
 sourceFiles <- function(vector){
   t = read.table(file = paste(PPISETUP,"/SourcableFiles.txt", sep = ""), header = TRUE)
@@ -31,4 +31,10 @@ getPath <- function(name){
   return(s)
 }
 
+packagesLoadedFrom <- function(scriptName){
+  # to check which libraries are actually necessary for this particular script
+  # in the same folder as the script a file is placed
+  
+  write.table(x = .packages(), file = paste(funr::get_script_path(), "/", scriptName, "_requirements.txt", sep = ""), quote = FALSE, row.names = FALSE, col.names = FALSE)
+}
 

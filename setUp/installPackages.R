@@ -53,6 +53,22 @@ loadPck("caret")
 loadPck("beepr")
 loadPck("doParallel")
 
+# load from R-Requirements.txt
+
+if(file.exists("R-Requirements.txt")){
+  rq = read.table(file = "R-Requirements.txt", header = FALSE)
+  
+  print("The following packages are to be installed (as commanded by R-Requirements.txt")
+  print(as.character(rq$V1))
+  print("--------------------------------------------------------")
+  for(p in rq$V1){
+    loadPck(p)
+  }
+} else {
+  print("WARNING: No R-Requirements.txt exists!")
+}
+
+
 # # installation on WS:
 # # inside the virtual-env-directories you have to call
 # #

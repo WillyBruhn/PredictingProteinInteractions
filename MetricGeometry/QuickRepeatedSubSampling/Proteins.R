@@ -161,6 +161,8 @@ library(e1071)
 
 print("done loading ...")
 
+packagesLoadedFrom("Proteins.R")
+
 convertParametersToCorrectType <- function(parameters){
   parameters$a1 = as.numeric(parameters$a1)
   parameters$a2 = as.numeric(parameters$a2)
@@ -434,7 +436,7 @@ if(opt$mode == "prediction"){
   
   parameters$nnModelName = nnModelNew
   parameters$recalculateNN = 0
-  parameters$recalculateQuants = 1
+  parameters$recalculateQuants = 0
   
   writeParameters(parameters = parameters, parametersFileInFolder)
   

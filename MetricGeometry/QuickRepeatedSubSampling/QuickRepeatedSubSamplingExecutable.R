@@ -69,6 +69,9 @@ s1 = paste(funr::get_script_path(),"/QuickRepeatedSubSampling.R",sep ="")
 source(s1)
 registerDoMC(cores= opt$cores)
 
+
+packagesLoadedFrom("QuickRepeatedSubSamplingExecutable.R")
+
 #---------------------------------------------------------------------------------------------------------------------
 n = opt$n
 m = opt$m

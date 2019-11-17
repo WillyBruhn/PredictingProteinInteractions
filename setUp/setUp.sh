@@ -18,6 +18,7 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
+echo "Using this directory ..."
 echo $DIR
 
 sed -i "s|PPISETUP =.*|PPISETUP = \"$DIR\"|g" SourceLoader.R
